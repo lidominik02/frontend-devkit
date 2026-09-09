@@ -47,7 +47,7 @@ jobs:
       - name: Validate marketplace and plugins
         run: |
           fail=0
-          for target in . ./plugins/core ./plugins/vue; do
+          for target in . ./plugins/core ./plugins/vue ./plugins/nuxt; do
             out="$(claude plugin validate "$target" --strict 2>&1 || true)"
             unexpected="$(printf '%s\n' "$out" | grep '❯' | grep -v 'version: No version specified' || true)"
             if [ -n "$unexpected" ]; then

@@ -90,15 +90,23 @@ gate is a tooling gap to report, not a job to absorb.
 
 ## Step 4 — Apply the framework lens
 
-If `stack` names a framework pack that is installed, invoke its engineering skill and
-apply the review checklist it ships. Framework-specific defects — lost reactivity, a
-cache key missing its varying input, a secret inlined into a client bundle, hydration
-mismatch — are invisible to a generic reading of the diff.
+`stack.packs` lists the framework packs that serve this project, already resolved —
+do not infer them from the `stack` string. Invoke each one's engineering skill and apply
+the review checklist it ships. Framework-specific defects — lost reactivity, a cache key
+missing its varying input, a secret inlined into a client bundle, hydration mismatch —
+are invisible to a generic reading of the diff.
 
-The checklist lives inside that pack, not here, and packs are installed in separate
-directories: reach it by invoking the skill, never by constructing a relative path out
-of this plugin. If no pack matches the stack, say so in the report header and review
-generically rather than improvising framework rules.
+**`packs` is ordered general to specific, and you apply it in that order.** A stack with
+two packs has them because the second is a delta on the first: it carries the rules that
+*invert* under its own conditions. So the later pack wins every conflict, and its
+"what is NOT a finding" section overrides the earlier one's severity. Reviewing a
+server-rendered app against the plain-SPA checklist alone produces both false findings
+and missed criticals.
+
+The checklists live inside those packs, not here, and packs are installed in separate
+directories: reach one by invoking its skill, never by constructing a relative path out
+of this plugin. If `packs` is empty, say so in the report header and review generically
+rather than improvising framework rules.
 
 ## Step 5 — Report
 

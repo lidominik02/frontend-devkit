@@ -32,7 +32,8 @@
 //          a gate-poor repo, and an exit code people ignore protects nothing.
 
 import { spawnSync } from 'node:child_process';
-import { detect } from './project-facts.mjs';
+import path from 'node:path';
+import { detect, readJson } from './project-facts.mjs';
 
 /** @typedef {{ name: string, command: string|null, status: 'pass'|'fail'|'not-run', reason?: string, blocking?: boolean, code?: number }} GateResult */
 
@@ -187,11 +188,41 @@ const brokenSetup = notRun.filter((r) => r.blocking);
 // Only where types exist. Warning a shell-and-markdown repo to add `tsc` would
 // train people to skip the warning.
 const typecheckMissing = !facts.gates.typecheck?.command && facts.stack.typed;
-const vue = facts.stack.stack === 'vue-nuxt' || facts.stack.stack === 'vue';
+// Two flags, not one. Nuxt and a plain Vue SPA both need template checking, but
+// the command that delivers it and the file the strictness setting goes in are
+// different, and giving a Nuxt repo the SPA answer produces a gate that passes
+// without checking anything -- see typecheckVacuous below.
+const nuxt = facts.stack.stack === 'nuxt';
+const vue = nuxt || facts.stack.stack === 'vue-spa';
 // vue-tsc needs TypeScript's stable programmatic compiler API, which the 7.x
 // line does not ship. Upgrading TypeScript silently removes a Vue repo's only
 // template type-checking.
 const typescriptTooNewForVueTsc = vue && (facts.stack.typescriptMajor ?? 0) >= 7;
+
+// The worst outcome this file can produce is a gate that exits 0 without having
+// checked anything, because that is indistinguishable from a pass to everyone
+// downstream -- the same confusion the pass/not-run split exists to prevent.
+//
+// Nuxt 4 generates .nuxt/tsconfig.*.json and leaves the root tsconfig.json as a
+// solution file: `files: []` plus `references`. A bare `vue-tsc --noEmit` there
+// has no inputs, finds nothing, and exits 0. So a Nuxt repo whose typecheck
+// script is plain `vue-tsc`/`tsc` with no project or build flag is reported.
+//
+// Gated on the root tsconfig actually looking like a solution file, because the
+// documented workaround for a vue-tsc build-mode bug is to keep the Nuxt-3-style
+// `extends: ./.nuxt/tsconfig.json`, where `vue-tsc --noEmit` does check. And
+// readJson is plain JSON.parse while a real tsconfig.json is JSONC, so an
+// unparseable file yields null -- which stays silent rather than warning wrongly.
+// A warning that cries wolf protects nothing.
+// The SCRIPT BODY, not `command` -- `command` is the runner invocation
+// ("npm run typecheck") and never names the compiler being run.
+const typecheckScript = facts.gates.typecheck?.script ?? '';
+const rootTsconfig = readJson(path.join(facts.dir, 'tsconfig.json'));
+const typecheckVacuous = nuxt
+  && /\b(vue-tsc|tsc)\b/.test(typecheckScript)
+  && !/\bnuxt\s+typecheck\b|\bnuxi\s+typecheck\b|(^|\s)(-b|--build|-p|--project)(\s|$)/.test(typecheckScript)
+  && Array.isArray(rootTsconfig?.references)
+  && Array.isArray(rootTsconfig?.files) && rootTsconfig.files.length === 0;
 
 if (asJson) {
   process.stdout.write(JSON.stringify({
@@ -201,6 +232,7 @@ if (asJson) {
     passed: failed.length === 0 && brokenSetup.length === 0,
     typecheckMissing,
     typescriptTooNewForVueTsc,
+    typecheckVacuous,
     note: 'A gate with status "not-run" was NOT executed. Report it as NOT RUN, never as passing. "blocking": true means the setup is broken, not the code.',
   }, null, 2) + '\n');
 } else {
@@ -216,16 +248,48 @@ if (asJson) {
     say('!! This project has TypeScript but no typecheck script.');
     say('   Nothing is verifying types.' + (vue ? ' On a Vue codebase that also means no' : ''));
     if (vue) say('   compiler checks template expressions at all.');
-    say('   Add one to package.json:');
-    say(vue ? '     "typecheck": "vue-tsc --noEmit"' : '     "typecheck": "tsc --noEmit"');
-    if (vue) say('   And set vueCompilerOptions.strictTemplates -- template checks default to OFF.');
+    if (nuxt) {
+      say('   Add these to package.json:');
+      say('     "postinstall": "nuxt prepare",');
+      say('     "typecheck": "nuxt typecheck"');
+      say('   `nuxt typecheck`, NOT `vue-tsc --noEmit`: Nuxt generates .nuxt/tsconfig.*.json');
+      say('   and leaves the root tsconfig.json a solution file (files: [] plus references),');
+      say('   so a bare vue-tsc there has no inputs and exits 0 without checking anything.');
+      say('   Those generated types exist only after `nuxt prepare`, the dev server or a');
+      say('   build -- hence the postinstall, which a clean CI checkout needs.');
+      say('   Template checks still default to OFF, and the setting does NOT go in');
+      say('   tsconfig.json (generated -- your edit is overwritten). In nuxt.config.ts:');
+      say('     typescript: { tsConfig: { vueCompilerOptions: { strictTemplates: true } } }');
+      say('   strictTemplates is the master switch: checkUnknownProps, checkUnknownEvents,');
+      say('   checkUnknownComponents, checkUnknownDirectives and strictVModel follow from it.');
+      say('   That key is not typed in defineNuxtConfig, so a typo fails silently -- run');
+      say('   `nuxt prepare` and confirm the option landed in .nuxt/tsconfig.app.json.');
+    } else {
+      say('   Add one to package.json:');
+      say(vue ? '     "typecheck": "vue-tsc --noEmit"' : '     "typecheck": "tsc --noEmit"');
+      if (vue) say('   And set vueCompilerOptions.strictTemplates -- template checks default to OFF.');
+    }
     say('   On an existing codebase, baseline the current errors rather than fixing all of them first.');
+  }
+  if (typecheckVacuous) {
+    say('');
+    say(`!! The typecheck gate on this Nuxt project runs \`${typecheckScript}\`, and the root`);
+    say('   tsconfig.json is a solution file (files: [] plus references). That command has');
+    say('   NO INPUTS: it exits 0 having checked nothing. This gate reports "pass" and');
+    say('   verifies nothing -- treat it as NOT RUN until it is changed to `nuxt typecheck`.');
   }
   if (typescriptTooNewForVueTsc) {
     say('');
-    say(`!! TypeScript ${facts.stack.typescriptRange} with a Vue stack: vue-tsc needs the stable`);
+    say(`!! TypeScript ${facts.stack.typescriptRange} with a ${nuxt ? 'Nuxt' : 'Vue'} stack: vue-tsc needs the stable`);
     say('   programmatic compiler API, which TypeScript 7 does not ship. Template');
-    say('   type-checking will not work. Pin TypeScript to the 6.x line.');
+    if (nuxt) {
+      say('   type-checking will not work. `nuxt typecheck` runs vue-tsc by default, so two');
+      say('   remedies exist here: pin TypeScript to the 6.x line, or select the other');
+      say('   checker (`nuxt typecheck --checker golar`). Confirm which checker this repo');
+      say('   actually runs before assuming templates are checked at all.');
+    } else {
+      say('   type-checking will not work. Pin TypeScript to the 6.x line.');
+    }
   }
 }
 

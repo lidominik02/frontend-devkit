@@ -2,48 +2,45 @@
 
 ## Why these exist
 
-A skill costs context in every session whether or not it changes an outcome. To know
-which rules earn that cost, run the same task twice — once with the plugin, once without
-— and compare:
+Same retention rule as every pack here — a component survives only if an ablation shows
+it adds capability. The methodology, the manual run procedure and how to write a case
+are in `plugins/core/evals/README.md`; this file covers only what is specific to this
+pack.
 
-| Baseline (no plugin) | With plugin | Verdict |
+## What each case tests
+
+| Case | The claim under test |
+| --- | --- |
+| `composable-reactivity` | Crossing a composable boundary with a getter rather than a value, so the result keeps tracking when the input changes |
+| `vite-secret` | Recognising that a static SPA has nowhere to keep a secret, and that a `VITE_`-prefixed value is inlined into the shipped bundle |
+| `module-scope-state` | A negative test: module-scope reactive state is an ordinary singleton in a client-only SPA, not a cross-request leak |
+
+`composable-reactivity` and `vite-secret` are capability cases: the pack earns its place
+only if the baseline arm gets them wrong. `module-scope-state` is expected to pass at
+baseline and is kept for a different reason.
+
+## The matched pair
+
+`module-scope-state` guards against Nuxt guidance leaking into this pack, which is a
+different question from whether the pack adds capability. Its mirror is
+`plugins/nuxt/evals/ssr-shared-state/`: the same code in the opposite environment.
+
+| Case | Correct verdict | What it guards |
 | --- | --- | --- |
-| fails | passes | **keep** — the rule adds capability |
-| passes | passes | **remove** — the model already knew |
-| fails | fails | rewrite, or accept it is out of reach |
+| `vue` / `module-scope-state` | **not** a bug (client-only SPA) | Nuxt guidance leaking into the SPA pack |
+| `nuxt` / `ssr-shared-state` | **Critical** (server-rendered) | The SPA rule being applied under SSR |
 
-A rule survives only if it lets the model do something it could not do without it.
-Anything that passes baseline is documentation the model already carries. This retention
-rule and the taxonomy below follow `vuejs-ai/skills`.
+**The pair is the instrument. Run both whenever either changes.** Either case alone
+measures nothing: a pack that calls module-scope state a leak everywhere passes one and
+fails the other, and a pack that calls it fine everywhere does the reverse.
 
-Cases fall into two kinds. **Capability**: the model cannot solve it unaided —
-version-specific behaviour, undocumented traps, anything past the training cutoff.
-**Efficiency**: it can, but not well. Capability rules are the ones worth paying for;
-keep efficiency rules few and short.
+## Running the `vue` arm
 
-## Running them
+**Enable `core` and `vue`, with `nuxt` disabled.** `nuxt` depends on `vue`, so enabling
+it ships both, and both skill bodies can trigger on the same `.vue` or `composables/`
+path with no guaranteed ordering. That contaminates `module-scope-state` in particular,
+whose correct answer is the exact inverse of the `nuxt` pack's rule.
 
-```bash
-claude plugin eval . --ablation with-without
-```
-
-As of Claude Code 2.1.250 this command is early-access gated and prints
-`plugin eval is currently in early access` without access. Until then, run a case by
-hand:
-
-1. Start a session with the plugin disabled, paste `prompt.md`, keep the output.
-2. Start one with it enabled, same prompt, keep the output.
-3. Score both against every file in that case's `graders/`.
-
-Use at least two runs per arm — a single run measures sampling, not the skill. The
-`plugin eval` interface is undocumented on code.claude.com, so do not put it in a
-blocking CI job.
-
-## Writing a case
-
-`prompt.md` is the task, and it must be clean: no hints, no TODOs, nothing that suggests
-the shape of the answer. A prompt that tells the model what to avoid measures reading
-comprehension rather than the skill.
-
-`graders/*.md` hold the criteria. Prefer criteria checkable from the output text over
-matters of taste.
+The baseline arm is **`core` alone**, not "no plugins". `core` is enabled in every
+repository anyway, so it is part of the floor this pack is measured against rather than
+part of what is being measured.

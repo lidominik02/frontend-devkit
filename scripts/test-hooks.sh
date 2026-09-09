@@ -147,6 +147,29 @@ import('$S/project-facts.mjs').then(m => {
   process.exit(bad.length === 0 ? 0 : 1);
 });" 2>/dev/null && ok || bad "project-facts must never report available:true"
 
+# The stack value names the stack, not the pack, and `packs` maps one to the
+# other. A meta-framework must never report as the view library it builds on:
+# every Nuxt app also depends on vue, so getting this order wrong hands a
+# server-rendered app the SPA guidance that inverts under SSR.
+stack_of() {
+  d="$(mktemp -d)"; printf '%s' "$1" > "$d/package.json"
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const s = m.detect(process.env.CLAUDE_PROJECT_DIR).stack;
+    console.log(JSON.stringify([s.stack, s.packs]));
+  });" 2>/dev/null
+}
+[ "$(stack_of '{"dependencies":{"nuxt":"^4","vue":"^3"}}')" = '["nuxt",["vue","nuxt"]]' ] \
+  && ok || bad "a nuxt dependency must report stack nuxt and both packs, general first"
+[ "$(stack_of '{"dependencies":{"vue":"^3"}}')" = '["vue-spa",["vue"]]' ] \
+  && ok || bad "a vue-only dependency must report stack vue-spa and only the vue pack"
+[ "$(stack_of '{"dependencies":{"next":"^15","react":"^19"}}')" = '["next",[]]' ] \
+  && ok || bad "next must outrank react, and no pack serves it yet"
+[ "$(stack_of '{"dependencies":{"react":"^19"}}')" = '["react-spa",[]]' ] \
+  && ok || bad "react alone must report react-spa"
+[ "$(stack_of '{}')" = '[null,[]]' ] \
+  && ok || bad "no framework must report a null stack and no packs"
+
 echo
 echo "run-gates: the distinction between a broken build and a broken toolchain"
 G="$(mktemp -d)"; (cd "$G" && git init -q . 2>/dev/null)
@@ -192,6 +215,36 @@ rgj --json | grep -q '"typecheckMissing": false' && ok || bad "should NOT nag an
 # Both spellings of the typecheck script occur in real repos.
 printf '{"scripts":{"type-check":"true"}}' > "$G/package.json"
 [ "$(rg --gate typecheck)" -eq 0 ] && ok || bad "should resolve the type-check alias"
+
+# A Nuxt project must be nudged toward `nuxt typecheck`, never `vue-tsc --noEmit`.
+# On Nuxt 4 the root tsconfig.json is a solution file, so a bare vue-tsc there
+# has no inputs and exits 0 -- advice that manufactures a silently-passing gate.
+printf '{"dependencies":{"nuxt":"^4"},"devDependencies":{"typescript":"5"},"scripts":{"lint":"true"}}' > "$G/package.json"
+printf '{"files":[],"references":[{"path":"./.nuxt/tsconfig.app.json"}]}' > "$G/tsconfig.json"
+rgj | grep -q 'nuxt typecheck' && ok || bad "a Nuxt project should be pointed at nuxt typecheck"
+rgj | grep -q 'nuxt prepare' && ok || bad "a Nuxt project should be told it needs nuxt prepare"
+rgj | grep -q '"typecheck": "vue-tsc --noEmit"' && bad "must not hand a Nuxt project the vue-tsc gate" || ok
+# ...while a plain Vue SPA still gets exactly that advice.
+printf '{"dependencies":{"vue":"^3"},"devDependencies":{"typescript":"5"},"scripts":{"lint":"true"}}' > "$G/package.json"
+rgj | grep -q '"typecheck": "vue-tsc --noEmit"' && ok || bad "a Vue SPA should still be pointed at vue-tsc"
+rgj | grep -q 'nuxt typecheck' && bad "must not mention nuxt typecheck on a plain Vue SPA" || ok
+
+# A gate that exits 0 having checked nothing is the failure this script exists
+# to prevent, so it is reported -- but only where it is genuinely vacuous.
+printf '{"dependencies":{"nuxt":"^4"},"devDependencies":{"typescript":"5"},"scripts":{"typecheck":"vue-tsc --noEmit"}}' > "$G/package.json"
+rgj --json | grep -q '"typecheckVacuous": true' && ok || bad "a bare vue-tsc on a Nuxt solution tsconfig is vacuous"
+printf '{"dependencies":{"nuxt":"^4"},"devDependencies":{"typescript":"5"},"scripts":{"typecheck":"nuxt typecheck"}}' > "$G/package.json"
+rgj --json | grep -q '"typecheckVacuous": false' && ok || bad "nuxt typecheck must not be called vacuous"
+printf '{"dependencies":{"nuxt":"^4"},"devDependencies":{"typescript":"5"},"scripts":{"typecheck":"vue-tsc -b --noEmit"}}' > "$G/package.json"
+rgj --json | grep -q '"typecheckVacuous": false' && ok || bad "build mode has inputs and must not be called vacuous"
+# A Nuxt-3-style extends tsconfig DOES give vue-tsc inputs: do not cry wolf.
+printf '{"extends":"./.nuxt/tsconfig.json"}' > "$G/tsconfig.json"
+printf '{"dependencies":{"nuxt":"^3"},"devDependencies":{"typescript":"5"},"scripts":{"typecheck":"vue-tsc --noEmit"}}' > "$G/package.json"
+rgj --json | grep -q '"typecheckVacuous": false' && ok || bad "an extends tsconfig gives vue-tsc inputs"
+# A JSONC tsconfig cannot be parsed, so the answer is unknown -- stay silent.
+printf '{\n  // generated\n  "files": [],\n  "references": []\n}' > "$G/tsconfig.json"
+rgj --json | grep -q '"typecheckVacuous": false' && ok || bad "an unparseable tsconfig must not produce a warning"
+rm -f "$G/tsconfig.json"
 rm -rf "$G"
 
 echo

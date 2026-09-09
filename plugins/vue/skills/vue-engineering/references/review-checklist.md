@@ -10,7 +10,10 @@ this list exists.
 
 This is the plain-Vue list. A Nuxt app has a different set of criticals (SSR-shared
 state, hydration mismatch, double-fetch, payload serialisation) and several of them
-invert here.
+invert here — module-scope state most of all, which is listed below as *not* a finding
+and is Critical under SSR. If the project depends on `nuxt`, review against the `nuxt`
+pack's `references/nuxt-review-checklist.md`, which is a delta on this file and states
+which of these verdicts it overrides.
 
 ## Blocking (Critical)
 
@@ -81,8 +84,9 @@ form value asserted with `as` instead of parsed. `as` is a claim, not a check.
 - A pattern the diff copies from its immediate neighbours, unless it is in the Critical
   list above. Note it as Info and say it is pre-existing.
 - Module-scope state in a client-only SPA. It is an ordinary singleton here — the
-  cross-request leak that makes it dangerous is an SSR property. Flag it only if the app
-  is server-rendered.
+  cross-request leak that makes it dangerous is an SSR property. If the app is
+  server-rendered, this list is the wrong one: the `nuxt` pack's checklist governs, and
+  it rates the same code Critical.
 - Missing tests in a repo with no test runner. Report the *gap* once, in the report
   header, as a tooling finding — not as a defect on every changed file.
 - Preferences about `reactive` versus `ref` where the existing file already chose one.

@@ -20,6 +20,13 @@ paths:
 
 # Vue 3 engineering
 
+**First, if this project depends on `nuxt`: stop and read `nuxt-engineering` instead.**
+This pack is for plain Vue on Vite, and roughly half of what follows inverts under
+server rendering — module-scope state, auto-imports, secrets, and where server data
+belongs. The `nuxt` pack is a delta on this one and names every rule here that does not
+apply there. Applying this file to a Nuxt app produces confidently wrong code, because
+each rule below is correct and more specific-sounding than the one that replaces it.
+
 Write code that looks like the rest of the codebase you are in. Read the neighbouring
 files first, reuse existing composables and components before writing new ones, and keep
 changes surgical.
@@ -150,7 +157,9 @@ Do not claim a gate passed that you did not run.
   project-local skills. This pack must stay true of *any* Vue app.
 - **Apply Nuxt guidance.** `useFetch`, `useAsyncData`, `useState`, `runtimeConfig`,
   Nitro server routes and auto-imports do not exist here, and module-scope state is an
-  ordinary singleton in an SPA rather than the cross-request leak it is under SSR.
+  ordinary singleton in an SPA rather than the cross-request leak it is under SSR. That
+  guidance lives in the `nuxt` pack; invoke `nuxt-engineering` rather than importing its
+  conclusions into this one.
 - **State a version-gated API as fact** without checking what is installed.
 - **Bulk-convert files the task did not ask about** — no drive-by TypeScript migrations
   or refactors of adjacent code.

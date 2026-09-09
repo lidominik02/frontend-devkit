@@ -10,7 +10,7 @@
 //   gitHost          the git remote URL, plus .gitlab/ or .github/ markers
 //   commitConvention commitlint config, which enforces it rather than describing it
 //   mrTemplates      .gitlab/merge_request_templates/ or .github/
-//   stack            dependencies
+//   stack            dependencies, plus which framework packs serve it
 //
 // Reading from the file that enforces a fact keeps it current; a copy in a
 // devkit-owned manifest would drift.
@@ -50,8 +50,11 @@ function onPath(bin) {
   return spawnSync(probe, [bin], { stdio: 'ignore' }).status === 0;
 }
 
+// Returns null on anything it cannot parse, which includes a valid JSONC file
+// with comments in it -- real tsconfig.json files often are. Callers must treat
+// null as "unknown", never as "empty".
 /** @param {string} p */
-function readJson(p) {
+export function readJson(p) {
   try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return null; }
 }
 
@@ -182,14 +185,41 @@ function detectChangeTemplates(dir) {
   return found;
 }
 
+// A meta-framework is checked before the view library it is built on, because
+// every Nuxt app also depends on `vue` and every Next app on `react`. Checking
+// in the other order would report every Nuxt repo as a plain SPA and hand it
+// guidance that inverts under SSR.
+//
+// The value names the stack, not the pack -- `vue-spa` and `nuxt` are both Vue.
+// PACKS below is what maps one to the other.
 /** @param {Record<string, unknown>} deps */
 function stackFromDeps(deps) {
   const has = (/** @type {string} */ d) => Object.prototype.hasOwnProperty.call(deps, d);
-  if (has('nuxt')) return 'vue-nuxt';
-  if (has('next')) return 'react-next';
-  if (has('vue')) return 'vue';
-  if (has('react')) return 'react';
+  if (has('nuxt')) return 'nuxt';
+  if (has('next')) return 'next';
+  if (has('vue')) return 'vue-spa';
+  if (has('react')) return 'react-spa';
   return null;
+}
+
+// Meta-framework stacks list BOTH packs, general first, because the packs
+// layer: `nuxt` depends on `vue` and carries only what SSR inverts or adds.
+// A consumer applies them in order, so the more specific one wins a conflict.
+//
+// This mapping lives here, once, rather than in the prose of every component
+// that needs it. Two components each describing the same mapping is two copies
+// that drift -- the failure this whole script exists to avoid.
+/** @type {Record<string, string[]>} */
+const PACKS = {
+  'vue-spa': ['vue'],
+  nuxt: ['vue', 'nuxt'],
+  'react-spa': [],
+  next: [],
+};
+
+/** @param {string|null} stack */
+function packsFor(stack) {
+  return stack ? (PACKS[stack] ?? []) : [];
 }
 
 /** @param {string} dir */
@@ -219,7 +249,7 @@ function detectStack(dir) {
       }
     }
     // Prefer the most specific framework found anywhere in the workspace.
-    if (!stack) stack = workspaceStacks.find((s) => s === 'vue-nuxt' || s === 'react-next') ?? workspaceStacks[0] ?? null;
+    if (!stack) stack = workspaceStacks.find((s) => s === 'nuxt' || s === 'next') ?? workspaceStacks[0] ?? null;
   }
 
   const tsRange = typeof rootDeps.typescript === 'string' ? rootDeps.typescript : null;
@@ -227,7 +257,7 @@ function detectStack(dir) {
   const typed = existsSync(path.join(dir, 'tsconfig.json'))
     || existsSync(path.join(dir, 'tsconfig.base.json'))
     || Object.prototype.hasOwnProperty.call(rootDeps, 'typescript');
-  return { stack, monorepo, typed, typescriptRange: tsRange, typescriptMajor: Number.isFinite(typescriptMajor) ? typescriptMajor : null, workspaceStacks };
+  return { stack, packs: packsFor(stack), monorepo, typed, typescriptRange: tsRange, typescriptMajor: Number.isFinite(typescriptMajor) ? typescriptMajor : null, workspaceStacks };
 }
 
 /** @param {string} [dir] */

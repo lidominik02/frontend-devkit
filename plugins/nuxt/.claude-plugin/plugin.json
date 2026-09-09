@@ -1,0 +1,8 @@
+{
+  "name": "nuxt",
+  "description": "Nuxt engineering and review knowledge for server-rendered Vue: per-request state with useState rather than module scope, useFetch and useAsyncData, runtimeConfig public versus private, hydration mismatches, Nitro server routes and route middleware. A delta on top of the vue pack -- it carries only what server rendering inverts or adds, and names the plain-Vue rules that must not be applied here. Framework-level only, and version-gated. Contains no facts about any individual repository.",
+  "author": { "name": "lidominik02" },
+  "repository": "https://github.com/lidominik02/frontend-devkit",
+  "keywords": ["nuxt", "nitro", "ssr", "vue", "hydration", "typescript"],
+  "dependencies": [{ "name": "core" }, { "name": "vue" }]
+}

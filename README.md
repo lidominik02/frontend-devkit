@@ -26,7 +26,8 @@ Add to `~/.claude/settings.json`:
   },
   "enabledPlugins": {
     "core@frontend-devkit": true,
-    "vue@frontend-devkit": true
+    "vue@frontend-devkit": true,
+    "nuxt@frontend-devkit": true
   }
 }
 ```
@@ -36,25 +37,55 @@ Then run `/reload-plugins`.
 Set `autoUpdate`. Auto-update is off by default for third-party marketplaces, so without
 it a push reaches nobody until someone runs `/plugin update`.
 
-Enabling `vue` installs and enables `core` with it: `dependencies` is enforced, not
-advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is enabled,
-and `--plugin-dir ./plugins/vue` alone leaves the plugin disabled with an unsatisfied
-dependency — pass both directories.
+Enabling `vue` installs and enables `core` with it — `dependencies` is enforced, not
+advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is
+enabled, and `--plugin-dir ./plugins/vue` on its own leaves the plugin disabled with an
+unsatisfied dependency. Pass both directories.
+
+`nuxt` declares `core` **and** `vue` directly rather than relying on `vue` to pull
+`core` in transitively. Transitive resolution is not observable from
+`claude plugin validate` — only at enable time — so both are named. Enable only the
+packs whose frameworks you actually use: a plain-Vue repo pays nothing for `nuxt`, and
+enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 ## Plugins
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` · `optimizing-prompts` · `preparing-a-repo` · 3 hooks · 3 scripts |
+| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` · `optimizing-prompts` · `preparing-a-repo` · 3 hooks · 2 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
+| `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Always-on cost is about 1.5k tokens (`core` ~1,300, `vue` ~260). Skill bodies load on
-trigger; reference files load only when the body points at them.
+About **1.8k tokens always-on** with all three enabled (`core` ~1,300, `vue` ~260,
+`nuxt` ~290). Skill bodies load on trigger; reference files load only when the body
+points at them. A repo that enables only the pack matching its framework pays for one.
 
-`vue` covers plain Vue on Vite. Nuxt is out of scope: roughly half the guidance inverts
-between the two — module-scope reactive state is an ordinary singleton in a client-only
-SPA and a cross-request leak under SSR — so Nuxt needs its own pack rather than shared
-guidance that hedges.
+## Why Vue and Nuxt are separate packs
+
+Roughly half the guidance inverts between them, and a rule that is correct for Vue and
+wrong for Nuxt is worse than no rule — it manufactures confident, wrong output.
+Module-scope reactive state is an ordinary singleton in a client-only SPA and a
+cross-request data leak under SSR. Imports are mandatory in one and auto-imported in the
+other. "There is no server, so nothing is secret" is replaced by `runtimeConfig`'s
+public/private boundary. Serving both from one pack means hedging every one of those into
+an "if SSR then… else…" sentence, which is precisely the wording that makes the model
+pick the wrong branch.
+
+So the packs layer instead of hedging:
+
+```
+nuxt  ──depends on──▶  vue  ──depends on──▶  core
+```
+
+`vue` holds the component-model truth that is identical everywhere. `nuxt` carries
+**only** what server rendering inverts or adds, names every `vue` rule that does not
+apply there, and `vue` points back at it. Nothing is duplicated, so nothing can drift.
+`project-facts.mjs` reports which packs serve a project as `stack.packs`, ordered general
+to specific — the later pack wins a conflict.
+
+The evidence the split earns its cost is a matched pair of ablation cases:
+`plugins/vue/evals/module-scope-state/` must call the code fine, and
+`plugins/nuxt/evals/ssr-shared-state/` must call the same code Critical.
 
 ## Scripts
 
@@ -67,6 +98,12 @@ it) and merge-request templates.
 
 Gates are reported as `declared`. A script name existing says nothing about whether its
 binary resolves, so `available` stays `null` until something runs it.
+
+`stack` names the stack, not the pack: `vue-spa`, `nuxt`, `react-spa`, `next`, or `null`.
+A meta-framework is checked before the view library it builds on, so a Nuxt app never
+reports as plain Vue. `stack.packs` maps that to the packs which serve it — `nuxt`
+resolves to `['vue', 'nuxt']`, general first — so no component has to restate the
+mapping in prose and drift from it.
 
 **`run-gates.mjs`** runs those gates and separates three outcomes:
 
@@ -197,10 +234,17 @@ pushy.
 ```bash
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # frontmatter, hooks.json
-bash scripts/test-hooks.sh                      # 84 assertions on the guarantees
+claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
+bash scripts/test-hooks.sh                      # 99 assertions on the guarantees
 node plugins/core/scripts/project-facts.mjs     # what detection sees here
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```
+
+Then, inside a session: `/doctor` for configuration problems and `/skill-doctor` for the
+per-skill listing token cost and any skill that never fires. "Prefer deleting a component
+to adding one" is only a slogan while the cost of keeping one is unmeasured; those two
+commands are what make it a decision. `plugins/*/evals/` holds the ablation cases that
+settle whether a component earns that cost at all.
 
 `--strict` turns an unrecognised field into an error, which is the only way to catch a typo
 such as `mcpServer` for `mcpServers` — Claude Code ignores unknown fields at load time, so

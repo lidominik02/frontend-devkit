@@ -93,7 +93,8 @@ Implementation runs **in the main thread**, not in a subagent: it shares the con
 that planning just built, and a fresh subagent would start cold and re-derive it.
 
 1. Confirm the phase is approved. If not, stop and ask.
-2. Load the framework pack skill for this repo's `stack` and follow it.
+2. Load every framework pack skill listed in this repo's `stack.packs`, in the order
+   given, and follow them. A later pack is a delta on an earlier one and wins conflicts.
 3. Implement exactly that phase's scope. Reuse before writing new code.
 4. Run the gates that exist. Report any that do not.
 5. Hand the diff to the `reviewer` agent, fix Critical findings, re-review.

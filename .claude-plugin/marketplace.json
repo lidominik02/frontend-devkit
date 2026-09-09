@@ -32,6 +32,19 @@
         "vue-router",
         "spa"
       ]
+    },
+    {
+      "name": "nuxt",
+      "source": "./plugins/nuxt",
+      "description": "Nuxt SSR engineering and review knowledge: per-request state with useState instead of module scope, useFetch and useAsyncData, runtimeConfig public versus private, hydration mismatches, Nitro server routes and route middleware. A delta on the vue pack -- only what server rendering inverts or adds. Contains no repo-specific facts. Requires core and vue.",
+      "category": "development",
+      "keywords": [
+        "nuxt",
+        "nitro",
+        "ssr",
+        "vue",
+        "hydration"
+      ]
     }
   ]
 }
