@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "frontend-devkit",
+  "description": "Private development platform: a framework-agnostic core plus per-framework engineering packs. Repo-specific facts live in each consuming repo's .claude/project.json, never in a component.",
+  "owner": {
+    "name": "lidominik02",
+    "url": "https://github.com/lidominik02"
+  },
+  "plugins": [
+    {
+      "name": "core",
+      "source": "./plugins/core",
+      "description": "Framework-agnostic: a read-only reviewer agent, bug investigation, feature planning, commit/MR authoring, prompt rewriting, and three deterministic hooks. Install in every repository.",
+      "category": "development",
+      "keywords": [
+        "review",
+        "planning",
+        "debugging",
+        "hooks",
+        "gitlab"
+      ]
+    },
+    {
+      "name": "vue",
+      "source": "./plugins/vue",
+      "description": "Vue 3 / Vite SPA engineering and review knowledge: reactivity, composables, Vue Router, client vs server state, build-time config and secrets, testing. Version-gated against the installed Vue, Router, Pinia, Vite and TypeScript. Contains no repo-specific facts. Requires core.",
+      "category": "development",
+      "keywords": [
+        "vue",
+        "vite",
+        "pinia",
+        "vue-router",
+        "spa"
+      ]
+    }
+  ]
+}

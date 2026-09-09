@@ -1,0 +1,5 @@
+# Machine-specific settings: local paths and consuming-repo access.
+.claude/settings.local.json
+
+# Scratch space. Never part of the marketplace.
+temp/

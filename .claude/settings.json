@@ -1,0 +1,18 @@
+{
+  "$comment": "Settings for developing this marketplace. Machine-specific paths and any consuming-repo access belong in settings.local.json, which is gitignored.",
+
+  "permissions": {
+    "allow": [
+      "Bash(claude plugin validate:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)"
+    ]
+  }
+}

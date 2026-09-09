@@ -1,0 +1,131 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Pinned deliberately. Validator behaviour moves between patch releases: flags
+# appear and warnings become errors, so an unpinned global install turns an
+# unrelated upstream change into a red build on a commit that touched nothing.
+env:
+  CLAUDE_CODE_VERSION: '2.1.250'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # No install step: this repo is dependency-free by design and runs with
+      # Node and the claude CLI alone.
+
+      # Asserts each hook by exit code against realistic event JSON, catching a
+      # hook that silently stops blocking and one that blocks everything. Parse
+      # checks run before behavioural ones, because a syntax error and a
+      # deliberate block look identical from outside.
+      - name: Hook regression suite
+        run: bash scripts/test-hooks.sh
+
+      - name: Install Claude Code
+        run: |
+          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
+
+      # --strict turns an unrecognised field into an error, the only way to catch
+      # a typo such as `mcpServer` for `mcpServers`: Claude Code ignores unknown
+      # fields at load time, so without --strict the component silently never
+      # loads and nothing fails.
+      #
+      # --strict also fails on the missing `version`, which is omitted
+      # deliberately so installs track the commit SHA. This step therefore runs
+      # strict and allows exactly that one finding.
+      - name: Validate marketplace and plugins
+        run: |
+          fail=0
+          for target in . ./plugins/core ./plugins/vue; do
+            out="$(claude plugin validate "$target" --strict 2>&1 || true)"
+            unexpected="$(printf '%s\n' "$out" | grep '❯' | grep -v 'version: No version specified' || true)"
+            if [ -n "$unexpected" ]; then
+              echo "::error::$target has findings beyond the intended version warning"
+              printf '%s\n' "$unexpected"
+              fail=1
+            else
+              echo "$target ok (version warning is intended)"
+            fi
+          done
+          exit "$fail"
+
+      # A framework pack must not contain facts about any individual repository.
+      - name: No repo-specific facts in plugins
+        run: |
+          if grep -rniE '/home/[A-Za-z0-9._-]+/|~/[A-Za-z0-9_-]' plugins/ ; then
+            echo "::error::A plugin contains a repo-specific fact. Those belong in the consuming repo's .claude/, not here."
+            exit 1
+          fi
+          echo "plugins are repo-agnostic"
+
+      # A skill pointing at a reference file that does not exist is a dead end
+      # followed at runtime, and nothing else catches it.
+      - name: Every referenced file exists
+        run: |
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path');
+          let bad = 0;
+          function walk(dir) {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, e.name);
+              if (e.isDirectory()) { walk(p); continue; }
+              if (e.name !== 'SKILL.md' && !p.includes('/agents/')) continue;
+              const body = fs.readFileSync(p, 'utf8');
+              for (const m of body.matchAll(/`(references\/[A-Za-z0-9._-]+\.md)`/g)) {
+                const target = path.join(path.dirname(p), m[1]);
+                if (!fs.existsSync(target)) { console.error(`${p} -> missing ${m[1]}`); bad++; }
+              }
+            }
+          }
+          walk('plugins');
+          if (bad) { console.error(`::error::${bad} dangling reference(s)`); process.exit(1); }
+          console.log('all referenced files exist');
+          NODE
+
+      # The description is the entire triggering mechanism, and 1024 is the Agent
+      # Skills spec's hard limit: past it a skill cannot be packaged or uploaded,
+      # even though Claude Code itself tolerates more.
+      - name: Descriptions within the portable cap
+        run: |
+          node - <<'NODE'
+          const fs = require('fs'), path = require('path');
+          let bad = 0;
+          function desc(t) {
+            const m = t.match(/^---\n([\s\S]*?)\n---/); if (!m) return null;
+            const L = m[1].split('\n');
+            const i = L.findIndex((l) => /^description:/.test(l)); if (i < 0) return null;
+            const b = [L[i].replace(/^description:\s*>?-?\s*/, '')];
+            for (let j = i + 1; j < L.length; j++) { if (/^[A-Za-z_$-]+:/.test(L[j])) break; b.push(L[j].trim()); }
+            return b.join(' ').replace(/\s+/g, ' ').trim();
+          }
+          function walk(dir) {
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, e.name);
+              if (e.isDirectory()) { walk(p); continue; }
+              if (e.name !== 'SKILL.md' && !p.includes('/agents/')) continue;
+              const t = fs.readFileSync(p, 'utf8');
+              const d = desc(t);
+              if (!d) { console.error(`${p} -> no description`); bad++; continue; }
+              if (d.length > 1024) { console.error(`${p} -> description ${d.length} chars, cap 1024`); bad++; }
+              if (e.name === 'SKILL.md') {
+                const name = (t.match(/^name:\s*(\S+)/m) || [])[1];
+                const dirName = path.basename(path.dirname(p));
+                if (name !== dirName) { console.error(`${p} -> name "${name}" must match directory "${dirName}"`); bad++; }
+              }
+            }
+          }
+          walk('plugins');
+          if (bad) { console.error(`::error::${bad} frontmatter problem(s)`); process.exit(1); }
+          console.log('frontmatter within limits');
+          NODE

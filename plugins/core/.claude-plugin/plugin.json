@@ -1,0 +1,7 @@
+{
+  "name": "core",
+  "description": "Framework-agnostic development platform: read-only reviewer, bug investigation, feature planning, commit/MR authoring, prompt rewriting, and deterministic hooks.",
+  "author": { "name": "lidominik02" },
+  "repository": "https://github.com/lidominik02/frontend-devkit",
+  "keywords": ["review", "planning", "debugging", "hooks", "gitlab"]
+}
