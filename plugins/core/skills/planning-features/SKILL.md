@@ -11,6 +11,7 @@ description: >-
   "plan phase N", "implement phase N", "resume the roadmap", "checkpoint this", or
   describes a feature too large to finish in one sitting.
 argument-hint: "[new|plan|implement|resume|save] [feature-or-phase]"
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Read Grep Glob
 ---
 
 You run large features across many sessions. The deliverable is not just a plan — it

@@ -12,10 +12,11 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | passes | passes | **remove** — the model already knew |
 | fails | fails | rewrite, or accept it is out of reach |
 
-**`core`'s bar is higher than a framework pack's.** `core` is enabled in every
-repository, so its listing cost is paid in every session of every project — roughly
-1,300 tokens against a framework pack's ~260. A pack at least only loads where its
-framework is. A `core` skill that passes baseline is five times the waste.
+**`core`'s bar is higher than a framework pack's.** `core` carries five listed
+descriptions against a framework pack's one — about 3.1k characters to 0.8k — and it is
+enabled in every repository, so that cost is paid in every session of every project. A
+pack at least only loads where its framework is. A `core` skill that passes baseline is
+several times the waste, and `/skill-doctor` will tell you what it actually costs.
 
 Cases fall into two kinds. **Capability**: the model cannot solve it unaided — a
 distinction it does not draw, an ordering it does not follow, a guardrail it does not
@@ -35,6 +36,12 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `planning-features` | Producing durable on-disk artifacts that survive context loss, not a plan that exists only in the transcript |
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
 | `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute |
+| `dispatching-a-review` | Whether the read-only `reviewer` agent gets dispatched from ordinary wording, or the main thread reviews the diff itself |
+
+`dispatching-a-review` is the odd one out: it scores the **agent**, and its result
+decides whether a component gets added at all. A pass at baseline means the agent's own
+description is already dispatching it, so a dispatcher skill would be a second trigger
+surface competing with the first — and the rule here is to prune before adding.
 
 ## Running them
 

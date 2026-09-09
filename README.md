@@ -56,9 +56,35 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-About **1.8k tokens always-on** with all three enabled (`core` ~1,300, `vue` ~260,
-`nuxt` ~290). Skill bodies load on trigger; reference files load only when the body
-points at them. A repo that enables only the pack matching its framework pays for one.
+Only descriptions are always-on: **4.7k characters** of them with all three packs
+enabled — `core` contributes five listed entries (~3.1k), `vue` and `nuxt` one each
+(~0.8k). `preparing-a-repo` is excluded because it is `disable-model-invocation`. Skill
+bodies load on trigger; reference files load only when the body points at them, and a
+repo that enables just the pack matching its framework pays for one.
+
+`/skill-doctor` reports the token cost of the listing. Character counts are what this
+repo can check from its own files.
+
+## Invoking things
+
+Every skill here answers to `/<plugin>:<skill-name>` — `/core:describing-changes`,
+`/core:planning-features`, `/nuxt:nuxt-engineering`. Components belong in `skills/`
+rather than `commands/`: a skill already carries the slash invocation, and the two CI
+checks that read component frontmatter select on `SKILL.md` or `agents/`, so a file
+under `commands/` skips both.
+
+The `reviewer` agent's fully-qualified name is `core:reviewer`, which always resolves to
+the one shipped here even when a consuming repo has its own — plugin agents rank lowest
+in discovery precedence.
+
+`preparing-a-repo` carries **`disable-model-invocation: true`**: Claude never reaches for
+it on its own, and its description leaves the always-on listing. It is the only component
+that writes into a host repository, and the write is gated behind an approved gap report.
+Type it.
+
+`planning-features` and `optimizing-prompts` are candidates for the same field on cost
+grounds. Which skills earn auto-triggering is settled by `/skill-doctor` and the ablation
+cases in `plugins/core/evals/`.
 
 ## Why Vue and Nuxt are separate packs
 
@@ -152,8 +178,20 @@ fresher than anything cached at session start.
 gets wrong. It is never required.
 
 ```json
-{ "gates": { "test": "pnpm test:ci" }, "baseBranch": "develop", "verifyOnStop": false }
+{
+  "gates": { "test": "pnpm test:ci" },
+  "baseBranch": "develop",
+  "verifyOnStop": false,
+  "stages": { "fast": ["typecheck"] },
+  "timeoutMs": 300000
+}
 ```
+
+That is the whole set. `gates` and `baseBranch` replace what detection found;
+`verifyOnStop: false` silences the Stop hook; `stages` is merged over the built-in stages
+by name, so the entry above *replaces* `fast` rather than adding to it, and an unknown
+name defines a new stage; `timeoutMs` sets the per-gate timeout, though a `--timeout`
+flag still wins over it.
 
 `gates.format` accepts only known formatters. The value is a string from a checked-out file
 handed to a subprocess, and the allowlist is what keeps it a convenience rather than an
@@ -214,6 +252,27 @@ shipped here.
 **Prefer deleting a component to adding one.** If Claude delegates to the wrong component,
 there are too many — prune before adding.
 
+**Only inject a command that cannot fail.** A skill body can run a command and inject
+its output with `` !`command` ``, which turns "the model is told to run the script" into
+"the output is already here" — but **a non-zero exit aborts the whole invocation.** So
+`project-facts.mjs` is injectable and is asserted to exit 0 against an empty directory, a
+malformed `package.json`, a malformed `project.json`, a literal `null` and wrong types
+throughout.
+`run-gates.mjs` is **not** injectable: it exits 1 whenever a gate fails, which is
+precisely the moment the skill is most needed, and injecting it would make a failing
+type-check look like a broken skill. Injection is documented for skills and undocumented
+for `agents/`, which is why `reviewer` still runs its facts step explicitly.
+
+**Grant `allowed-tools` read-only, and only what the body actually runs.** It
+pre-approves commands for the invoking turn only — the grant clears on the next message —
+so it is for removing prompts, never for widening reach. Read each body and grant its
+real command set: `investigating-bugs` shells out to nothing and is granted nothing.
+Never grant a command a component deliberately holds behind approval;
+`describing-changes` withholds `git commit`, `git push`, `glab mr create` and
+`gh pr create` on purpose, and pre-approving those would delete the guarantee it is
+built on. Whether a grant can override a project `permissions.deny` rule is
+undocumented, so do not build on the answer either way.
+
 **Bodies under ~200 lines, front-loaded.** After compaction an invoked skill body is
 re-attached truncated to its first 5,000 tokens, so the important part goes at the top.
 Detail belongs in `references/` — the Agent Skills spec directory, alongside `scripts/` and
@@ -235,7 +294,7 @@ pushy.
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # frontmatter, hooks.json
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
-bash scripts/test-hooks.sh                      # 99 assertions on the guarantees
+bash scripts/test-hooks.sh                      # 105 assertions on the guarantees
 node plugins/core/scripts/project-facts.mjs     # what detection sees here
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```

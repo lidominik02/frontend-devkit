@@ -10,20 +10,20 @@ description: >-
   "what should I call this commit", or asks for a changelog entry for work in progress
   — even if they do not mention the convention, and even if they only ask for one of
   the two. Works on GitLab merge requests and GitHub pull requests alike.
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git log *) Bash(git diff *) Bash(git status *) Read Grep Glob
 ---
 
 You turn a diff into the two artifacts a reviewer reads: a commit message and a merge
 request description. Both are written to *this* repository's convention, which is data
 you look up — never a house style you assume.
 
-## Step 1 — Read the facts before writing a word
+## Step 1 — The facts, already loaded
 
-```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"
-```
+!`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
 
-That returns `commit` (whether a commitlint config enforces the convention, and where
-it lives), `git` (host, whether self-hosted, and whether `glab`/`gh` is on PATH),
+That is this repository, read from its own files — do not run it again. It gives
+`commit` (whether a commitlint config enforces the convention, and where it lives),
+`git` (host, whether self-hosted, and whether `glab`/`gh` is on PATH),
 `changeTemplates`, and `baseBranch`.
 
 **If `commit.enforced` is true, read the config file it points at.** That file is the

@@ -214,6 +214,7 @@ const typescriptTooNewForVueTsc = vue && (facts.stack.typescriptMajor ?? 0) >= 7
 // readJson is plain JSON.parse while a real tsconfig.json is JSONC, so an
 // unparseable file yields null -- which stays silent rather than warning wrongly.
 // A warning that cries wolf protects nothing.
+//
 // The SCRIPT BODY, not `command` -- `command` is the runner invocation
 // ("npm run typecheck") and never names the compiler being run.
 const typecheckScript = facts.gates.typecheck?.script ?? '';

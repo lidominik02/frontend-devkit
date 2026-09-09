@@ -1,16 +1,21 @@
 #!/usr/bin/env node
 // Describes a project by reading the files it already maintains. Nothing is
 // added to the repo and nothing is written into it, so every fact is derived
-// from a file that exists for the project's own reasons:
+// from a file that exists for the project's own reasons.
 //
+// detect() returns these top-level keys, in this order:
+//
+//   dir              the directory being described
 //   packageManager   package.json "packageManager", else the lockfile
+//   stack            dependencies, plus which framework packs serve it
+//   baseBranch       git symbolic-ref refs/remotes/origin/HEAD
+//   git              the remote URL, plus .gitlab/ or .github/ markers
+//   commit           commitlint config, which enforces the convention rather
+//                    than describing it
+//   changeTemplates  .gitlab/merge_request_templates/ or .github/
 //   gates            package.json scripts (aliases resolved). Reported as
 //                    DECLARED, never as "available" -- see detectGates.
-//   baseBranch       git symbolic-ref refs/remotes/origin/HEAD
-//   gitHost          the git remote URL, plus .gitlab/ or .github/ markers
-//   commitConvention commitlint config, which enforces it rather than describing it
-//   mrTemplates      .gitlab/merge_request_templates/ or .github/
-//   stack            dependencies, plus which framework packs serve it
+//   overrides        .claude/project.json verbatim, or null
 //
 // Reading from the file that enforces a fact keeps it current; a copy in a
 // devkit-owned manifest would drift.

@@ -11,6 +11,8 @@ description: >-
   CLAUDE.md", or opens work in a repository with no .claude/ directory — and use it
   before authoring any new project-local skill, because the most common finding is that
   a suitable one already exists and nobody knew.
+disable-model-invocation: true
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(ls *) Bash(cat *) Bash(grep *) Read Grep Glob
 ---
 
 You make a repository legible to an agent. You audit first and write second, and the
@@ -40,16 +42,14 @@ Report the inventory before anything else. If a sibling tool's rules exist
 they are usually already drifting from their Claude counterparts. Say so rather than
 adding a third copy.
 
-## Step 2 — Read the facts rather than asking for them
+## Step 2 — The facts, already loaded
 
-```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"
-```
+!`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
 
-That gives package manager, stack, base branch, git host, commit convention, MR/PR
-templates and which gates the project declares. Everything it reports is derived from a
-file the project already maintains, so none of it can go stale. Do not ask the user for
-anything this already answers.
+That is this repository, read from its own files — do not run it again. It gives package
+manager, stack, base branch, git host, commit convention, MR/PR templates and which gates
+the project declares. Everything in it is derived from a file the project already
+maintains, so none of it can go stale. Do not ask the user for anything it answers.
 
 ## Step 3 — Gates, because nothing else substitutes for them
 

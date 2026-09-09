@@ -147,6 +147,35 @@ import('$S/project-facts.mjs').then(m => {
   process.exit(bad.length === 0 ? 0 : 1);
 });" 2>/dev/null && ok || bad "project-facts must never report available:true"
 
+# INJECTION GUARANTEE. Skills inject this script's output with `!`command``,
+# and a non-zero exit from an injected command aborts the whole skill
+# invocation. So a throw here does not degrade one step -- it takes out
+# describing-changes and preparing-a-repo entirely, in exactly the broken
+# repositories where they are most needed. Exit 0 is the contract, not a
+# nicety, and these are the inputs most likely to break it.
+inj() {
+  d="$(mktemp -d)"; mkdir -p "$d/.claude"
+  [ -n "$1" ] && printf '%s' "$1" > "$d/package.json"
+  [ -n "$2" ] && printf '%s' "$2" > "$d/.claude/project.json"
+  CLAUDE_PROJECT_DIR="$d" node "$S/project-facts.mjs" >/dev/null 2>&1
+  local code=$?
+  rm -rf "$d"
+  [ "$code" -eq 0 ] && ok || bad "$(printf 'injected project-facts must exit 0: %-28s exit=%s' "$3" "$code")"
+}
+inj ''                  ''                  'empty dir, no git'
+inj '{ not json at all' ''                  'malformed package.json'
+inj '{"name":"x"}'      '{ broken'          'malformed project.json'
+inj 'null'              'null'              'literal null in both'
+inj '{"scripts":null}'  '{"gates":"str"}'   'wrong types throughout'
+# And the counterpart: run-gates must NOT be injected, because it exits 1 by
+# design on a failing gate. Asserted so the distinction stays visible if
+# anyone reaches for the same trick on the other script.
+GX="$(mktemp -d)"; (cd "$GX" && git init -q . 2>/dev/null)
+printf '{"scripts":{"lint":"false"}}' > "$GX/package.json"
+CLAUDE_PROJECT_DIR="$GX" node "$S/run-gates.mjs" --gate lint >/dev/null 2>&1
+[ $? -eq 1 ] && ok || bad "run-gates must exit 1 on a failing gate (hence: never inject it)"
+rm -rf "$GX"
+
 # The stack value names the stack, not the pack, and `packs` maps one to the
 # other. A meta-framework must never report as the view library it builds on:
 # every Nuxt app also depends on vue, so getting this order wrong hands a
