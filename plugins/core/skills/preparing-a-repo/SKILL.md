@@ -33,7 +33,7 @@ near-identical descriptions, which is worse than the original complaint.
 
 ```
 ls -la .claude/ .claude/skills/ .claude/agents/ .claude/commands/ .claude/rules/ 2>/dev/null
-cat CLAUDE.md AGENTS.md CONTRIBUTING.md 2>/dev/null
+cat CLAUDE.md AGENTS.md CONTRIBUTING.md .mcp.json 2>/dev/null
 ls .cursor/rules/ .cursorrules .github/copilot-instructions.md 2>/dev/null
 ```
 
@@ -47,9 +47,10 @@ adding a third copy.
 !`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
 
 That is this repository, read from its own files — do not run it again. It gives package
-manager, stack, base branch, git host, commit convention, MR/PR templates and which gates
-the project declares. Everything in it is derived from a file the project already
-maintains, so none of it can go stale. Do not ask the user for anything it answers.
+manager, stack, base branch, git host, commit convention, MR/PR templates, which gates
+the project declares and which browser MCP servers it declares. Everything in it is
+derived from a file the project already maintains, so none of it can go stale. Do not
+ask the user for anything it answers.
 
 ## Step 3 — Gates, because nothing else substitutes for them
 
@@ -78,7 +79,42 @@ before changing anything**, report the number, and offer: fix now if small; base
 enforce on changed files only; or stage the strictness. Do not pick silently, and never
 reach for a blanket `@ts-nocheck` — that is not installing the gate, with extra steps.
 
-## Step 4 — CLAUDE.md: cut the generic, add the load-bearing
+## Step 4 — Runtime verification, where the repo has a user interface
+
+Every gate in step 3 reads code. The defects a frontend repo actually ships — the error
+branch rendering the empty state, a skeleton a different height from its content, focus
+stranded after a client-side navigation — leave no trace in any of them, so an agent
+without a browser can only *assert* they are fine. That is the same unverified claim as
+a gate reported as passing without running.
+
+`browserTools` in the facts above says what this project already declares:
+
+- A declared server: check the project approves it. `approved: false` is a server
+  switched off in settings, `parsed: false` a `.mcp.json` that is not valid JSON and
+  therefore loads nothing. Both look identical to "no browser tool" from a session.
+- None declared: that is not evidence there is none — a user-scope install serves every
+  project without appearing in this repository. Ask before proposing a second one.
+
+**Ask before proposing anything here, and expect the answer to be "I already have one."**
+A browser is a property of how someone works rather than of a repository, so the ordinary
+install is user scope, where it serves every project and appears in no file you can read.
+Proposing a checked-in `.mcp.json` to someone already equipped adds a second copy of a
+server they have, in a file they did not want.
+
+Where a project has a UI and the user confirms they have no browser tool, name the choice
+— `chrome-devtools-mcp` for day-to-day work, `@playwright/mcp` where cross-engine coverage
+is the point — and recommend **user scope** (`claude mcp add --scope user ...`). Propose a
+checked-in `.mcp.json` only when handing the same server to everyone who clones the repo
+is the actual goal, and pair it with the matching `enabledMcpjsonServers` entry.
+
+Where a browser *is* available, the useful thing to write into the repo is not a config
+but a line in CLAUDE.md saying **when not to use it**. Left unsaid, a browser attached to a
+session gets used on every change, which is slow and often slower than the human glance it
+replaces. It earns its cost on what a glance cannot see — a console error, a duplicated
+request, a hydration mismatch, focus after a route change — and loses on "does this look
+right". Propose that sentence; it is worth more than the install.
+
+## Step 5 — CLAUDE.md: cut the generic, add the load-bearing
 
 Judge each line by one question: **would this be true of any other project in this
 stack?** If yes it is costing context and buying nothing.
@@ -100,7 +136,7 @@ so a long file is not a safer file. Path-specific conventions belong in
 `.claude/rules/*.md` with a `paths:` glob so they load only when a matching file is
 touched, instead of costing every session.
 
-## Step 5 — Permissions
+## Step 6 — Permissions
 
 A missing `.claude/settings.json` means every ordinary command prompts. An accreted
 `settings.local.json` is worse: they collect absolute paths from one machine and one-off
@@ -112,7 +148,7 @@ Propose a small, curated, read-only allowlist — the project's own gate command
 allowlist a destructive command, and keep machine-specific paths out of the committed
 file.
 
-## Step 6 — Check that the documentation is not lying
+## Step 7 — Check that the documentation is not lying
 
 Cheap, and it finds real defects:
 
@@ -125,7 +161,7 @@ is worse than no procedure: the agent hunts for it, then improvises. Report dang
 references and orphaned docs (files nothing points at) as findings — they are usually
 stale and sometimes contradict the current architecture.
 
-## Step 7 — Report, then ask
+## Step 8 — Report, then ask
 
 ```
 ## AI-readiness: <repo>

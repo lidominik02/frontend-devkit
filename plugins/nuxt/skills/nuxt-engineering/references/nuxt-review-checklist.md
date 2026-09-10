@@ -108,4 +108,7 @@ nothing, so report that as not verifying rather than as a pass, and note that
 
 For anything server-rendered, static review cannot see a hydration mismatch or a payload
 problem. If they were not checked by loading the page and viewing source, say so rather
-than implying the render was verified.
+than implying the render was verified. `/core:verifying-ui` is what checks them — a
+hydration mismatch shows as a flash of replaced content plus a console warning, and both
+need a browser attached. Naming it turns "not verified" into something the reader can act
+on instead of a disclaimer.

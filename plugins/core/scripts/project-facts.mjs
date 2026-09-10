@@ -15,6 +15,12 @@
 //   changeTemplates  .gitlab/merge_request_templates/ or .github/
 //   gates            package.json scripts (aliases resolved). Reported as
 //                    DECLARED, never as "available" -- see detectGates.
+//   devServer        the script that serves the app, which alias matched, the
+//                    workspace it lives in, and any port it names. Declared,
+//                    never bound -- see detectDevServer.
+//   browserTools     browser MCP servers this PROJECT declares in .mcp.json,
+//                    and whether its settings approve them. Declared, never
+//                    available -- see detectBrowserTools.
 //   overrides        .claude/project.json verbatim, or null
 //
 // Reading from the file that enforces a fact keeps it current; a copy in a
@@ -42,6 +48,33 @@ const GATE_ALIASES = /** @type {Record<string, string[]>} */ ({
   build: ['build'],
   format: ['format', 'format:write', 'prettier'],
 });
+
+// The script that serves the app for a human to look at, in preference order.
+// `start` is last because in a production-oriented setup it serves a build
+// rather than the working tree, which is the wrong thing to verify a change
+// against. Deliberately NOT a gate: every one of these starts a watcher, and
+// run-gates.mjs refuses those.
+const DEV_ALIASES = ['dev', 'serve', 'start'];
+
+// Browser MCP servers this devkit knows how to drive, matched on the launch
+// command rather than the server key. The key is whatever the author of the
+// .mcp.json typed -- `browser`, `devtools`, anything -- while the package name
+// is what actually determines which tools appear.
+const BROWSER_MCP = /** @type {[RegExp, string][]} */ ([
+  [/chrome-devtools-mcp/, 'chrome-devtools'],
+  [/@playwright\/mcp|playwright-mcp/, 'playwright'],
+]);
+
+// Claude Code sanitises a server name before it appears in a tool name or is
+// compared against an approval list: every character outside [A-Za-z0-9_-]
+// becomes an underscore. Reproducing that here is what keeps `toolPrefix` and
+// `approved` true for a key the author typed as `chrome.devtools` -- which is
+// the only case this field exists for, since the recommended keys need no
+// normalising.
+/** @param {unknown} k */
+function mcpName(k) {
+  return String(k).replace(/[^A-Za-z0-9_-]/g, '_');
+}
 
 /** @param {string} dir @param {string[]} args */
 function git(dir, args) {
@@ -110,6 +143,177 @@ function detectGates(dir, pm) {
       : { command: null, script: null, source: 'no matching script in package.json', declared: false, available: false };
   }
   return gates;
+}
+
+// The workspace packages a monorepo's root package.json does not itself hold.
+// Shared by stack and dev-server detection so the two cannot disagree about
+// where a project's real package lives -- reporting a framework and no dev
+// server in one breath is the exact drift this file exists to prevent.
+/** @param {string} dir @returns {{rel: string, pkg: Record<string, any>}[]} */
+function workspacePackages(dir) {
+  const found = /** @type {{rel: string, pkg: Record<string, any>}[]} */ ([]);
+  for (const base of ['.', 'packages', 'apps']) {
+    const baseDir = path.join(dir, base);
+    let entries = /** @type {string[]} */ ([]);
+    try { entries = readdirSync(baseDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name); } catch { continue; }
+    for (const name of entries) {
+      if (name === 'node_modules' || name.startsWith('.')) continue;
+      const pkg = readJson(path.join(baseDir, name, 'package.json'));
+      if (!pkg) continue;
+      found.push({ rel: base === '.' ? name : `${base}/${name}`, pkg });
+    }
+  }
+  return found;
+}
+
+// The dev server is how a change becomes observable, so it is detected the same
+// way a gate is -- from the project's own scripts, never assumed.
+//
+// `declaredPort` is the port the SCRIPT NAMES, which is not the port the server
+// binds. Vite and Nuxt both walk to the next free port when theirs is taken and
+// print the one they actually got, so a caller that trusts this number drives a
+// browser at a URL nothing is serving and reports whatever stale page answers.
+// The bound URL comes from the server's own startup output. This field exists to
+// say what the project intended, and null means "the script names no port",
+// never "the default". A composite script that names several ports reports the
+// first, for the same reason: it is what the project wrote down, not a promise.
+//
+// `alias` says WHICH of DEV_ALIASES matched, because they are not equivalent.
+// A `start` script in a production-oriented setup serves a build rather than the
+// working tree, so a caller that verifies against it is looking at the last
+// build and not at the change. Reporting the alias puts that branch on a fact
+// instead of on string-matching `source`.
+/** @param {string} dir @param {string|null} pm */
+function detectDevServer(dir, pm) {
+  const pkg = readJson(path.join(dir, 'package.json'));
+  const monorepo = existsSync(path.join(dir, 'pnpm-workspace.yaml')) || Array.isArray(pkg?.workspaces);
+  /** @param {Record<string, unknown>|undefined} scripts */
+  const pick = (scripts) => DEV_ALIASES.find((s) => typeof scripts?.[s] === 'string' && String(scripts[s]).trim() !== '');
+
+  let scripts = /** @type {Record<string, unknown>|undefined} */ (pkg?.scripts);
+  let alias = pick(scripts);
+  /** @type {string|null} */
+  let workspace = null;
+
+  // Same walk detectStack uses: in a monorepo the root package.json usually
+  // holds only tooling, and the app that can actually be served lives one level
+  // down.
+  if (!alias && monorepo) {
+    for (const w of workspacePackages(dir)) {
+      const a = pick(w.pkg.scripts);
+      if (a) { scripts = w.pkg.scripts; alias = a; workspace = w.rel; break; }
+    }
+  }
+
+  if (!alias) {
+    return {
+      command: null,
+      script: null,
+      source: monorepo ? 'no dev script in the root package.json or any workspace package' : 'no dev script in package.json',
+      declared: false,
+      alias: null,
+      workspace: null,
+      declaredPort: null,
+    };
+  }
+
+  const script = String(/** @type {Record<string, unknown>} */ (scripts)[alias]);
+  const port = script.match(/(?:--port[=\s]+|(?:^|\s)-p[=\s]+|(?:^|\s)PORT=)(\d{2,5})(?!\d)/);
+  return {
+    command: runCommand(/** @type {string} */ (pm), alias),
+    script,
+    source: workspace ? `package.json script "${alias}" in ${workspace}` : `package.json script "${alias}"`,
+    declared: true,
+    alias,
+    // Relative directory the script lives in, or null for the repository root.
+    // `command` is the script invocation; this says where to run it.
+    workspace,
+    declaredPort: port ? Number(port[1]) : null,
+  };
+}
+
+// Approval for a server declared in .mcp.json, read from the project's own
+// settings. Returns null rather than false when neither file mentions it,
+// because the interactive trust dialog records its answer in the USER's config,
+// outside this repository -- so "not written down here" is genuinely unknown,
+// and reporting it as false would be a confident wrong answer.
+//
+// These three keys do NOT follow ordinary settings precedence, so the chain is
+// not walked last-writer-wins. A `disabledMcpjsonServers` entry in ANY settings
+// file rejects the server outright; the enables are a union across files, not a
+// ranking. Applying general precedence here would report `approved: true` for a
+// server the base file disabled and the local one re-enabled, which is the one
+// answer a caller acts on and cannot check.
+/** @param {string} key @param {unknown[]} chain */
+function approvalFor(key, chain) {
+  const want = mcpName(key);
+  /** @param {unknown} v */
+  const names = (v) => (Array.isArray(v) ? v.map(mcpName) : []);
+  const settings = chain
+    .filter((raw) => raw && typeof raw === 'object')
+    .map((raw) => /** @type {Record<string, unknown>} */ (raw));
+
+  if (settings.some((s) => names(s.disabledMcpjsonServers).includes(want))) return false;
+  if (settings.some((s) => s.enableAllProjectMcpServers === true || names(s.enabledMcpjsonServers).includes(want))) return true;
+  return null;
+}
+
+// What browser MCP server THIS PROJECT declares, for the one caller that needs
+// it: an audit asking what a repository already has before proposing anything.
+//
+// `declared: false` does NOT mean no browser tool is available. A server added
+// at user scope lives in the user's own config and serves every project without
+// appearing in any file here, which is the normal way to install one. The only
+// authority on whether a browser can be driven is the caller's own tool list;
+// this function describes the repository, and `available` stays null to keep
+// those two questions apart -- the same split `gates` draws between a declared
+// script and a binary that resolves.
+/** @param {string} dir */
+function detectBrowserTools(dir) {
+  const rel = '.mcp.json';
+  const present = existsSync(path.join(dir, rel));
+  // Parsed and empty are different answers, and readJson collapses them: it
+  // returns null both for a file that is not JSON and for one whose content IS
+  // the literal `null`. Only the first is "nothing in it loaded because it is
+  // broken", which is what the callers report as a finding.
+  /** @type {boolean|null} */
+  let parsed = present ? false : null;
+  /** @type {any} */
+  let cfg = null;
+  if (present) {
+    try { cfg = JSON.parse(readFileSync(path.join(dir, rel), 'utf8')); parsed = true; } catch { parsed = false; }
+  }
+  const declared = cfg && typeof cfg.mcpServers === 'object' && cfg.mcpServers !== null && !Array.isArray(cfg.mcpServers) ? cfg.mcpServers : {};
+  const chain = [
+    readJson(path.join(dir, '.claude', 'settings.json')),
+    readJson(path.join(dir, '.claude', 'settings.local.json')),
+  ];
+
+  const servers = [];
+  for (const [key, entry] of Object.entries(declared)) {
+    const e = /** @type {Record<string, unknown>} */ (entry);
+    const launch = [e?.command, ...(Array.isArray(e?.args) ? e.args : [])]
+      .filter((v) => typeof v === 'string')
+      .join(' ');
+    const match = BROWSER_MCP.find(([re]) => re.test(launch));
+    if (!match) continue;
+    // The tool prefix is built from the KEY, not the package: Claude Code names
+    // an MCP tool mcp__<server-key>__<tool>, so a server keyed `browser` exposes
+    // mcp__browser__take_snapshot and a grant written against the package name
+    // matches nothing. The key is sanitised on the way in -- see mcpName -- so a
+    // key with a dot or a space does not reach the tool name intact.
+    servers.push({ key, kind: match[1], toolPrefix: `mcp__${mcpName(key)}__`, approved: approvalFor(key, chain) });
+  }
+
+  return {
+    configPath: present ? rel : null,
+    // Present but unparseable is its own state: the servers in it load nowhere,
+    // and an empty list would read as "this project declares none".
+    parsed,
+    servers,
+    declared: servers.length > 0,
+    available: null,
+  };
 }
 
 /** @param {string} dir */
@@ -241,17 +445,9 @@ function detectStack(dir) {
   // the framework lives in a workspace package. Detecting at the root alone
   // reports "no stack" for exactly those projects.
   if (monorepo) {
-    for (const base of ['.', 'packages', 'apps']) {
-      const baseDir = path.join(dir, base);
-      let entries = /** @type {string[]} */ ([]);
-      try { entries = readdirSync(baseDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name); } catch { continue; }
-      for (const name of entries) {
-        if (name === 'node_modules' || name.startsWith('.')) continue;
-        const wp = readJson(path.join(baseDir, name, 'package.json'));
-        if (!wp) continue;
-        const s = stackFromDeps({ ...(wp.dependencies ?? {}), ...(wp.devDependencies ?? {}) });
-        if (s && !workspaceStacks.includes(s)) workspaceStacks.push(s);
-      }
+    for (const { pkg: wp } of workspacePackages(dir)) {
+      const s = stackFromDeps({ ...(wp.dependencies ?? {}), ...(wp.devDependencies ?? {}) });
+      if (s && !workspaceStacks.includes(s)) workspaceStacks.push(s);
     }
     // Prefer the most specific framework found anywhere in the workspace.
     if (!stack) stack = workspaceStacks.find((s) => s === 'nuxt' || s === 'next') ?? workspaceStacks[0] ?? null;
@@ -277,6 +473,8 @@ export function detect(dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
     commit: detectCommitConvention(dir),
     changeTemplates: detectChangeTemplates(dir),
     gates: detectGates(dir, pm.name),
+    devServer: detectDevServer(dir, pm.name),
+    browserTools: detectBrowserTools(dir),
     overrides: /** @type {Record<string, unknown>|null} */ (null),
   };
 

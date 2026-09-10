@@ -37,11 +37,32 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
 | `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute |
 | `dispatching-a-review` | Whether the read-only `reviewer` agent gets dispatched from ordinary wording, or the main thread reviews the diff itself |
+| `verifying-ui` | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
 
-`dispatching-a-review` is the odd one out: it scores the **agent**, and its result
-decides whether a component gets added at all. A pass at baseline means the agent's own
+Two of these decide a component rather than only scoring an answer.
+
+`dispatching-a-review` scores the **agent**. A pass at baseline means the agent's own
 description is already dispatching it, so a dispatcher skill would be a second trigger
 surface competing with the first — and the rule here is to prune before adding.
+
+`verifying-ui` ships `disable-model-invocation`, so it is absent from the always-on
+listing and its cost is zero until someone types it. Its case carries the promotion
+question: whether the model reaches for a browser with any discipline unprompted, and
+therefore whether the listing cost would buy anything.
+
+It is also the case with the most arms, because it varies two things at once. The
+environment: **a browser MCP server present, and none** — the second is not a degenerate
+case but the more important half, since most repositories are in it and it is where the
+failure the skill exists to prevent actually happens. And the invocation: the skill typed,
+the skill present but not typed, and `core` disabled entirely. Its `graders/criteria.md`
+says which combinations answer which question; run the environments against both, rather
+than reading the pass rate of one as the skill's score.
+
+**A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
+that is the whole point of the field, and it now applies to two of the seven cases here.
+Enabling the plugin is not enough: type `/core:verifying-ui` or `/core:preparing-a-repo`
+to start that arm, and keep the baseline arm's prompt identical apart from the invocation.
+An arm that merely enables the plugin and waits is measuring the field, not the skill.
 
 ## Running them
 

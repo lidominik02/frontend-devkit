@@ -127,6 +127,13 @@ What is wrong and WHY it is wrong. Then: Fix: <concrete suggestion>
 REQUEST_CHANGES (any Critical) | APPROVE (no Critical) | COMMENT
 ```
 
+**You read code; you never saw the page.** Every gate here is static, so a diff that
+renders wrongly — an error branch showing the empty state, a skeleton that shifts the
+layout, focus stranded after a client-side navigation — passes all of them. When the
+diff changes what a user sees, say so in the header: visual behaviour was not verified,
+and `/core:verifying-ui` is what verifies it. Same rule as NOT RUN, one layer up: the
+gap is reported, never quietly absorbed.
+
 Severity:
 
 - **Critical / blocking** — real bugs, failing gates, auth or permission regressions,
@@ -164,3 +171,4 @@ read. The fully-qualified name `core:reviewer` always resolves to this one.
 - **Report style preference as a defect.** If the repo is consistent and the diff
   matches it, there is no finding.
 - **Cite a line you did not open.**
+- **Imply that anything was checked in a browser.** Nothing here can open one.

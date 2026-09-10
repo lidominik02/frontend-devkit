@@ -91,7 +91,7 @@ form value asserted with `as` instead of parsed. `as` is a claim, not a check.
   header, as a tooling finding — not as a defect on every changed file.
 - Preferences about `reactive` versus `ref` where the existing file already chose one.
 - A version-specific API that is correct for the version actually installed. Check
-  `reference/versions.md` before flagging one as wrong.
+  `references/versions.md` before flagging one as wrong.
 
 ## Before writing the verdict
 
@@ -99,3 +99,8 @@ A passing `vue-tsc` is weaker evidence than it looks: `strictTemplates` and the
 `checkUnknown*` options default to off, so unknown props, unknown components and
 misspelled events pass silently. If the repo has not enabled them, say so once in the
 report header rather than treating the green run as full template coverage.
+
+Every gate here reads code, so nothing in this checklist has seen the page. A change to
+what a user looks at — an empty or error state, a skeleton, focus after a route change —
+is unverified until someone loads it, and `/core:verifying-ui` is what loads it. Say which
+of the two you did, rather than letting a static pass stand in for both.

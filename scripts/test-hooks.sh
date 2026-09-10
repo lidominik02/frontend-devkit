@@ -199,6 +199,165 @@ stack_of() {
 [ "$(stack_of '{}')" = '[null,[]]' ] \
   && ok || bad "no framework must report a null stack and no packs"
 
+# The injection guarantee again, for the file added last. A .mcp.json is written
+# by hand far more often than package.json is, and an unparseable one must not
+# take out the skills that inject these facts.
+mcpinj() {
+  d="$(mktemp -d)"; mkdir -p "$d/.claude"
+  printf '{"name":"x"}' > "$d/package.json"
+  printf '%s' "$1" > "$d/.mcp.json"
+  [ -n "$2" ] && printf '%s' "$2" > "$d/.claude/settings.json"
+  CLAUDE_PROJECT_DIR="$d" node "$S/project-facts.mjs" >/dev/null 2>&1
+  local code=$?
+  rm -rf "$d"
+  [ "$code" -eq 0 ] && ok || bad "$(printf 'injected project-facts must exit 0: %-28s exit=%s' "$3" "$code")"
+}
+mcpinj '{ broken'                 ''            'malformed .mcp.json'
+mcpinj 'null'                     ''            'literal null .mcp.json'
+mcpinj '{"mcpServers":null}'      ''            'null mcpServers'
+mcpinj '{"mcpServers":{"a":1}}'   ''            'server entry is not an object'
+mcpinj '{"mcpServers":{}}'        '{ broken'    'malformed settings.json alongside'
+
+# A browser MCP server is DECLARED by .mcp.json and APPROVED by settings, and
+# those are different questions -- a declared server that settings switch off
+# has no tools at all, which from inside a session is indistinguishable from
+# having none. Reporting it as present would send the loop looking for tools
+# that are not there.
+browser_of() {
+  d="$(mktemp -d)"; mkdir -p "$d/.claude"
+  printf '{"name":"x"}' > "$d/package.json"
+  [ -n "$1" ] && printf '%s' "$1" > "$d/.mcp.json"
+  [ -n "$2" ] && printf '%s' "$2" > "$d/.claude/settings.json"
+  [ -n "${3:-}" ] && printf '%s' "$3" > "$d/.claude/settings.local.json"
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const b = m.detect(process.env.CLAUDE_PROJECT_DIR).browserTools;
+    console.log(JSON.stringify([b.declared, b.parsed, b.servers.map(s => [s.kind, s.toolPrefix, s.approved])]));
+  });" 2>/dev/null
+  rm -rf "$d"
+}
+CDP='{"mcpServers":{"chrome-devtools":{"command":"npx","args":["-y","chrome-devtools-mcp@latest"]}}}'
+[ "$(browser_of "$CDP" '{"enabledMcpjsonServers":["chrome-devtools"]}')" \
+  = '[true,true,[["chrome-devtools","mcp__chrome-devtools__",true]]]' ] \
+  && ok || bad "an enabled chrome-devtools server must report approved"
+[ "$(browser_of "$CDP" '{"disabledMcpjsonServers":["chrome-devtools"],"enableAllProjectMcpServers":true}')" \
+  = '[true,true,[["chrome-devtools","mcp__chrome-devtools__",false]]]' ] \
+  && ok || bad "an explicit disable must beat enableAllProjectMcpServers"
+# Unknown, not false: the trust prompt records its answer in the USER's config,
+# so silence here is genuinely no information rather than a refusal.
+[ "$(browser_of "$CDP" '')" = '[true,true,[["chrome-devtools","mcp__chrome-devtools__",null]]]' ] \
+  && ok || bad "a declared server no settings mention must report approval unknown"
+# The tool prefix comes from the KEY, which is user-chosen. A grant written
+# against the package name would match nothing.
+[ "$(browser_of '{"mcpServers":{"browser":{"command":"npx","args":["@playwright/mcp@latest"]}}}' '{"enableAllProjectMcpServers":true}')" \
+  = '[true,true,[["playwright","mcp__browser__",true]]]' ] \
+  && ok || bad "the tool prefix must be built from the server key, not the package"
+# Present-but-unparseable is not the same as absent: nothing in it loaded, and
+# saying so is the finding.
+[ "$(browser_of '{ broken' '')" = '[false,false,[]]' ] \
+  && ok || bad "an unparseable .mcp.json must report parsed:false, not merely empty"
+[ "$(browser_of '' '')" = '[false,null,[]]' ] \
+  && ok || bad "no .mcp.json at all must report parsed:null"
+# Declaring nothing is NOT evidence there is no browser: a user-scope install
+# serves every project and appears in no file here. Hence available stays null.
+avail() {
+  d="$(mktemp -d)"; printf '{"name":"x"}' > "$d/package.json"
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => console.log(JSON.stringify(m.detect(process.env.CLAUDE_PROJECT_DIR).browserTools.available)));" 2>/dev/null
+  rm -rf "$d"
+}
+[ "$(avail)" = 'null' ] && ok || bad "browserTools.available must stay null, never be inferred from disk"
+
+# These three keys do NOT follow ordinary settings precedence. A disable in ANY
+# settings file rejects the server, and the enables are a union rather than a
+# ranking -- so the per-machine file cannot resurrect a server the committed one
+# switched off. Reporting approved:true there sends the loop hunting for tools
+# that were never loaded, which is the confident-wrong-answer failure this whole
+# file exists to prevent.
+[ "$(browser_of "$CDP" '{"disabledMcpjsonServers":["chrome-devtools"]}' '{"enabledMcpjsonServers":["chrome-devtools"]}')" \
+  = '[true,true,[["chrome-devtools","mcp__chrome-devtools__",false]]]' ] \
+  && ok || bad "a disable in the committed settings must survive an enable in settings.local.json"
+[ "$(browser_of "$CDP" '{"disabledMcpjsonServers":["chrome-devtools"]}' '{"enableAllProjectMcpServers":true}')" \
+  = '[true,true,[["chrome-devtools","mcp__chrome-devtools__",false]]]' ] \
+  && ok || bad "a disable must survive enableAllProjectMcpServers in a later file"
+[ "$(browser_of "$CDP" '' '{"enabledMcpjsonServers":["chrome-devtools"]}')" \
+  = '[true,true,[["chrome-devtools","mcp__chrome-devtools__",true]]]' ] \
+  && ok || bad "settings.local.json alone must be able to approve a server"
+# Claude Code replaces every character outside [A-Za-z0-9_-] with an underscore
+# before building the tool name and before matching an approval list. The
+# recommended keys need no normalising, so this field's only real customer is
+# the key that does.
+DOTKEY='{"mcpServers":{"chrome.devtools":{"command":"npx","args":["-y","chrome-devtools-mcp@1.9.0"]}}}'
+[ "$(browser_of "$DOTKEY" '{"enabledMcpjsonServers":["chrome_devtools"]}' '')" \
+  = '[true,true,[["chrome-devtools","mcp__chrome_devtools__",true]]]' ] \
+  && ok || bad "an unusual server key must be sanitised in the tool prefix and in approval matching"
+# Valid JSON that declares nothing is not a broken file, and only the broken one
+# is worth reporting as a finding.
+[ "$(browser_of 'null' '' '')" = '[false,true,[]]' ] \
+  && ok || bad "a .mcp.json holding literal null is valid JSON and must report parsed:true"
+[ "$(browser_of '{"mcpServers":[{"command":"npx","args":["chrome-devtools-mcp"]}]}' '' '')" = '[false,true,[]]' ] \
+  && ok || bad "an array-valued mcpServers must not produce a server keyed by its index"
+
+# The dev server is detected like a gate and is emphatically not one: every dev
+# script starts a watcher, and run-gates refuses those.
+dev_of() {
+  d="$(mktemp -d)"; printf '%s' "$1" > "$d/package.json"
+  if [ -n "${2:-}" ]; then mkdir -p "$d/apps/web"; printf '%s' "$2" > "$d/apps/web/package.json"; fi
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const s = m.detect(process.env.CLAUDE_PROJECT_DIR).devServer;
+    console.log(JSON.stringify([s.declared, s.declaredPort]));
+  });" 2>/dev/null
+  rm -rf "$d"
+}
+dev_where() {
+  d="$(mktemp -d)"; printf '%s' "$1" > "$d/package.json"
+  if [ -n "${2:-}" ]; then mkdir -p "$d/apps/web"; printf '%s' "$2" > "$d/apps/web/package.json"; fi
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const s = m.detect(process.env.CLAUDE_PROJECT_DIR).devServer;
+    console.log(JSON.stringify([s.alias, s.workspace]));
+  });" 2>/dev/null
+  rm -rf "$d"
+}
+[ "$(dev_of '{"scripts":{"dev":"vite"}}')" = '[true,null]' ] \
+  && ok || bad "a dev script naming no port must report declaredPort null, not a default"
+[ "$(dev_of '{"scripts":{"dev":"vite --port 4200"}}')" = '[true,4200]' ] \
+  && ok || bad "should read --port from the dev script"
+[ "$(dev_of '{"scripts":{"dev":"next dev -p 3100"}}')" = '[true,3100]' ] \
+  && ok || bad "should read -p from the dev script"
+[ "$(dev_of '{"scripts":{"serve":"PORT=8080 node server.js"}}')" = '[true,8080]' ] \
+  && ok || bad "should read a PORT= prefix, and fall back to the serve alias"
+[ "$(dev_of '{"scripts":{"lint":"eslint ."}}')" = '[false,null]' ] \
+  && ok || bad "a project with no dev script must report declared false"
+# The port is read with a right-hand boundary: a longer number is not a port,
+# and silently truncating it to a plausible one sends the loop to a URL nothing
+# is serving -- the exact failure declaredPort's own comment warns about.
+[ "$(dev_of '{"scripts":{"dev":"vite --port=5180"}}')" = '[true,5180]' ] \
+  && ok || bad "should read the --port=N spelling"
+[ "$(dev_of '{"scripts":{"dev":"vite --port 123456"}}')" = '[true,null]' ] \
+  && ok || bad "a number too long to be a port must report null, not a truncation"
+# Which alias matched is a fact the caller acts on: `start` commonly serves a
+# build rather than the working tree, so a loop that verifies against it is
+# looking at the last build and not at the change.
+[ "$(dev_where '{"scripts":{"start":"vite preview"}}')" = '["start",null]' ] \
+  && ok || bad "the matched alias must be reported, not just the command"
+[ "$(dev_where '{"scripts":{"dev":"  ","start":"vite preview"}}')" = '["start",null]' ] \
+  && ok || bad "an empty dev script must not win over a real one"
+# detectStack walks the workspace packages; detectDevServer must walk the same
+# ones, or a monorepo reports a framework and no dev server in one breath.
+[ "$(dev_of '{"name":"r","workspaces":["apps/*"]}' '{"scripts":{"dev":"nuxt dev --port 3000"}}')" = '[true,3000]' ] \
+  && ok || bad "a monorepo dev script in a workspace package must be found"
+[ "$(dev_where '{"name":"r","workspaces":["apps/*"]}' '{"scripts":{"dev":"nuxt dev"}}')" = '["dev","apps/web"]' ] \
+  && ok || bad "the workspace holding the dev script must be reported"
+[ "$(dev_of '{"name":"r"}' '{"scripts":{"dev":"nuxt dev"}}')" = '[false,null]' ] \
+  && ok || bad "a workspace package must not be searched when the repo is not a monorepo"
+# `dev` must never become a gate: run-gates would try to run it and hang.
+DV="$(mktemp -d)"; printf '{"scripts":{"dev":"vite","lint":"true"}}' > "$DV/package.json"
+CLAUDE_PROJECT_DIR="$DV" node "$S/run-gates.mjs" --list --stage release 2>/dev/null | grep -q ' dev ' \
+  && bad "the dev script must not be picked up as a gate" || ok
+rm -rf "$DV"
+
 echo
 echo "run-gates: the distinction between a broken build and a broken toolchain"
 G="$(mktemp -d)"; (cd "$G" && git init -q . 2>/dev/null)

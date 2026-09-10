@@ -12,6 +12,10 @@ already maintains: `package.json`, the lockfile, the git remote, `commitlint.con
 The one exception is the `preparing-a-repo` skill, whose purpose is to add those files. It
 reports before it writes and writes nothing without approval.
 
+One capability is not self-contained: `verifying-ui` drives a browser, and the browser is
+an MCP server the consuming repo installs. The devkit still adds nothing — it detects what
+the repo declares and says plainly when there is nothing to drive.
+
 ## Install
 
 Add to `~/.claude/settings.json`:
@@ -52,15 +56,16 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` · `optimizing-prompts` · `preparing-a-repo` · 3 hooks · 2 shared scripts |
+| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 3 hooks · 2 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
 Only descriptions are always-on: **4.7k characters** of them with all three packs
 enabled — `core` contributes five listed entries (~3.1k), `vue` and `nuxt` one each
-(~0.8k). `preparing-a-repo` is excluded because it is `disable-model-invocation`. Skill
-bodies load on trigger; reference files load only when the body points at them, and a
-repo that enables just the pack matching its framework pays for one.
+(~0.8k). `preparing-a-repo` and `verifying-ui` are excluded because they are
+`disable-model-invocation`, which is why adding the second one did not move that number.
+Skill bodies load on trigger; reference files load only when the body points at them, and
+a repo that enables just the pack matching its framework pays for one.
 
 `/skill-doctor` reports the token cost of the listing. Character counts are what this
 repo can check from its own files.
@@ -77,10 +82,15 @@ The `reviewer` agent's fully-qualified name is `core:reviewer`, which always res
 the one shipped here even when a consuming repo has its own — plugin agents rank lowest
 in discovery precedence.
 
-`preparing-a-repo` carries **`disable-model-invocation: true`**: Claude never reaches for
-it on its own, and its description leaves the always-on listing. It is the only component
-that writes into a host repository, and the write is gated behind an approved gap report.
-Type it.
+Two components carry **`disable-model-invocation: true`**: Claude never reaches for them
+on its own, and their descriptions leave the always-on listing. Type them.
+
+- `preparing-a-repo` — the only component that writes into a host repository, and the
+  write is gated behind an approved gap report.
+- `verifying-ui` — it needs a browser MCP server that most repositories do not have, and
+  `core` is enabled in every one of them, including those with no interface at all. It
+  ships typed so that cost is zero until someone asks for it; `plugins/core/evals/` holds
+  the case that decides whether to promote it.
 
 `planning-features` and `optimizing-prompts` are candidates for the same field on cost
 grounds. Which skills earn auto-triggering is settled by `/skill-doctor` and the ablation
@@ -125,6 +135,15 @@ it) and merge-request templates.
 Gates are reported as `declared`. A script name existing says nothing about whether its
 binary resolves, so `available` stays `null` until something runs it.
 
+`devServer` and `browserTools` draw the same line. `devServer.declaredPort` is the port
+the script *names*, and Vite, Nuxt and Next all walk to the next free one when it is
+taken — so the URL to open is the one the server printed, and a caller that trusts the
+declared number verifies a page nothing is serving. `browserTools` lists the browser MCP
+servers this repository declares in `.mcp.json` and whether its settings approve them;
+`available` stays `null` there too, because a server installed at user scope serves every
+project without appearing in any file here. Only the caller's own tool list settles that
+one.
+
 `stack` names the stack, not the pack: `vue-spa`, `nuxt`, `react-spa`, `next`, or `null`.
 A meta-framework is checked before the view library it builds on, so a Nuxt app never
 reports as plain Vue. `stack.packs` maps that to the packs which serve it — `nuxt`
@@ -164,13 +183,53 @@ the edit that would repair it. Node exits `1` on a `SyntaxError`, a non-blocking
 a broken Node hook fails open while a deliberate `exit 2` still blocks. Fail closed on a
 policy decision; fail open on a broken interpreter.
 
-Two coverage holes no matcher can close: an `@file` reference in a prompt inserts file
-contents with no tool call at all, and a file written by Bash never fires a PostToolUse
-hook. Close the first with a `Read(...)` deny rule in project settings.
+Three coverage holes no matcher can close: an `@file` reference in a prompt inserts file
+contents with no tool call at all; a file written by Bash never fires a PostToolUse hook;
+and `block-secrets` matches file tools and `Bash`, so **no MCP tool is covered by it**.
+Close the first with a `Read(...)` deny rule in project settings.
+
+The third one matters as soon as a browser MCP is attached. A file input reached through
+`upload_file` (`browser_file_upload` on Playwright) sends a local file to a page, and from
+there to the network, with no hook firing anywhere on the path. `verifying-ui` therefore
+grants the tools that look at a page and deliberately withholds the upload and
+`evaluate_script` tools, so both still prompt — the same shape as `describing-changes`
+withholding `git push`.
 
 There is no SessionStart hook. Writing a capabilities file into a host repo dirties
 `git status` wherever `.claude/` is committed, and detection at the moment of use is
 fresher than anything cached at session start.
+
+## Runtime verification
+
+Everything above is static. The type-checker, the linter, the tests and the reviewer all
+read code, and the defects a frontend actually ships do not live there: the error branch
+that renders the empty state, a skeleton a different height from the content it stands in
+for, focus stranded on the old view after a client-side navigation, a component that is
+correct and throws on every render. Nothing in this repo can see any of them, so without a
+browser the honest report is "not verified" — and the failure mode is that it comes back
+as "looks right" instead.
+
+`/core:verifying-ui` closes that loop against a browser MCP server. Serve the app, take the
+URL the dev server actually printed, snapshot the accessibility tree before the screenshot,
+read the console and the network, drive the page to the state under test, and re-observe
+after the fix. It is the same move `run-gates.mjs` made for the type-checker, one layer
+up: replace a claim with an observation, and report the gap when there is no observation
+to be had.
+
+**The browser is not bundled, and that is the design.** `core` is enabled in every
+repository, including every one with no interface, and a plugin-declared MCP server would
+start a browser subprocess and fetch a package in all of them. So the server is the
+consuming repo's to install — `chrome-devtools-mcp` for day-to-day work, `@playwright/mcp`
+where cross-engine coverage is the point — and `preparing-a-repo` offers it as a proposal
+rather than assuming it. A second reason: a plugin-bundled server's tools are named
+`mcp__plugin_<plugin>_<server>__<tool>` rather than `mcp__<server>__<tool>`, so bundling it
+would rename every tool the guidance refers to, on exactly the install path being forced on
+everyone.
+
+`project-facts.mjs` reports what a repository declares, never whether a browser is there.
+The only authority on that is the caller's own tool list, and a skill that inferred "no
+browser configured" from an absent `.mcp.json` would be confidently wrong in the common
+case — a user-scope install serves every project and appears in no file in the repo.
 
 ## Optional per-project override
 
@@ -273,6 +332,22 @@ Never grant a command a component deliberately holds behind approval;
 built on. Whether a grant can override a project `permissions.deny` rule is
 undocumented, so do not build on the answer either way.
 
+A grant on an MCP tool has one extra trap: the name is `mcp__<server-key>__<tool>`, and
+the key is whatever the consuming repo's `.mcp.json` happens to call the server. A grant
+is therefore a best-effort convenience that matches the recommended key and silently
+matches nothing under a different one — which degrades to a permission prompt, the status
+quo, and never to wider reach. Grant what looks, withhold what acts: for `verifying-ui`
+that means snapshots, screenshots, console, network and navigation are pre-approved while
+`evaluate_script`, the upload tools and every interaction tool are not.
+
+The line is not perfectly clean, and the skill says so rather than claiming it is.
+`resize_page` and `emulate` are granted although both change the page: `emulate` is the
+whole of the dark-mode, offline and throttling techniques, so withholding it would put a
+prompt in front of every state check and make the loop something people turn off — but it
+also carries `extraHttpHeaders`, `userAgent` and `geolocation`, so it is not a pure
+observation tool. That is a trade, and a documented trade is worth more than a tidy rule
+the grant does not actually follow.
+
 **Bodies under ~200 lines, front-loaded.** After compaction an invoked skill body is
 re-attached truncated to its first 5,000 tokens, so the important part goes at the top.
 Detail belongs in `references/` — the Agent Skills spec directory, alongside `scripts/` and
@@ -294,7 +369,7 @@ pushy.
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # frontmatter, hooks.json
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
-bash scripts/test-hooks.sh                      # 105 assertions on the guarantees
+bash scripts/test-hooks.sh                      # 136 assertions on the guarantees
 node plugins/core/scripts/project-facts.mjs     # what detection sees here
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```
