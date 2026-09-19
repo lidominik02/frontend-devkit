@@ -12,8 +12,8 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | passes | passes | **remove** — the model already knew |
 | fails | fails | rewrite, or accept it is out of reach |
 
-**`core`'s bar is higher than a framework pack's.** `core` carries five listed
-descriptions against a framework pack's one — about 3.3k characters to 0.8k — and it is
+**`core`'s bar is higher than a framework pack's.** `core` carries four listed
+descriptions against a framework pack's one — about 2.7k characters to 0.8k — and it is
 enabled in every repository, so that cost is paid in every session of every project. A
 pack at least only loads where its framework is. A `core` skill that passes baseline is
 several times the waste, and `/skill-doctor` will tell you what it actually costs.
@@ -35,7 +35,8 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `describing-changes` | Reading the commit convention from the file that enforces it, and reporting unrun gates as NOT RUN rather than implying they passed |
 | `planning-features` | Producing durable on-disk artifacts that survive context loss, not a plan that exists only in the transcript |
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
-| `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute |
+| `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute, and specifying the rewrite enough to act on |
+| `anchoring-a-rewrite` | Whether an agentic rewrite points at a file that already does the thing, or paraphrases the convention — and whether it invents the path when it has none |
 | `dispatching-a-review` | Whether the read-only `reviewer` agent gets dispatched from ordinary wording, or the main thread reviews the diff itself |
 | `verifying-ui` | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
 
@@ -59,9 +60,10 @@ says which combinations answer which question; run the environments against both
 than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
-that is the whole point of the field, and it now applies to two of the seven cases here.
-Enabling the plugin is not enough: type `/core:verifying-ui` or `/core:preparing-a-repo`
-to start that arm, and keep the baseline arm's prompt identical apart from the invocation.
+that is the whole point of the field, and it now applies to four of the eight cases here.
+Enabling the plugin is not enough: type `/core:verifying-ui`, `/core:preparing-a-repo` or
+`/core:optimizing-prompts` — the last of these covers two cases — to start that arm, and
+keep the baseline arm's prompt identical apart from the invocation.
 An arm that merely enables the plugin and waits is measuring the field, not the skill.
 
 ## Running them

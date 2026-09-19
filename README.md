@@ -64,10 +64,11 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Only descriptions are always-on: **4.9k characters** of them with all three packs
-enabled — `core` contributes five listed entries (~3.3k), `vue` and `nuxt` one each
-(~0.8k). `preparing-a-repo` and `verifying-ui` are excluded because they are
-`disable-model-invocation`, which is why adding the second one did not move that number.
+Only descriptions are always-on: **4.3k characters** of them with all three packs
+enabled — `core` contributes four listed entries (~2.7k), `vue` and `nuxt` one each
+(~0.8k). `preparing-a-repo`, `verifying-ui` and `optimizing-prompts` are excluded because
+they are `disable-model-invocation`, which is why the listing shrank when the third one
+grew its description.
 Skill bodies load on trigger; reference files load only when the body points at them, and
 a repo that enables just the pack matching its framework pays for one.
 
@@ -86,8 +87,8 @@ The `reviewer` agent's fully-qualified name is `core:reviewer`, which always res
 the one shipped here even when a consuming repo has its own — plugin agents rank lowest
 in discovery precedence.
 
-Two components carry **`disable-model-invocation: true`**: Claude never reaches for them
-on its own, and their descriptions leave the always-on listing. Type them.
+Three components carry **`disable-model-invocation: true`**: Claude never reaches for
+them on its own, and their descriptions leave the always-on listing. Type them.
 
 - `preparing-a-repo` — the only component that writes into a host repository, and the
   write is gated behind an approved gap report.
@@ -95,10 +96,14 @@ on its own, and their descriptions leave the always-on listing. Type them.
   `core` is enabled in every one of them, including those with no interface at all. It
   ships typed so that cost is zero until someone asks for it; `plugins/core/evals/` holds
   the case that decides whether to promote it.
+- `optimizing-prompts` — it rewrites a prompt rather than acting on one, and a skill whose
+  whole job is to *not* carry out the text it is handed is the wrong thing for Claude to
+  reach for on its own initiative. Typing it also settles a collision: a repo with its own
+  prompt-rewriting skill would otherwise have two matching the same wording.
 
-`planning-features` and `optimizing-prompts` are candidates for the same field on cost
-grounds. Which skills earn auto-triggering is settled by `/skill-doctor` and the ablation
-cases in `plugins/core/evals/`.
+`planning-features` is a candidate for the same field on cost grounds. Which skills earn
+auto-triggering is settled by `/skill-doctor` and the ablation cases in
+`plugins/core/evals/`.
 
 ## Why Vue and Nuxt are separate packs
 
