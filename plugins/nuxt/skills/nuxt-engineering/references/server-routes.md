@@ -5,7 +5,7 @@ pack means when it says an SPA has nowhere to put a secret and no backend of its
 here you have both, and with them the obligations of a backend.
 
 Note that `server/` roots at the project root, **not** inside the app source directory.
-Which directories root where changed between majors; see `references/versions.md`.
+Which directories root where changed between majors; see `versions.md`.
 
 ## Layout
 
@@ -70,9 +70,8 @@ then comparing — a filter that is part of the query cannot be forgotten in a l
 ## Secrets and outbound calls
 
 This is where a third-party key lives. Read it with `useRuntimeConfig(event)` and keep
-it out of `public` — see `references/runtime-config.md`. A handler that proxies a
-third-party API is the correct answer to "the browser needs to call this service with a
-key".
+it out of `public` — see `runtime-config.md`. A handler that proxies a third-party API
+is the correct answer to "the browser needs to call this service with a key".
 
 Never interpolate a caller-supplied value into an outbound URL path or a shell command,
 and validate any URL the caller supplies before fetching it.
@@ -91,7 +90,7 @@ and validate any URL the caller supplies before fetching it.
 The server layer is the part of Nuxt that changes most between majors: the import
 specifiers for handler utilities, the shape of the event object, and whether error
 fields are named `statusCode`/`statusMessage` or `status`/`statusText` have all moved.
-Check what is installed before writing a handler from memory — `references/versions.md`.
+Check what is installed before writing a handler from memory — `versions.md`.
 
 ## Review list
 

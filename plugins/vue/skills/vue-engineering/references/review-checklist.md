@@ -11,9 +11,9 @@ this list exists.
 This is the plain-Vue list. A Nuxt app has a different set of criticals (SSR-shared
 state, hydration mismatch, double-fetch, payload serialisation) and several of them
 invert here — module-scope state most of all, which is listed below as *not* a finding
-and is Critical under SSR. If the project depends on `nuxt`, review against the `nuxt`
-pack's `references/nuxt-review-checklist.md`, which is a delta on this file and states
-which of these verdicts it overrides.
+and is Critical under SSR. If the project depends on `nuxt`, invoke
+`/nuxt:nuxt-engineering` and review against its checklist instead — it is a delta on
+this file and states which of these verdicts it overrides.
 
 ## Blocking (Critical)
 
@@ -91,7 +91,7 @@ form value asserted with `as` instead of parsed. `as` is a claim, not a check.
   header, as a tooling finding — not as a defect on every changed file.
 - Preferences about `reactive` versus `ref` where the existing file already chose one.
 - A version-specific API that is correct for the version actually installed. Check
-  `references/versions.md` before flagging one as wrong.
+  `versions.md` before flagging one as wrong.
 
 ## Before writing the verdict
 

@@ -1,9 +1,9 @@
 # Review checklist — Nuxt
 
-**This is a delta. Run the `vue` pack's `references/review-checklist.md` first** — lost
-reactivity, a cache key missing its varying input, prop mutation, a missing error branch,
-an uncleaned watcher, unvalidated external input and a guard failing open are all still
-findings here and are not repeated below.
+**This is a delta. Invoke `/vue:vue-engineering` and run its review checklist first**
+— lost reactivity, a cache key missing its varying input, prop mutation, a missing error
+branch, an uncleaned watcher, unvalidated external input and a guard failing open are
+all still findings here and are not repeated below.
 
 Then apply this list, and the inversions at the bottom, which change the verdict the
 `vue` list would give.
@@ -104,7 +104,7 @@ that excuse across.
 Say which gates ran. `nuxt typecheck` is the one that checks templates — a bare
 `vue-tsc --noEmit` against a solution-file `tsconfig.json` exits 0 having checked
 nothing, so report that as not verifying rather than as a pass, and note that
-`strictTemplates` defaults to off. See `references/versions.md`.
+`strictTemplates` defaults to off. See `versions.md`.
 
 For anything server-rendered, static review cannot see a hydration mismatch or a payload
 problem. If they were not checked by loading the page and viewing source, say so rather

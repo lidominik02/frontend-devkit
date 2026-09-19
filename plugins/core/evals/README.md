@@ -13,7 +13,7 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | fails | fails | rewrite, or accept it is out of reach |
 
 **`core`'s bar is higher than a framework pack's.** `core` carries five listed
-descriptions against a framework pack's one — about 3.1k characters to 0.8k — and it is
+descriptions against a framework pack's one — about 3.3k characters to 0.8k — and it is
 enabled in every repository, so that cost is paid in every session of every project. A
 pack at least only loads where its framework is. A `core` skill that passes baseline is
 several times the waste, and `/skill-doctor` will tell you what it actually costs.

@@ -45,8 +45,8 @@ crawlers, and unavailable with JavaScript off. Reach for it after the first thre
 A component can be server-rendered and have its hydration deferred until it is needed —
 visible, idle, interacted with — which keeps the content in the HTML while cutting the
 JavaScript that runs at load. This is version-gated and the API has moved; check
-`references/versions.md` before using it. Note that importing a component explicitly
-from `#components` opts it out.
+`versions.md` before using it. Note that importing a component explicitly from
+`#components` opts it out.
 
 ## Rendering modes
 

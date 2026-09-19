@@ -46,7 +46,7 @@ consequences, both security-relevant:
 
 Read the session from something that exists in both places: a cookie via `useCookie`, or
 `useRequestHeaders(['cookie'])` plus a server route that validates it. See
-`references/ssr-state.md`.
+`ssr-state.md`.
 
 ## Rules that are easy to get wrong
 
@@ -57,11 +57,11 @@ Read the session from something that exists in both places: a cookie via `useCoo
   middleware blocks navigation and is not cached.
 - **Do not use middleware to protect data.** It controls which page renders, not who can
   read an endpoint. Authorisation belongs in the Nitro route as well — see
-  `references/server-routes.md`. A client-side redirect is a UX affordance; the server
-  route is the boundary.
+  `server-routes.md`. A client-side redirect is a UX affordance; the server route is
+  the boundary.
 - **Route metadata is version-gated.** Which keys appear on `route.meta`, and how route
   names are generated from filenames, changed between majors. Check
-  `references/versions.md` before relying on `route.meta.name`.
+  `versions.md` before relying on `route.meta.name`.
 - **`scrollBehavior` and focus** live in `app/router.options.ts`, not in a constructed
   router. Focus management after client-side navigation is still your job, and still
   matters — the `vue` pack's routing notes on that hold.
@@ -84,8 +84,8 @@ export default defineNuxtPlugin((nuxtApp) => {
   expressed. Where one plugin genuinely needs another, declare `dependsOn` rather than
   relying on the prefix.
 - **A plugin runs per request on the server.** Anything it assigns to a module-level
-  variable is shared across users — the leak in `references/ssr-state.md`. Provide state
-  through `nuxtApp` or `useState`.
+  variable is shared across users — the leak in `ssr-state.md`. Provide state through
+  `nuxtApp` or `useState`.
 - Do not put a guard here. Middleware is the mechanism, and it is the one
   `definePageMeta` composes with.
 

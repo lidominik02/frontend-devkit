@@ -145,8 +145,8 @@ observing each other's tabs.
 `browser_wait_for`, `browser_resize`, `browser_click`, `browser_type`,
 `browser_fill_form`, `browser_press_key`, `browser_evaluate`, `browser_file_upload`.
 It has no equivalent of `emulate`: colour scheme and throttling are launch configuration
-there rather than a per-call argument, so the techniques in `references/runtime-checks.md`
-that reach for one are Chrome DevTools MCP's.
+there rather than a per-call argument, so the techniques in `runtime-checks.md` that
+reach for one are Chrome DevTools MCP's.
 
 `--slim` on Chrome DevTools MCP exposes three tools — navigate, evaluate, screenshot —
 and none of the snapshot, console or network tools this loop is built on. Do not use it
@@ -162,28 +162,37 @@ that change how the page is *rendered to you* rather than what it is — `resize
 `emulate` is the awkward one and is granted deliberately. It carries `colorScheme`,
 `networkConditions` and `cpuThrottlingRate`, which are the whole of the dark-mode,
 error-state and loading-state techniques — without it every state check in
-`references/runtime-checks.md` costs a prompt, and a loop that prompts six times to look
-at one panel is a loop people switch off. It also carries `extraHttpHeaders`, `userAgent`
+`runtime-checks.md` costs a prompt, and a loop that prompts six times to look at one
+panel is a loop people switch off. It also carries `extraHttpHeaders`, `userAgent`
 and `geolocation`, so it is not purely an observation tool: it can put a header on every
 request the page makes. That is the trade being made, not an oversight.
 
-Withheld on purpose:
+**Removed from the pool outright**, via `disallowed-tools`, because for these two a
+prompt is not a good enough boundary:
 
 - **`evaluate_script` / `browser_evaluate`** run arbitrary JavaScript in the page. Used
   to read a value they are a debugging tool; they are also the shortest path from a
   page to anywhere else.
 - **`upload_file` / `browser_file_upload`** push a local file into a page, which then
   sends it. `block-secrets` matches file tools and `Bash`, not MCP tools, so a credential
-  file taking that route fires no hook at all. Never upload a real file to verify an
-  upload control; make a throwaway.
+  file taking that route fires no hook at all — removing the tool is what closes that
+  path, because nothing else here can. Never upload a real file to verify an upload
+  control; make a throwaway.
+
+**Left to prompt** — available, but never pre-approved, so a human sees each one:
+
 - **The interaction tools** — `click`, `fill`, `fill_form`, `hover`, `press_key`,
   `type_text` and their Playwright counterparts. Driving a page to a state needs them, so
   they prompt when a check calls for one; that is the point at which a human sees what is
   about to be typed into what.
 - **Extension and PWA installs** change the machine, not the page.
 
-A server under a different key than the recommended one simply prompts for everything.
-That is the status quo, not a failure.
+Both lists are keyed to the two recommended server keys. Under a different key every
+name here misses: the grants degrade to prompts, which is the harmless direction, and
+the two removals degrade to prompts as well, which is not — there the first list is back
+to being a rule you hold rather than one the frontmatter enforces. That is the status
+quo, not a failure, but it is the reason the prose above says *why* each is withheld
+instead of just listing them.
 
 ## Caveats worth knowing before trusting a result
 

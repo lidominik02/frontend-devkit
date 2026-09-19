@@ -59,7 +59,7 @@ that, and a store created at module scope is the leak above with more ceremony.
 
 The client-vs-server split from the `vue` pack still holds: Pinia holds what the client
 owns. Server data belongs in `useAsyncData`/`useFetch`, which is already keyed and
-already in the payload — see `references/data-fetching.md`.
+already in the payload — see `data-fetching.md`.
 
 ## Per-request context
 

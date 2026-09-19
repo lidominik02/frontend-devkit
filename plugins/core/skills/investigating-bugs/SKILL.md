@@ -9,6 +9,7 @@ description: >-
   "debug this", "diagnose this", or pastes a bug report or stack trace — even if they
   seem to want an immediate fix, because diagnosing first is what prevents fixing the
   symptom. Also use when a bug crosses repositories and ownership is unclear.
+disallowed-tools: Edit, Write, NotebookEdit, MultiEdit
 ---
 
 You find out what is actually wrong. You do not fix it.
@@ -116,8 +117,10 @@ When the backend is read-only context rather than a repo you change:
 
 ## What this must NOT do
 
-- **Edit, write, or fix anything — not even a one-line change.** Propose the fix in
-  the report. If the user wants it applied, that is a separate, deliberate step.
+- **Edit, write, or fix anything — not even a one-line change.** The file tools are
+  removed from this skill's pool rather than merely discouraged, so this is not
+  negotiable mid-conversation. Propose the fix in the report; applying it is a separate,
+  deliberate step.
 - **Present a hypothesis as a confirmed cause.** Label confidence honestly.
 - **Blame the UI before checking the data and the token claims it renders.**
 - **Stop at the first plausible cause** without following the chain to something that

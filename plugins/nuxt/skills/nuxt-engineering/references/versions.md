@@ -11,9 +11,10 @@ node -p "Object.entries({...require('./package.json').dependencies,...require('.
 Then read `nuxt.config` for `compatibilityDate` and anything under `future` — those
 change runtime behaviour without changing an installed version.
 
-**For Vue, Pinia, Tailwind, TanStack and lint tooling, read the `vue` pack's
-`references/versions.md`.** Those rows are not repeated here. This file covers only what
-Nuxt itself owns.
+**For Vue, Pinia, Tailwind, TanStack and lint tooling, invoke `/vue:vue-engineering` and
+read its version table.** Those rows are not repeated here, and the `vue` pack installs
+in its own directory — reach it by invoking the skill, never by a relative path out of
+this one. This file covers only what Nuxt itself owns.
 
 ## Nuxt majors
 

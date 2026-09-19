@@ -12,6 +12,7 @@ description: >-
   whether a visual change actually works. Reports what it could not observe rather
   than calling it fine, and says plainly when no browser tool is configured.
 disable-model-invocation: true
+disallowed-tools: mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__upload_file, mcp__playwright__browser_evaluate, mcp__playwright__browser_file_upload
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(git diff *) mcp__chrome-devtools__take_snapshot mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__list_console_messages mcp__chrome-devtools__get_console_message mcp__chrome-devtools__list_network_requests mcp__chrome-devtools__get_network_request mcp__chrome-devtools__navigate_page mcp__chrome-devtools__new_page mcp__chrome-devtools__list_pages mcp__chrome-devtools__select_page mcp__chrome-devtools__resize_page mcp__chrome-devtools__emulate mcp__chrome-devtools__wait_for mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_console_messages mcp__playwright__browser_network_requests mcp__playwright__browser_navigate mcp__playwright__browser_resize mcp__playwright__browser_wait_for Read Grep Glob
 ---
 
@@ -123,10 +124,15 @@ the whole checklist on a change that cannot reach most of it.
 
 ## Step 5 — Fix, then observe again
 
-After every fix, re-observe. Not "the change should handle it" — take the snapshot
-again and confirm. This is the entire point of having a browser attached, and it is the
-step that gets skipped: the model that just wrote the fix is the worst available judge
-of whether it worked.
+After every fix, re-observe — and **re-establish the condition under test before you
+look.** `emulate` is absolute, not incremental: a later call that omits
+`networkConditions` restores the network, so the "after" snapshot is of a working page
+and the pass is clean, confident and wrong. A combined state is a single call naming
+every parameter, never two calls.
+
+Not "the change should handle it" — take the snapshot again and confirm. This is the
+entire point of having a browser attached, and it is the step that gets skipped: the
+model that just wrote the fix is the worst available judge of whether it worked.
 
 Loop until the observation matches the intent, or until you can say precisely what
 still does not and why.
@@ -166,13 +172,13 @@ is worse than a short honest list.
 - **Report an observation without the URL it came from.** The snapshot tells you the URL,
   so there is no excuse for an unlabelled finding — and the console does not, so that one
   has to be tied to the page by hand.
-- **Re-observe without re-establishing the state under test.** Emulation is replaced
-  whole on every call, so the second look is of a different page unless you put the
-  condition back — see `references/runtime-checks.md`.
+- **Re-observe without re-establishing the state under test.** See step 5, and
+  `references/runtime-checks.md` for the full mechanics.
 - **Call it fixed without re-observing.** See step 5.
 - **Leave a dev server or a browser running** that it started, or kill one it did not.
-- **Type credentials into a page**, or upload a local file through one. A file input is
-  a network path that no hook here can see — see `references/browser-tools.md`.
+- **Type credentials into a page.** A file input is a network path that no hook here can
+  see, so the upload tools are removed from this skill's pool outright rather than left
+  to prompt — see `references/browser-tools.md`.
 - **Substitute for an accessibility review.** A snapshot shows the tree; it does not
   tell you the tree is right.
 - **Run the whole state checklist** on a change that cannot reach most of it.

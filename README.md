@@ -3,14 +3,18 @@
 A private Claude Code marketplace: a framework-agnostic `core` plugin plus per-framework
 packs. Install it once and it applies to every repository you open.
 
-The devkit runs on top of an existing project. It requires nothing to be added to a repo
-and writes nothing into one. Every fact it needs — package manager, quality gates, base
-branch, git host, commit convention — is read at the moment of use from a file the project
-already maintains: `package.json`, the lockfile, the git remote, `commitlint.config.*`,
-`.gitlab/merge_request_templates/`. Nothing is cached, so nothing goes stale.
+The devkit runs on top of an existing project. It requires nothing to be added to a repo,
+and writes into one only in the two cases below. Every fact it needs — package manager,
+quality gates, base branch, git host, commit convention — is read at the moment of use
+from a file the project already maintains: `package.json`, the lockfile, the git remote,
+`commitlint.config.*`, `.gitlab/merge_request_templates/`. Nothing is cached, so nothing
+goes stale.
 
-The one exception is the `preparing-a-repo` skill, whose purpose is to add those files. It
-reports before it writes and writes nothing without approval.
+Two components write, both deliberately. `preparing-a-repo` exists to add those files: it
+reports before it writes and writes nothing without approval. `planning-features` writes
+its roadmap and handoff files to `temp/<feature-slug>/planning/` in the repo that owns the
+feature, because a plan that has to survive context loss cannot live in a transcript. It
+never `git add`s them, and it says so once if `temp/` is not already ignored.
 
 One capability is not self-contained: `verifying-ui` drives a browser, and the browser is
 an MCP server the consuming repo installs. The devkit still adds nothing — it detects what
@@ -60,8 +64,8 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Only descriptions are always-on: **4.7k characters** of them with all three packs
-enabled — `core` contributes five listed entries (~3.1k), `vue` and `nuxt` one each
+Only descriptions are always-on: **4.9k characters** of them with all three packs
+enabled — `core` contributes five listed entries (~3.3k), `vue` and `nuxt` one each
 (~0.8k). `preparing-a-repo` and `verifying-ui` are excluded because they are
 `disable-model-invocation`, which is why adding the second one did not move that number.
 Skill bodies load on trigger; reference files load only when the body points at them, and
@@ -332,6 +336,18 @@ Never grant a command a component deliberately holds behind approval;
 built on. Whether a grant can override a project `permissions.deny` rule is
 undocumented, so do not build on the answer either way.
 
+**Use `disallowed-tools` where a "must NOT" is absolute.** `allowed-tools` cannot enforce
+anything — it pre-approves, and every unlisted tool stays callable behind a prompt. A
+prohibition the component must never negotiate belongs in `disallowed-tools`, which
+removes the tool from the pool outright: `investigating-bugs` and `optimizing-prompts`
+drop the write tools, `optimizing-prompts` also drops `Bash` and `Agent` because its
+input is untrusted imperative text by construction, and `verifying-ui` drops the
+page-evaluate and file-upload tools that `block-secrets` cannot see. Keep the prose rule
+as well as the field, and say which of the two is doing the work — claiming enforcement
+that is not happening is worse than an honest advisory rule. Only for prohibitions that
+are genuinely absolute; a tool a body legitimately needs behind approval stays merely
+un-granted.
+
 A grant on an MCP tool has one extra trap: the name is `mcp__<server-key>__<tool>`, and
 the key is whatever the consuming repo's `.mcp.json` happens to call the server. A grant
 is therefore a best-effort convenience that matches the recommended key and silently
@@ -367,12 +383,21 @@ pushy.
 
 ```bash
 claude plugin validate . --strict               # marketplace + entries
-claude plugin validate ./plugins/core --strict  # frontmatter, hooks.json
+claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
 bash scripts/test-hooks.sh                      # 136 assertions on the guarantees
 node plugins/core/scripts/project-facts.mjs     # what detection sees here
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```
+
+**`--strict` does not read component frontmatter.** It flags an unknown field in
+`plugin.json` and a missing `description` in a `SKILL.md`, but a *misspelled* frontmatter
+key passes clean — checked against 2.1.250. That failure is silent and expensive in both
+directions: misspell `disable-model-invocation` and a typed skill starts auto-triggering
+in every repository, misspell `disallowed-tools` and a guardrail stops being enforced with
+the prose still claiming it is. The two CI steps that own what the validator will not
+check are `Every referenced file resolves` and `Component frontmatter is valid`; run them
+locally with `act`, or read them as the reference for what to keep true by hand.
 
 Then, inside a session: `/doctor` for configuration problems and `/skill-doctor` for the
 per-skill listing token cost and any skill that never fires. "Prefer deleting a component

@@ -89,7 +89,7 @@ After a mutation, refresh the affected key rather than reloading the route.
 
 On Nuxt 4 `data` is a `shallowRef`, so mutating a nested property does not trigger a
 re-render. Replace the value (`data.value = { ...data.value, x }`) rather than mutating
-into it. See `references/versions.md` for the major-by-major position.
+into it. See `versions.md` for the major-by-major position.
 
 ## Common failure modes
 
@@ -101,4 +101,4 @@ into it. See `references/versions.md` for the major-by-major position.
 - Deep-mutating `data` on Nuxt 4 and seeing no update.
 - Adding TanStack Query alongside this and paying for every request twice.
 - A server-side `$fetch` to an internal route with no forwarded cookies — see
-  `references/ssr-state.md`.
+  `ssr-state.md`.
