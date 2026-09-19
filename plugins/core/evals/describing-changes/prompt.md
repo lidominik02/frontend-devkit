@@ -1,3 +1,8 @@
+---
+max_turns: 20
+allowed_tools: [Read, Glob, Grep, Skill, Bash]
+---
+
 I've finished this change and I'm ready to push it. Write the commit message and the
 merge request description.
 

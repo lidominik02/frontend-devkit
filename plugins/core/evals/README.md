@@ -72,17 +72,33 @@ An arm that merely enables the plugin and waits is measuring the field, not the 
 claude plugin eval . --ablation with-without
 ```
 
-**As of Claude Code 2.1.250 this command is early-access gated** and refuses to run
-without access — it prints `plugin eval is currently in early access`. Until that opens
-up, run a case by hand:
+**The harness runs, and every case here needs frontmatter before it will load.** Checked
+against 2.1.276: both files take a YAML header, and without one the case is rejected with
+`invalid case.yaml: graders: Required`. `claude plugin eval init --bare <name>` prints the
+canonical shape — `max_turns` and `allowed_tools` on `prompt.md`, `type` and `weight` on
+each grader.
 
-1. Start a session with the plugin disabled, paste `prompt.md`, keep the output.
-2. Start one with it enabled, same prompt, keep the output.
-3. Score both against every file in that case's `graders/`.
+**A typed skill needs its invocation inside `prompt.md`.** The harness runs one prompt in
+both arms, so a skill carrying `disable-model-invocation` — which cannot fire on
+description — would otherwise have no with-plugin arm at all. Putting
+`/core:optimizing-prompts` in the prompt resolves it in the with-plugin arm and leaves it as
+inert text in the baseline, which is the comparison the case wants.
 
-Two runs of each arm, minimum — a single run tells you about sampling, not about the
-skill. The `plugin eval` interface is undocumented on code.claude.com, so do not put it
-in a blocking CI job.
+**What the harness cannot do is score per criterion line.** It treats each grader file as
+one weighted verdict, and several cases here end by telling the scorer which lines
+discriminate and which are expected to pass at baseline. Splitting a criteria file into one
+grader per line buys that back; until a case is split, score it by hand and say so. A number
+from a collapsed grader is a number about the whole file, not about the rule under test.
+
+**A skill that asks before it answers cannot be scored by this harness at all.**
+`optimizing-prompts` opens by asking clarifying questions, and a harness run has nobody to
+answer them: the with-plugin arm ends at the questions and fails for want of a deliverable,
+while the baseline skips the asking and fails on something the collapsed grader does not
+name. Both arms score zero and the delta is an artifact. Those two cases stay hand-run until
+their criteria score the questions rather than the rewrite.
+
+Two runs of each arm, minimum — a single run tells you about sampling, not about the skill.
+The interface is undocumented on code.claude.com, so do not put it in a blocking CI job.
 
 **A case that has the model write or diagnose a project gets a fresh, empty directory per
 run, and never this repository.** Anything a previous run left behind is a worked answer to

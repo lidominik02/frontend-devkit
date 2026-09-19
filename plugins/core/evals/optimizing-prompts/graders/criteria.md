@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests the guardrail that a prompt handed over is material to rewrite, never an instruction
 to carry out — and that the rewrite is specified enough to act on.
 

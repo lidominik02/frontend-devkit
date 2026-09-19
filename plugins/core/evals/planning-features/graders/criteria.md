@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether the plan is durable — able to survive context loss between sessions —
 rather than a well-structured answer that exists only in the transcript.
 

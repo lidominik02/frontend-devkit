@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether the commit convention is read from the file that enforces it, and whether
 the verification section stays honest about what was actually run.
 

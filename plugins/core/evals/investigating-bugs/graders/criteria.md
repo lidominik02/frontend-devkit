@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests the layer-ownership ordering and the no-edits rule, on a report that reads as a UI
 defect and is owned by the layer underneath it.
 

@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests the rule that carries the most weight in an agentic rewrite: point at a file that
 already does the thing, rather than describing the convention in prose — and do it without
 inventing the path.

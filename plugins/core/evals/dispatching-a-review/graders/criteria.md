@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether the read-only `reviewer` agent actually gets dispatched from the words a
 user would really use, or whether the main thread reviews the diff itself.
 

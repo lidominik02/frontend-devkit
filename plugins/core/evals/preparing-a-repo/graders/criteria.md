@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests inventory-before-proposing, and that nothing is written to the repository without
 approval.
 

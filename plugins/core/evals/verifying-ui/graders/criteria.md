@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether a claim about how a page renders is backed by having looked at the page,
 and whether the state under test is reached rather than reasoned about.
 

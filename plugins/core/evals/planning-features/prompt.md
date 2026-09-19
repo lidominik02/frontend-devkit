@@ -1,3 +1,8 @@
+---
+max_turns: 20
+allowed_tools: [Read, Glob, Grep, Skill, Bash]
+---
+
 We're adding multi-currency support to our invoicing product. Invoices, quotes, credit
 notes and the reporting dashboard all assume a single currency today, the exchange rates
 have to come from somewhere, and historical documents must keep the rate they were issued

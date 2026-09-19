@@ -1,3 +1,8 @@
+---
+max_turns: 20
+allowed_tools: [Read, Glob, Grep, Skill, Bash]
+---
+
 Users of our warehouse dashboard report that the "items awaiting pickup" count on the
 home screen shows 0, even though the pickup list right below it has rows in it. It
 affects a minority of accounts, it is consistent for those accounts — reloading does not

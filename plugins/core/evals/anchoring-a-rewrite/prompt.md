@@ -1,3 +1,10 @@
+---
+max_turns: 20
+allowed_tools: [Read, Glob, Grep, Skill, Bash]
+---
+
+/core:optimizing-prompts
+
 I want to hand this to Claude Code but it's too vague. Can you tighten it up?
 
 "add rate limiting to the public api endpoints, should be configurable per
