@@ -31,6 +31,33 @@ jobs:
       - name: Hook regression suite
         run: bash scripts/test-hooks.sh
 
+      # A blocked MCP tool is the one enforcement rule here that rests on a string
+      # match against a name the server chooses. Nothing errors when a server renames
+      # a tool: the block silently matches nothing and the reference table documenting
+      # it quietly goes stale. These two have to name the same tools or one of them is
+      # already wrong.
+      - name: Blocked MCP names match their reference table
+        run: |
+          node - <<'NODE'
+          const fs = require('fs')
+          const skill = 'plugins/core/skills/verifying-ui/SKILL.md'
+          const ref = 'plugins/core/skills/verifying-ui/references/browser-tools.md'
+          const body = fs.readFileSync(skill, 'utf8'), table = fs.readFileSync(ref, 'utf8')
+          const line = (body.match(/^disallowed-tools:(.*)$/m) || [, ''])[1]
+          const blocked = line.split(',').map((s) => s.trim()).filter((s) => s.startsWith('mcp__'))
+          let bad = 0
+          for (const full of blocked) {
+            const bare = full.split('__').pop()
+            if (!table.includes('`' + bare + '`')) {
+              console.error(`${full} is blocked but absent from browser-tools.md`)
+              bad++
+            }
+          }
+          if (!blocked.length) { console.error('no mcp__ names blocked — did the field move?'); bad++ }
+          if (bad) { console.error(`::error::${bad} MCP name(s) out of step`); process.exit(1) }
+          console.log(`${blocked.length} blocked MCP names all documented`)
+          NODE
+
       - name: Install Claude Code
         run: |
           npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
@@ -41,7 +68,8 @@ jobs:
       # ignores unknown fields at load time, so without --strict the component
       # silently never loads and nothing fails.
       #
-      # It does NOT check component frontmatter — verified against 2.1.250, a
+      # It does NOT check component frontmatter — verified against 2.1.250 and
+      # again against 2.1.276, a
       # misspelled SKILL.md field passes clean. The frontmatter step below owns that.
       #
       # --strict also fails on the missing `version`, which is omitted
@@ -190,7 +218,8 @@ jobs:
                 if (name !== dirName) { console.error(`${p} -> name "${name}" must match directory "${dirName}"`); bad++; }
               }
               // `claude plugin validate --strict` flags unknown fields in plugin.json
-              // but NOT in component frontmatter (verified against 2.1.250), so a typo
+              // but NOT in component frontmatter (verified against 2.1.250 and 2.1.276),
+            // so a typo
               // there loads as silence: misspell `disable-model-invocation` and the
               // skill quietly becomes model-invocable, misspell `disallowed-tools` and
               // a guardrail quietly stops being enforced. Hence this allowlist.
