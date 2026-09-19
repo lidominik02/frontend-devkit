@@ -168,7 +168,10 @@ and `geolocation`, so it is not purely an observation tool: it can put a header 
 request the page makes. That is the trade being made, not an oversight.
 
 **Removed from the pool outright**, via `disallowed-tools`, because for these two a
-prompt is not a good enough boundary:
+prompt is not a good enough boundary. The removal is real and it is the strong kind:
+checked against Claude Code 2.1.276 under the `chrome-devtools` key, `ToolSearch` reports
+both names as unavailable and there is no schema left to call, while `take_snapshot` from
+the same server in the same turn answers normally.
 
 - **`evaluate_script` / `browser_evaluate`** run arbitrary JavaScript in the page. Used
   to read a value they are a debugging tool; they are also the shortest path from a
@@ -187,12 +190,13 @@ prompt is not a good enough boundary:
   about to be typed into what.
 - **Extension and PWA installs** change the machine, not the page.
 
-Both lists are keyed to the two recommended server keys. Under a different key every
-name here misses: the grants degrade to prompts, which is the harmless direction, and
-the two removals degrade to prompts as well, which is not — there the first list is back
-to being a rule you hold rather than one the frontmatter enforces. That is the status
-quo, not a failure, but it is the reason the prose above says *why* each is withheld
-instead of just listing them.
+Both lists are keyed to the two recommended server keys, and the removal above was
+confirmed under `chrome-devtools`. Under a different key every name here misses by
+construction: the grants would degrade to prompts, which is the harmless direction, and
+the two removals would degrade to prompts as well, which is not — there the first list is
+back to being a rule you hold rather than one the frontmatter enforces. **That degradation
+has not been observed, only predicted from how the names resolve.** It is the reason the
+prose above says *why* each is withheld instead of just listing them.
 
 ## Caveats worth knowing before trusting a result
 

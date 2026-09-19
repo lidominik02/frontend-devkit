@@ -343,8 +343,13 @@ undocumented, so do not build on the answer either way.
 
 **Use `disallowed-tools` where a "must NOT" is absolute.** `allowed-tools` cannot enforce
 anything — it pre-approves, and every unlisted tool stays callable behind a prompt. A
-prohibition the component must never negotiate belongs in `disallowed-tools`, which
-removes the tool from the pool outright: `investigating-bugs` and `optimizing-prompts`
+prohibition the component must never negotiate belongs in `disallowed-tools`, which blocks
+the tool for the invoking turn and beats an explicit `--allowedTools` grant. **It does so by
+two different mechanisms, and only one of them is removal** — checked against 2.1.276. A
+built-in tool such as `Bash` stays in the model's schema and the call is refused when it is
+made, so the model can see the tool and attempt it. A deferred MCP tool is withdrawn
+outright: `ToolSearch` reports it unavailable and there is no schema left to call. Either
+way the call does not run. The components: `investigating-bugs` and `optimizing-prompts`
 drop the write tools, `optimizing-prompts` also drops `Bash` and `Agent` because its
 input is untrusted imperative text by construction, and `verifying-ui` drops the
 page-evaluate and file-upload tools that `block-secrets` cannot see. Keep the prose rule
@@ -370,17 +375,20 @@ observation tool. That is a trade, and a documented trade is worth more than a t
 the grant does not actually follow.
 
 **Bodies under ~200 lines, front-loaded.** After compaction an invoked skill body is
-re-attached truncated to its first 5,000 tokens, so the important part goes at the top.
+re-attached truncated, so the important part goes at the top. The 5,000-token figure this
+was authored against has not been measured here; the ordering rule costs nothing either way.
 Detail belongs in `references/` — the Agent Skills spec directory, alongside `scripts/` and
-`assets/` — exactly one level deep, because Claude partial-reads anything reached through a
-second hop.
+`assets/` — exactly one level deep. That depth is a convention, not a measured limit: a
+second hop is one more thing that has to go right at the moment the model is furthest from
+the instruction, and nothing is gained by nesting.
 
 **Descriptions are the entire triggering mechanism**, and the cap to author against is
 **1,024 characters**: the spec's hard validation limit and the only portable ceiling.
 (Claude Code truncates its listing at 1,536, counting `description` plus `when_to_use`
-together, but a description over 1,024 cannot be packaged.) Write them in the third person,
-front-loaded, using the literal words a user would type. Claude undertriggers, so lean
-pushy.
+together — measured against 2.1.276, where cost stops rising at exactly that point and
+there is no separate global budget — but a description over 1,024 cannot be packaged.)
+Write them in the third person, front-loaded, using the literal words a user would type.
+Claude undertriggers, so lean pushy.
 
 **A skill's `name` must match its parent directory**, per the spec.
 
@@ -397,12 +405,24 @@ claude plugin details core@frontend-devkit      # inventory + token cost
 
 **`--strict` does not read component frontmatter.** It flags an unknown field in
 `plugin.json` and a missing `description` in a `SKILL.md`, but a *misspelled* frontmatter
-key passes clean — checked against 2.1.250. That failure is silent and expensive in both
-directions: misspell `disable-model-invocation` and a typed skill starts auto-triggering
-in every repository, misspell `disallowed-tools` and a guardrail stops being enforced with
+key passes clean — checked against 2.1.250 and again against 2.1.276. That failure is
+silent and expensive in both directions: misspell `disable-model-invocation` and a typed
+skill starts auto-triggering in every repository, misspell `disallowed-tools` and a
+guardrail stops being enforced with
 the prose still claiming it is. The two CI steps that own what the validator will not
 check are `Every referenced file resolves` and `Component frontmatter is valid`; run them
 locally with `act`, or read them as the reference for what to keep true by hand.
+
+**After a Claude Code upgrade, four claims here are worth re-checking by hand.** They are
+about the platform rather than about this repo, so nothing in CI can hold them: that
+`disallowed-tools` still blocks a tool the component grants at the CLI, that it still
+matches MCP tool names, that a non-zero exit from an injected command still aborts the
+invocation, and that the listing still truncates a description where it does. Each was
+checked against 2.1.276 and the method is the same in every case — run the same prompt
+twice, changing only the one field under test, and load the working tree with
+`--plugin-dir` rather than the installed plugin, which on a developer machine is often an
+older snapshot. A control matters more than it looks: a model declining to do what a skill
+told it not to do proves nothing, so the arm without the field has to succeed.
 
 Then, inside a session: `/doctor` for configuration problems and `/skill-doctor` for the
 per-skill listing token cost and any skill that never fires. "Prefer deleting a component

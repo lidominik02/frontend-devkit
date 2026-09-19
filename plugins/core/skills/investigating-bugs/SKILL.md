@@ -117,9 +117,9 @@ When the backend is read-only context rather than a repo you change:
 
 ## What this must NOT do
 
-- **Edit, write, or fix anything — not even a one-line change.** The file tools are
-  removed from this skill's pool rather than merely discouraged, so this is not
-  negotiable mid-conversation. Propose the fix in the report; applying it is a separate,
+- **Edit, write, or fix anything — not even a one-line change.** The file tools are blocked
+  for this turn rather than merely discouraged: you will still see them in your own schema,
+  and the call is refused when you make it, so this is not negotiable mid-conversation. Propose the fix in the report; applying it is a separate,
   deliberate step.
 - **Present a hypothesis as a confirmed cause.** Label confidence honestly.
 - **Blame the UI before checking the data and the token claims it renders.**
