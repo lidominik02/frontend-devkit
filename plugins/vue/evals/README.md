@@ -14,10 +14,28 @@ pack.
 | `composable-reactivity` | Crossing a composable boundary with a getter rather than a value, so the result keeps tracking when the input changes |
 | `vite-secret` | Recognising that a static SPA has nowhere to keep a secret, and that a `VITE_`-prefixed value is inlined into the shipped bundle |
 | `module-scope-state` | A negative test: module-scope reactive state is an ordinary singleton in a client-only SPA, not a cross-request leak |
+| `focus-and-announcement` | Whether accessibility rules get applied on a task that never asks for them — focus after a removal, a live region for a count that changes, names that distinguish one control from another |
+| `submit-state` | Whether a form is modelled as state that can be submitted twice and rejected by the server, rather than as values plus a validate function |
+| `finding-the-cost` | Whether a performance claim is backed by a measurement, or assembled from plausible causes read off the source |
 
 `composable-reactivity` and `vite-secret` are capability cases: the pack earns its place
 only if the baseline arm gets them wrong. `module-scope-state` is expected to pass at
 baseline and is kept for a different reason.
+
+`focus-and-announcement`, `submit-state` and `finding-the-cost` each decide whether a
+reference file is worth adding to this pack. **All three came back with no criterion line
+missed in any of three runs, so there is no `accessibility.md`, no `forms.md` and no
+`performance.md`** — a plain `core` + `vue` session already does these things unaided.
+
+They are kept for the reason `module-scope-state` is kept, as a regression instrument. A
+case is cheaper to run than its question is to re-argue, so a proposal to add one of these
+files is answered by running the case rather than by debating the file.
+
+`finding-the-cost` needs a second baseline arm, `core` alone. `references/routing.md` in
+this pack supplies the lazy-route and entry-chunk answers in prose, so a `core` + `vue`
+baseline can produce them without knowing anything. If `core` alone passes where the pair
+fails, the pack is manufacturing the failure and the finding is a wording fix there rather
+than a new reference file.
 
 ## The matched pair
 

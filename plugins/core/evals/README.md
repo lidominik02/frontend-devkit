@@ -84,6 +84,15 @@ Two runs of each arm, minimum — a single run tells you about sampling, not abo
 skill. The `plugin eval` interface is undocumented on code.claude.com, so do not put it
 in a blocking CI job.
 
+**A case that has the model write or diagnose a project gets a fresh, empty directory per
+run, and never this repository.** Anything a previous run left behind is a worked answer to
+the same task lying in the workspace, and the next run reads it instead of solving it;
+running inside `frontend-devkit` is the same problem with the pack's own prose as the
+answer. `node_modules` is the only thing safe to share between runs. Give the scratch
+project an explicit `target` and `lib` in `tsconfig.json` and a test runner, so a run spends
+its attention on the task rather than on a broken toolchain, and so "did not verify" is a
+choice the criteria can score rather than something the environment decided.
+
 `core` has one wrinkle a framework pack does not. Its skills trigger on description, so
 a baseline arm has to disable the whole plugin rather than merely avoid naming the
 skill — and disabling the plugin also removes the three hooks. A `core`-off arm
@@ -99,6 +108,15 @@ what to avoid, the eval measures reading comprehension rather than the skill.
 
 `graders/*.md` hold the criteria. Prefer criteria that are checkable from the output text
 rather than matters of taste.
+
+**Write each criterion as an outcome, not as an implementation.** A line naming the
+mechanism it expects fails a solution that reaches the same outcome by another, and the
+tally then argues for guidance the model did not need.
+
+**Score per criterion line, not per run**, when a case is deciding whether to write
+something rather than grading one answer. The unit of retention is the rule: a topic whose
+baseline misses one line every time and gets the rest right earns guidance covering that
+line and nothing else.
 
 Prompts must invent their own domain. The CI check that forbids repo-specific facts in
 `plugins/` greps these files too, so no real project names and no absolute paths.
