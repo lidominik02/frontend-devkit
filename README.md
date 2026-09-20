@@ -345,11 +345,19 @@ undocumented, so do not build on the answer either way.
 anything — it pre-approves, and every unlisted tool stays callable behind a prompt. A
 prohibition the component must never negotiate belongs in `disallowed-tools`, which blocks
 the tool for the invoking turn and beats an explicit `--allowedTools` grant. **It does so by
-two different mechanisms, and only one of them is removal** — checked against 2.1.276. A
+two different mechanisms, and only one of them is removal** — checked against 2.1.276 and
+again against 2.1.278, the second time with a real browser MCP server rather than a stub. A
 built-in tool such as `Bash` stays in the model's schema and the call is refused when it is
 made, so the model can see the tool and attempt it. A deferred MCP tool is withdrawn
 outright: `ToolSearch` reports it unavailable and there is no schema left to call. Either
-way the call does not run. The components: `investigating-bugs` and `optimizing-prompts`
+way the call does not run. The withdrawal happens when the session starts, not when the
+body does — with the skill typed in the prompt the tools are already absent from the init
+event, and with the plugin loaded but the skill untyped nothing is withdrawn at all, so it
+is scoped to the invocation. **Name each tool.** A wildcard such as
+`mcp__chrome-devtools__*` withdraws the entire server, including the fourteen tools
+`verifying-ui` grants itself to look at a page, which leaves the skill with nothing to look
+with; a tool named in both lists is withdrawn, so `disallowed-tools` wins over
+`allowed-tools`. The components: `investigating-bugs` and `optimizing-prompts`
 drop the write tools, `optimizing-prompts` also drops `Bash` and `Agent` because its
 input is untrusted imperative text by construction, and `verifying-ui` drops the
 page-evaluate and file-upload tools that `block-secrets` cannot see. Keep the prose rule
@@ -362,7 +370,12 @@ A grant on an MCP tool has one extra trap: the name is `mcp__<server-key>__<tool
 the key is whatever the consuming repo's `.mcp.json` happens to call the server. A grant
 is therefore a best-effort convenience that matches the recommended key and silently
 matches nothing under a different one — which degrades to a permission prompt, the status
-quo, and never to wider reach. Grant what looks, withhold what acts: for `verifying-ui`
+quo, and never to wider reach. **`disallowed-tools` misses the same way, and that direction
+is not harmless**: under a non-matching key its removals degrade to prompts too, which puts
+`evaluate_script` one approval away instead of out of reach. Checked against 2.1.278. A key
+is also sanitised before the prefix is built — `chrome.devtools` resolves to
+`mcp__chrome_devtools__*` — so a dotted key matches none of the hyphenated names in either
+list while the server connects and every tool works. Grant what looks, withhold what acts: for `verifying-ui`
 that means snapshots, screenshots, console, network and navigation are pre-approved while
 `evaluate_script`, the upload tools and every interaction tool are not.
 
@@ -374,9 +387,13 @@ also carries `extraHttpHeaders`, `userAgent` and `geolocation`, so it is not a p
 observation tool. That is a trade, and a documented trade is worth more than a tidy rule
 the grant does not actually follow.
 
-**Bodies under ~200 lines, front-loaded.** After compaction an invoked skill body is
-re-attached truncated, so the important part goes at the top. The 5,000-token figure this
-was authored against has not been measured here; the ordering rule costs nothing either way.
+**Bodies under ~200 lines, front-loaded** — but not because a surviving prefix rewards it.
+Measured against 2.1.278, a manual `/compact` does not re-attach the invoked body at all,
+truncated or otherwise; what reaches the next turn is a summary of it. A summary is not a
+prefix. It can carry a detail from the very end of a long body and drop the heading that
+gave that detail its meaning, so no rule of the form "the first N tokens survive" describes
+it. Front-load for the reader working top-down, and do not plan around a cut point.
+Automatic compaction on context exhaustion is untested.
 Detail belongs in `references/` — the Agent Skills spec directory, alongside `scripts/` and
 `assets/` — exactly one level deep. That depth is a convention, not a measured limit: a
 second hop is one more thing that has to go right at the moment the model is furthest from
@@ -405,7 +422,7 @@ claude plugin details core@frontend-devkit      # inventory + token cost
 
 **`--strict` does not read component frontmatter.** It flags an unknown field in
 `plugin.json` and a missing `description` in a `SKILL.md`, but a *misspelled* frontmatter
-key passes clean — checked against 2.1.250 and again against 2.1.276. That failure is
+key passes clean — checked against 2.1.250, 2.1.276 and 2.1.278. That failure is
 silent and expensive in both directions: misspell `disable-model-invocation` and a typed
 skill starts auto-triggering in every repository, misspell `disallowed-tools` and a
 guardrail stops being enforced with
@@ -417,8 +434,9 @@ locally with `act`, or read them as the reference for what to keep true by hand.
 about the platform rather than about this repo, so nothing in CI can hold them: that
 `disallowed-tools` still blocks a tool the component grants at the CLI, that it still
 matches MCP tool names, that a non-zero exit from an injected command still aborts the
-invocation, and that the listing still truncates a description where it does. Each was
-checked against 2.1.276 and the method is the same in every case — run the same prompt
+invocation, and that the listing still truncates a description where it does. The first two
+were re-checked against 2.1.278; the other two stand at 2.1.276. The method is the same in
+every case — run the same prompt
 twice, changing only the one field under test, and load the working tree with
 `--plugin-dir` rather than the installed plugin, which on a developer machine is often an
 older snapshot. A control matters more than it looks: a model declining to do what a skill

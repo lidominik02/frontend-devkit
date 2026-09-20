@@ -169,9 +169,11 @@ request the page makes. That is the trade being made, not an oversight.
 
 **Removed from the pool outright**, via `disallowed-tools`, because for these two a
 prompt is not a good enough boundary. The removal is real and it is the strong kind:
-checked against Claude Code 2.1.276 under the `chrome-devtools` key, `ToolSearch` reports
-both names as unavailable and there is no schema left to call, while `take_snapshot` from
-the same server in the same turn answers normally.
+checked against Claude Code 2.1.278 under both recommended keys, the two names are already
+absent from the session's tool set before the first model call, `ToolSearch` reports them
+unavailable and there is no schema left to call — while `take_snapshot` (or
+`browser_snapshot`) from the same server in the same turn answers normally. Exactly two
+tools are withdrawn and the rest of the server is untouched.
 
 - **`evaluate_script` / `browser_evaluate`** run arbitrary JavaScript in the page. Used
   to read a value they are a debugging tool; they are also the shortest path from a
@@ -190,13 +192,22 @@ the same server in the same turn answers normally.
   about to be typed into what.
 - **Extension and PWA installs** change the machine, not the page.
 
-Both lists are keyed to the two recommended server keys, and the removal above was
-confirmed under `chrome-devtools`. Under a different key every name here misses by
-construction: the grants would degrade to prompts, which is the harmless direction, and
-the two removals would degrade to prompts as well, which is not — there the first list is
-back to being a rule you hold rather than one the frontmatter enforces. **That degradation
-has not been observed, only predicted from how the names resolve.** It is the reason the
-prose above says *why* each is withheld instead of just listing them.
+Both lists are keyed to the two recommended server keys. **Under any other key every name
+here misses**, and the whole server stays in the pool. The grants degrade to prompts, which
+is the harmless direction; the two removals degrade to prompts as well, which is not —
+`evaluate_script` is then one approval away, and the list above is back to being a rule you
+hold rather than one the frontmatter enforces. Checked against 2.1.278.
+
+A key is also sanitised before the prefix is built, so the miss can happen while the config
+looks right: `chrome.devtools` resolves to `mcp__chrome_devtools__*`, matching none of the
+hyphenated names above although the server connects and every tool works. If you are
+attaching a server under a key that is not `chrome-devtools` or `playwright`, assume this
+file's guarantees are absent and say so rather than relying on them. It is the reason the
+prose above says *why* each tool is withheld instead of just listing them.
+
+**Do not collapse either list into a wildcard.** `mcp__chrome-devtools__*` in
+`disallowed-tools` withdraws the whole server — including every tool this loop needs — and
+a tool named in both lists is withdrawn, so the wildcard silently wins over the grants.
 
 ## Caveats worth knowing before trusting a result
 
