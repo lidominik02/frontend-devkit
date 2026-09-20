@@ -60,15 +60,16 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` (+ `references/shaping-commits.md`) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 2 shared scripts |
+| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` (+ `references/rules-block.md`) · `describing-changes` (+ `references/shaping-commits.md`) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 2 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Only descriptions are always-on: **5.1k characters** of them with all three packs
-enabled — `core` contributes five listed entries (~3.5k), `vue` and `nuxt` one each
+Only descriptions are always-on: **5.2k characters** of them with all three packs
+enabled — `core` contributes five listed entries (~3.6k), `vue` and `nuxt` one each
 (~0.8k). `preparing-a-repo` and `optimizing-prompts` are excluded because they are
 `disable-model-invocation`. `verifying-ui` used to be the third; it is now listed as a
-trial (see below), which is most of why this figure grew from the previous 4.3k.
+trial (see below), and `planning-features` grew two new modes (`research`, `checkpoint`)
+into its own description — between them, most of why this figure grew from 4.3k.
 Skill bodies load on trigger; reference files load only when the body points at them, and
 a repo that enables just the pack matching its framework pays for one.
 

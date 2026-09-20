@@ -37,6 +37,10 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `commit-message-audience` | Whether the message describes the change for a colleague, or leaks the planning-artifact context (a session, a handoff, a phase, a roadmap) it was drafted alongside — even when paraphrased around the literal banned words |
 | `describing-changes-trigger` | Whether the `Skill` tool actually fires on the owner's own informal register, not only whether the description matches it in isolation |
 | `planning-features` | Producing durable on-disk artifacts that survive context loss, not a plan that exists only in the transcript |
+| `roadmap-rules-preamble` | Whether the owner's rules block defaults get recorded durably in the artifacts when none are given, not just recited in chat |
+| `checkpoint-resume` | Whether `checkpoint` mode has somewhere to put ad-hoc work with no roadmap, rather than forcing one or writing nothing durable |
+| `feature-understanding` | Whether `MASTER-PLAN.md` records what is being built and why — including the reason behind a stated business rule — before it records how |
+| `conflicting-inputs` | Whether the source-of-truth ladder (confirmed rule > user story > visual reference) is applied when sources disagree, rather than silently following one |
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
 | `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute, and specifying the rewrite enough to act on |
 | `anchoring-a-rewrite` | Whether an agentic rewrite points at a file that already does the thing, or paraphrases the convention — and whether it invents the path when it has none |
