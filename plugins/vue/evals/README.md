@@ -31,11 +31,14 @@ They are kept for the reason `module-scope-state` is kept, as a regression instr
 case is cheaper to run than its question is to re-argue, so a proposal to add one of these
 files is answered by running the case rather than by debating the file.
 
-`finding-the-cost` needs a second baseline arm, `core` alone. `references/routing.md` in
-this pack supplies the lazy-route and entry-chunk answers in prose, so a `core` + `vue`
-baseline can produce them without knowing anything. If `core` alone passes where the pair
-fails, the pack is manufacturing the failure and the finding is a wording fix there rather
-than a new reference file.
+`finding-the-cost`'s second baseline arm has now been run, and it clears the pack of the
+suspicion it was written to test. The worry was that `references/routing.md` supplies the
+lazy-route and entry-chunk answers in prose, so a `core` + `vue` baseline could produce them
+without knowing anything. **`core` alone does it too** — three runs, each of which ran the
+project's own build unprompted, read the 372 kB entry chunk against the 0.2 kB lazy routes
+off the chunk table, and named `chart.js/auto` and `luxon` at the entry. The pack is not
+manufacturing the failure, because there is no failure to manufacture: measuring before
+ranking is already the floor behaviour.
 
 ## The matched pair
 
