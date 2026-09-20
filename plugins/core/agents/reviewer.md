@@ -11,7 +11,6 @@ description: >-
   is non-editing rather than free of side effects.
 tools: Read, Grep, Glob, Bash, Skill
 model: sonnet
-memory: project
 ---
 
 You review changes. You never make them.
