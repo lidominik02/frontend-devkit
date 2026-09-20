@@ -31,32 +31,29 @@ jobs:
       - name: Hook regression suite
         run: bash scripts/test-hooks.sh
 
-      # A blocked MCP tool is the one enforcement rule here that rests on a string
-      # match against a name the server chooses. Nothing errors when a server renames
-      # a tool: the block silently matches nothing and the reference table documenting
-      # it quietly goes stale. These two have to name the same tools or one of them is
-      # already wrong.
-      - name: Blocked MCP names match their reference table
-        run: |
-          node - <<'NODE'
-          const fs = require('fs')
-          const skill = 'plugins/core/skills/verifying-ui/SKILL.md'
-          const ref = 'plugins/core/skills/verifying-ui/references/browser-tools.md'
-          const body = fs.readFileSync(skill, 'utf8'), table = fs.readFileSync(ref, 'utf8')
-          const line = (body.match(/^disallowed-tools:(.*)$/m) || [, ''])[1]
-          const blocked = line.split(',').map((s) => s.trim()).filter((s) => s.startsWith('mcp__'))
-          let bad = 0
-          for (const full of blocked) {
-            const bare = full.split('__').pop()
-            if (!table.includes('`' + bare + '`')) {
-              console.error(`${full} is blocked but absent from browser-tools.md`)
-              bad++
-            }
-          }
-          if (!blocked.length) { console.error('no mcp__ names blocked — did the field move?'); bad++ }
-          if (bad) { console.error(`::error::${bad} MCP name(s) out of step`); process.exit(1) }
-          console.log(`${blocked.length} blocked MCP names all documented`)
-          NODE
+      # Five static checks, none of which `claude plugin validate` performs:
+      #
+      #   frontmatter  description present and under the 1024-char packaging cap,
+      #                skill name matching its directory, and every field one
+      #                Claude Code actually reads — `--strict` flags unknown keys
+      #                in plugin.json but NOT in component frontmatter (verified
+      #                against 2.1.250 and 2.1.276), so a misspelled
+      #                `disallowed-tools` silently stops being enforced.
+      #   budget       the always-on description total still matches the figure
+      #                README.md publishes.
+      #   references   every cited .md resolves from the file citing it — a dead
+      #                reference is followed at runtime and nothing else catches it.
+      #   mcp-names    every blocked mcp__ tool appears in browser-tools.md. This
+      #                is the one rule resting on a string match against a name a
+      #                server chooses: on a rename the block silently matches
+      #                nothing and the table quietly goes stale.
+      #   scripts      every .mjs parses, and every script hooks.json names exists.
+      #
+      # This is the same script the Stop hook runs locally. It lives in
+      # scripts/validate.mjs rather than inline here so that a developer can run
+      # the checks before pushing, and so CI and the hook cannot drift apart.
+      - name: Marketplace checks
+        run: node scripts/validate.mjs
 
       - name: Install Claude Code
         run: |
@@ -68,17 +65,19 @@ jobs:
       # ignores unknown fields at load time, so without --strict the component
       # silently never loads and nothing fails.
       #
-      # It does NOT check component frontmatter — verified against 2.1.250 and
-      # again against 2.1.276, a
-      # misspelled SKILL.md field passes clean. The frontmatter step below owns that.
+      # It does NOT check component frontmatter — the step above owns that.
       #
       # --strict also fails on the missing `version`, which is omitted
       # deliberately so installs track the commit SHA. This step therefore runs
       # strict and allows exactly that one finding.
+      #
+      # The pack list is derived from marketplace.json rather than hardcoded, so
+      # adding a pack cannot leave it unvalidated here.
       - name: Validate marketplace and plugins
         run: |
           fail=0
-          for target in . ./plugins/core ./plugins/vue ./plugins/nuxt; do
+          targets=". $(node -p "require('./.claude-plugin/marketplace.json').plugins.map(p => p.source).join(' ')")"
+          for target in $targets; do
             out="$(claude plugin validate "$target" --strict 2>&1 || true)"
             unexpected="$(printf '%s\n' "$out" | grep '❯' | grep -v 'version: No version specified' || true)"
             if [ -n "$unexpected" ]; then
@@ -90,158 +89,3 @@ jobs:
             fi
           done
           exit "$fail"
-
-      # A framework pack must not contain facts about any individual repository.
-      - name: No repo-specific facts in plugins
-        run: |
-          if grep -rniE '/home/[A-Za-z0-9._-]+/|~/[A-Za-z0-9_-]' plugins/ ; then
-            echo "::error::A plugin contains a repo-specific fact. Those belong in the consuming repo's .claude/, not here."
-            exit 1
-          fi
-          echo "plugins are repo-agnostic"
-
-      # A skill pointing at a reference file that does not exist is a dead end
-      # followed at runtime, and nothing else catches it. Every .md under skills/ and
-      # agents/ is scanned, not just SKILL.md, because most references live in
-      # references/ and citing a sibling as `references/x.md` from inside references/
-      # resolves to references/references/x.md. Both backtick and markdown-link forms
-      # count, since the docs recommend the latter.
-      - name: Every referenced file resolves
-        run: |
-          node - <<'NODE'
-          const fs = require('fs'), path = require('path');
-
-          // Scope: the reference sets that skills and agents actually navigate at runtime.
-          // Eval READMEs are excluded because they describe a file *layout* (`prompt.md`,
-          // `graders/*.md`) rather than linking to one file.
-          const ROOTS = fs
-            .readdirSync('plugins')
-            .flatMap((p) => ['skills', 'agents'].map((k) => path.join('plugins', p, k)))
-            .filter((d) => fs.existsSync(d));
-
-          // Named conceptually ("the same knowledge as SKILL.md"), never opened by path.
-          const CONCEPTUAL = new Set(['SKILL.md', 'README.md', 'CLAUDE.md', 'AGENTS.md']);
-
-          let bad = 0;
-
-          function ownerDir(file) {
-            let d = path.dirname(file);
-            while (d.startsWith('plugins')) {
-              if (fs.existsSync(path.join(d, 'SKILL.md'))) return d;
-              d = path.dirname(d);
-            }
-            return path.dirname(file);
-          }
-
-          function mdFiles(dir) {
-            const out = new Map();
-            (function rec(d) {
-              for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-                const p = path.join(d, e.name);
-                if (e.isDirectory()) rec(p);
-                else if (e.name.endsWith('.md')) out.set(e.name, p);
-              }
-            })(dir);
-            return out;
-          }
-
-          function walk(dir) {
-            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-              const p = path.join(dir, e.name);
-              if (e.isDirectory()) { walk(p); continue; }
-              if (!e.name.endsWith('.md')) continue;
-
-              const body = fs.readFileSync(p, 'utf8');
-              const present = mdFiles(ownerDir(p));
-
-              const cited = new Set([
-                ...[...body.matchAll(/`([A-Za-z0-9._\/-]+\.md)`/g)].map((m) => m[1]),
-                ...[...body.matchAll(/\]\((\.?\/?[A-Za-z0-9._\/-]+\.md)(?:#[^)]*)?\)/g)].map((m) => m[1]),
-              ]);
-
-              for (const ref of cited) {
-                if (CONCEPTUAL.has(path.basename(ref))) continue;
-                // Resolvable from the citing file, or as a repo-root path: both are fine.
-                if (fs.existsSync(path.join(path.dirname(p), ref)) || fs.existsSync(ref)) continue;
-
-                const elsewhere = present.get(path.basename(ref));
-                // Inside references/, a bare filename is always a sibling citation, so a name
-                // matching nothing is a deleted target rather than prose.
-                const inRefs = path.dirname(p).endsWith(`${path.sep}references`);
-                if (elsewhere) {
-                  console.error(`${p} -> ${ref}: exists at ${elsewhere}, but that path does not resolve from here`);
-                  bad++;
-                } else if (ref.includes('/') || inRefs) {
-                  console.error(`${p} -> ${ref}: no such file; if it is in another pack, name the /plugin:skill invocation instead of a path`);
-                  bad++;
-                }
-                // Elsewhere, a bare basename matching nothing is prose naming a runtime artifact.
-              }
-            }
-          }
-
-          for (const r of ROOTS) walk(r);
-          if (bad) { console.error(`::error::${bad} unresolvable reference(s)`); process.exit(1); }
-          console.log(`all referenced files resolve from the file citing them (${ROOTS.length} roots)`);
-          NODE
-
-      # Three things, all invisible to `plugin validate`: the description is the
-      # entire triggering mechanism and 1024 is the Agent Skills spec's hard limit
-      # (past it a skill cannot be packaged or uploaded, even though Claude Code
-      # itself tolerates ~1536); a skill's name must match its directory; and every
-      # frontmatter field must be one Claude Code actually reads.
-      - name: Component frontmatter is valid
-        run: |
-          node - <<'NODE'
-          const fs = require('fs'), path = require('path');
-          let bad = 0;
-          function desc(t) {
-            const m = t.match(/^---\n([\s\S]*?)\n---/); if (!m) return null;
-            const L = m[1].split('\n');
-            const i = L.findIndex((l) => /^description:/.test(l)); if (i < 0) return null;
-            const b = [L[i].replace(/^description:\s*>?-?\s*/, '')];
-            for (let j = i + 1; j < L.length; j++) { if (/^[A-Za-z_$-]+:/.test(L[j])) break; b.push(L[j].trim()); }
-            return b.join(' ').replace(/\s+/g, ' ').trim();
-          }
-          function walk(dir) {
-            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-              const p = path.join(dir, e.name);
-              if (e.isDirectory()) { walk(p); continue; }
-              if (e.name !== 'SKILL.md' && !p.includes('/agents/')) continue;
-              const t = fs.readFileSync(p, 'utf8');
-              const d = desc(t);
-              if (!d) { console.error(`${p} -> no description`); bad++; continue; }
-              if (d.length > 1024) { console.error(`${p} -> description ${d.length} chars, cap 1024`); bad++; }
-              if (e.name === 'SKILL.md') {
-                const name = (t.match(/^name:\s*(\S+)/m) || [])[1];
-                const dirName = path.basename(path.dirname(p));
-                if (name !== dirName) { console.error(`${p} -> name "${name}" must match directory "${dirName}"`); bad++; }
-              }
-              // `claude plugin validate --strict` flags unknown fields in plugin.json
-              // but NOT in component frontmatter (verified against 2.1.250 and 2.1.276),
-            // so a typo
-              // there loads as silence: misspell `disable-model-invocation` and the
-              // skill quietly becomes model-invocable, misspell `disallowed-tools` and
-              // a guardrail quietly stops being enforced. Hence this allowlist.
-              const KNOWN = e.name === 'SKILL.md'
-                ? ['name', 'description', 'when_to_use', 'disable-model-invocation', 'user-invocable',
-                   'allowed-tools', 'disallowed-tools', 'argument-hint', 'arguments', 'paths', 'model',
-                   'effort', 'context', 'agent', 'background', 'shell', 'license', 'compatibility',
-                   'metadata', 'hooks']
-                : ['name', 'description', 'tools', 'disallowedTools', 'model', 'permissionMode',
-                   'maxTurns', 'skills', 'mcpServers', 'hooks', 'memory', 'background', 'effort',
-                   'isolation', 'color', 'initialPrompt', 'experimental'];
-              const fm = (t.match(/^---\n([\s\S]*?)\n---/) || [, ''])[1];
-              for (const line of fm.split('\n')) {
-                const k = (line.match(/^([A-Za-z_][A-Za-z0-9_-]*):/) || [])[1];
-                if (k && !KNOWN.includes(k)) {
-                  console.error(`${p} -> unknown frontmatter field '${k}'; it will be ignored at load time`);
-                  bad++;
-                }
-              }
-            }
-          }
-          walk('plugins');
-          if (bad) { console.error(`::error::${bad} frontmatter problem(s)`); process.exit(1); }
-          console.log('frontmatter valid: caps, names and fields');
-          NODE

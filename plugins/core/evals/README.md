@@ -157,5 +157,5 @@ something rather than grading one answer. The unit of retention is the rule: a t
 baseline misses one line every time and gets the rest right earns guidance covering that
 line and nothing else.
 
-Prompts must invent their own domain. The CI check that forbids repo-specific facts in
-`plugins/` greps these files too, so no real project names and no absolute paths.
+Prompts must invent their own domain. A prompt written in the skill's own vocabulary
+tests whether the model can pattern-match, not whether the skill changed an outcome.

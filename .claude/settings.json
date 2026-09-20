@@ -4,6 +4,8 @@
   "permissions": {
     "allow": [
       "Bash(claude plugin validate:*)",
+      "Bash(node scripts/validate.mjs:*)",
+      "Bash(bash scripts/test-hooks.sh)",
       "Bash(git status)",
       "Bash(git diff:*)",
       "Bash(git log:*)"
@@ -13,6 +15,42 @@
       "Read(./.env.*)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)"
+    ]
+  },
+
+  "$hooks_comment": "The marketplace's own gates. All three are Node for the reason plugins/core/hooks/hooks.json states: bash exits 2 on a syntax error and 2 is the block signal, so a broken shell hook blocks every tool call. Node exits 1 on a SyntaxError, so a broken hook here fails open.",
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/frontmatter-on-write.mjs"],
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/budget-on-write.mjs"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/on-stop.mjs"],
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }

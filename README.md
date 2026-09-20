@@ -1,6 +1,6 @@
 # frontend-devkit
 
-A private Claude Code marketplace: a framework-agnostic `core` plugin plus per-framework
+A Claude Code marketplace: a framework-agnostic `core` plugin plus per-framework
 packs. Install it once and it applies to every repository you open.
 
 The devkit runs on top of an existing project. It requires nothing to be added to a repo,
@@ -79,9 +79,9 @@ repo can check from its own files.
 
 Every skill here answers to `/<plugin>:<skill-name>` — `/core:describing-changes`,
 `/core:planning-features`, `/nuxt:nuxt-engineering`. Components belong in `skills/`
-rather than `commands/`: a skill already carries the slash invocation, and the two CI
-checks that read component frontmatter select on `SKILL.md` or `agents/`, so a file
-under `commands/` skips both.
+rather than `commands/`: a skill already carries the slash invocation, and the checks
+that read component frontmatter select on `SKILL.md` or `agents/`, so a file under
+`commands/` is validated by nothing.
 
 The `reviewer` agent's fully-qualified name is `core:reviewer`, which always resolves to
 the one shipped here even when a consuming repo has its own — plugin agents rank lowest
@@ -411,14 +411,61 @@ Claude undertriggers, so lean pushy.
 
 ## Working on the devkit
 
+Everything under `.claude/` is tooling for working **on** this marketplace. It is not
+shipped to consumers, is not part of any pack, and costs a consuming repository nothing.
+
+| | |
+| --- | --- |
+| `/eval-case` | Scaffolds a case under the retention methodology, with the prompt and grader templates |
+| `/new-pack` | Scaffolds a pack and wires it into every place that must know about it |
+| `/pack-parity` | Checks the delta contract for drift, for every family the manifests declare |
+| `/body-vs-reference-audit` | Which parts of a body have earned loading on every trigger |
+| `/cli-upgrade-check` | Revalidates the platform claims against a newer CLI and moves the pin |
+| `trigger-tester` | Whether a description would fire. Reads descriptions, never bodies — the author cannot judge their own, because they know what the skill does |
+| `eval-grader` | Dry-runs a `criteria.md` against synthetic answers before a real run pays for it |
+| `component-reviewer` | Reviews a changed component against the invariants CI cannot check |
+
+Three hooks in `.claude/settings.json` run the gates without being asked: `Stop` runs
+`validate.mjs` when anything under `plugins/`, `scripts/` or `README.md` has changed, and
+two `PostToolUse` hooks check the frontmatter of a component just written and recompute
+the always-on budget. All three are Node for the reason the shipped hooks are — a bash
+hook with a syntax error exits 2, which is the block signal, so it blocks every tool call
+including the edit that would repair it.
+
+`.mcp.json` declares a browser MCP server so `verifying-ui`'s eval can actually run its
+browser arm here; without it that half of the case is untestable in this checkout.
+
+**`pack-graph.mjs`** derives the layering from the manifests rather than restating it. A
+pack's non-`core` dependency is its base, and that pair is what the delta contract
+governs; `core` is the framework-agnostic floor and forms no family. It reports each
+family's paired reference topics and the ones present on only one side, so adding a pack
+later needs no edit to `/pack-parity` — the relationship is read, not written down.
+
+
 ```bash
+node scripts/validate.mjs                       # the six static checks CI runs
+bash scripts/test-hooks.sh                      # 136 assertions on the guarantees
+node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
-bash scripts/test-hooks.sh                      # 136 assertions on the guarantees
 node plugins/core/scripts/project-facts.mjs     # what detection sees here
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```
+
+The first two are the gate. `scripts/validate.mjs` is the single implementation of
+everything `claude plugin validate` will not check, and CI calls that same file rather
+than carrying its own copy, so the two cannot drift:
+
+| Check | Catches |
+| --- | --- |
+| `frontmatter` | A missing description, one past the 1024-char packaging cap, a skill whose `name` does not match its directory, and any frontmatter field Claude Code does not read |
+| `budget` | The always-on description total drifting from the figure this README publishes |
+| `references` | A cited `.md` that does not resolve **from the file citing it** |
+| `mcp-names` | A blocked `mcp__` tool absent from the table documenting it |
+| `scripts` | A `.mjs` that does not parse, or a script `hooks.json` names and does not exist |
+
+Run one with `--checks=frontmatter,budget`.
 
 **`--strict` does not read component frontmatter.** It flags an unknown field in
 `plugin.json` and a missing `description` in a `SKILL.md`, but a *misspelled* frontmatter
@@ -426,9 +473,9 @@ key passes clean — checked against 2.1.250, 2.1.276 and 2.1.278. That failure 
 silent and expensive in both directions: misspell `disable-model-invocation` and a typed
 skill starts auto-triggering in every repository, misspell `disallowed-tools` and a
 guardrail stops being enforced with
-the prose still claiming it is. The two CI steps that own what the validator will not
-check are `Every referenced file resolves` and `Component frontmatter is valid`; run them
-locally with `act`, or read them as the reference for what to keep true by hand.
+the prose still claiming it is. What the validator will not check is owned by
+`scripts/validate.mjs`, which runs in a terminal in well under a second — there is no
+reason to reach for `act` or to keep those rules true by hand.
 
 **After a Claude Code upgrade, four claims here are worth re-checking by hand.** They are
 about the platform rather than about this repo, so nothing in CI can hold them: that
