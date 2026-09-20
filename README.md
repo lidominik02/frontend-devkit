@@ -505,8 +505,12 @@ In `scripts/test-hooks.sh` the parse check runs before any behavioural assertion
 with a syntax error and a script that deliberately blocks are indistinguishable by exit
 code, so without that ordering every result below it is unreadable.
 
-`version` is omitted from every manifest, so version resolution falls through to the git
-commit SHA — the documented mode for internal plugins under active development. The version
-string is the update cache key, so a static `"1.0.0"` that nobody bumps would pin every
-install indefinitely. `claude plugin validate` warns about the omission; that warning is the
-intended state.
+`version` is omitted from every manifest so a static `"1.0.0"` that nobody bumps never pins
+the update cache key. This marketplace is installed from a directory source (see "Install"),
+and for that source omitting `version` does **not** make an install track the commit SHA:
+observed on CLI 2.1.278, `core@frontend-devkit` and `vue@frontend-devkit` both record
+`version: "unknown"`. A GitHub-sourced install would resolve a real SHA; a directory source
+serves the working tree directly instead, which is what makes iterating on this repository
+fast — every edit is live in a consuming session with nothing to publish first — and that
+speed is why the directory source is kept. `claude plugin validate` warns about the missing
+`version` regardless of source; that warning is the intended state.
