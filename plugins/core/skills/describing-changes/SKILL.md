@@ -17,6 +17,12 @@ You turn a diff into the two artifacts a reviewer reads: a commit message and a 
 request description. Both are written to *this* repository's convention, which is data
 you look up — never a house style you assume.
 
+**Both are written for another developer, not for the person who asked for them.** Never
+name anything that exists only between the two of you — a session, a handoff file, a
+roadmap artifact, a phase, a decision id. A colleague reading `git log` or the merge
+request has no access to any of that, so it reads as noise at best and as a private
+detail leaked at worst. Say what the change does and why; that is the whole job.
+
 ## Step 1 — The facts, already loaded
 
 !`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
@@ -67,10 +73,16 @@ trivial commits.
 
 - Subject in the imperative — "add", not "added" or "adds".
 - The body explains the *why*. The diff already shows the what.
+- **Omit the body for a genuinely trivial commit.** Short but informative means the body
+  earns its place; a body that restates the subject is worse than no body.
 - Note breaking changes explicitly (`!` after the scope, or a `BREAKING CHANGE:`
   footer).
 - Match the repository's real types. If its history only ever uses
   `feat|fix|chore|refactor`, do not introduce `perf` because the spec allows it.
+
+**Asked for alternatives, or the diff could plausibly be one commit or several?**
+Read `references/shaping-commits.md` before writing anything — it has the default shape
+for alternatives and the questions that settle the split.
 
 ## Step 4 — Write the MR/PR description
 
@@ -105,6 +117,10 @@ false claim there propagates further than anywhere else.
 
 ## Step 5 — Hand it over
 
+Produce the message, then stop. **Commit only once this exact message has been
+accepted** — not a paraphrase of it, not "looks fine" applied to an earlier draft.
+If the user asks for a change, apply it and show the result again before committing.
+
 - `git.cliAvailable: true` → offer to create the MR with `glab mr create` (or
   `gh pr create`), and **wait for explicit approval before running it**. When
   `git.selfHosted` is true, `glab` needs that host configured (`GITLAB_HOST`, or
@@ -130,3 +146,10 @@ publishing it is their decision.
   stated intent disagree, report the discrepancy — that gap is usually a real bug or
   forgotten work in progress.
 - **Pad the body.** Short but informative. A body restating the subject is noise.
+- **Name a session, a handoff file, a roadmap artifact, a phase, or a decision id.**
+  The reader is a colleague, not a participant in this conversation.
+- **Rewrite history — amend, squash, or fold a change into an earlier commit —
+  unasked.** This skill describes the current diff; it does not restructure past
+  commits. `references/shaping-commits.md`'s "one commit or several" question is about
+  how to slice *uncommitted* work going forward, never about rewriting what already
+  landed.

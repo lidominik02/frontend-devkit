@@ -1,5 +1,5 @@
 {
-  "description": "Three guarantees: no credential leaves the machine, nothing reaches review unformatted, and no turn ends on failing gates. All three are Node scripts: bash exits 2 on a syntax error and 2 is the block signal, so a shell hook with a syntax error blocks every tool call. Node exits 1, which is non-blocking, so it fails open.",
+  "description": "Four guarantees: no credential leaves the machine, no commit carries an attribution trailer or names something only Claude and the owner can see, nothing reaches review unformatted, and no turn ends on failing gates. All four are Node scripts: bash exits 2 on a syntax error and 2 is the block signal, so a shell hook with a syntax error blocks every tool call. Node exits 1, which is non-blocking, so it fails open.",
   "hooks": {
     "PreToolUse": [
       {
@@ -9,6 +9,17 @@
             "type": "command",
             "command": "node",
             "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/block-secrets.mjs"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/commit-hygiene.mjs"],
             "timeout": 10
           }
         ]

@@ -60,7 +60,7 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 3 hooks · 2 shared scripts |
+| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` · `describing-changes` (+ `references/shaping-commits.md`) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 2 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
@@ -182,11 +182,12 @@ timeout, and a script that starts a watcher is refused rather than left to hang.
 
 | Hook | Event | Guarantee |
 | --- | --- | --- |
-| `block-secrets.mjs` | PreToolUse | Exit 2 on credential material, regardless of permission mode. Covers **file tools and `Bash`** — a `deny` rule does nothing about reading a dotenv file in a shell. Blocks exfiltration (upload flags, piping into a network client), interpreter one-liners, `source`, environment dumps and a download piped into a shell. Refuses hand-edits to lockfiles and `.git/`. Exempts `.example` / `.sample` / `.template` |
+| `block-secrets.mjs` | PreToolUse | Exit 2 on credential material, regardless of permission mode. Covers **file tools and `Bash`** — a `deny` rule does nothing about reading a dotenv file in a shell. Blocks exfiltration (upload flags, piping into a network client), interpreter one-liners, `source`, environment dumps and a download piped into a shell. Refuses hand-edits to lockfiles and `.git/`. Exempts `.example` / `.sample` / `.template`. A dotenv match requires a path context before it (start, whitespace, a quote, `=`, `/`, `~`), so it does not match inside `process.env` or `import.meta.env`. A heredoc body is stripped from the scan by locating its real closing line, not by truncating everything after the opening marker — truncating there would let anything typed after the heredoc closes through unscanned |
+| `commit-hygiene.mjs` | PreToolUse | Exit 2 on a `git commit` whose message (inline `-m`, or a `-F`/`--file` message file this hook's own process can read) carries an attribution trailer (`Co-Authored-By:`, `Generated with`) or names something only Claude and the owner can see: a Claude/chat session, a handoff, a planning-artifact filename this pack's own skills write (`HANDOFF.md`, `PROGRESS.md`, …), or a roadmap phase/artifact. The words that would collide with ordinary engineering vocabulary — a bare "session", "roadmap", "phase N", or a decision/ADR id — are deliberately not banned; see the file's own comments for the false positives an earlier draft produced and why each was dropped |
 | `format-on-write.mjs` | PostToolUse | Formats what was just written with the project's own formatter, located by walking up from the file so workspace installs are found. Never blocks — the edit has already happened, and PostToolUse cannot block |
 | `verify-before-done.mjs` | Stop | Runs the `fast` gates before the turn can end and returns the real failure output. Silent when the repo has no gates, when nothing has changed, or when `verifyOnStop: false`. Honours `stop_hook_active` so it cannot loop |
 
-All three are Node, not bash. Bash exits `2` on a syntax error, and `2` is also the hook
+All four are Node, not bash. Bash exits `2` on a syntax error, and `2` is also the hook
 protocol's "block", so a shell hook with a syntax error blocks every tool call — including
 the edit that would repair it. Node exits `1` on a `SyntaxError`, a non-blocking error, so
 a broken Node hook fails open while a deliberate `exit 2` still blocks. Fail closed on a
@@ -339,7 +340,11 @@ Never grant a command a component deliberately holds behind approval;
 `describing-changes` withholds `git commit`, `git push`, `glab mr create` and
 `gh pr create` on purpose, and pre-approving those would delete the guarantee it is
 built on. Whether a grant can override a project `permissions.deny` rule is
-undocumented, so do not build on the answer either way.
+undocumented, so do not build on the answer either way. Absence from `allowed-tools`
+is a prompt-level guarantee, though — it stops nothing once the user approves a
+`git commit` by hand. `commit-hygiene.mjs` is the deterministic layer underneath it:
+whoever runs the command, an attribution trailer or a planning-artifact reference in
+the message is denied regardless of which turn approved the call.
 
 **Use `disallowed-tools` where a "must NOT" is absolute.** `allowed-tools` cannot enforce
 anything — it pre-approves, and every unlisted tool stays callable behind a prompt. A

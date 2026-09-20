@@ -584,6 +584,98 @@ mkdir -p "$V/.claude" && printf '{"verifyOnStop":false}' > "$V/.claude/project.j
 rm -rf "$V"
 
 echo
+echo "commit-hygiene: no attribution trailer, and nothing only Claude and the"
+echo "owner can see, in a git commit message"
+CH="$S/commit-hygiene.mjs"
+ch_assert() {
+  local expect="$1"; local cmd="$2"; local label="$3"
+  printf '%s' "$(node -e 'process.stdout.write(JSON.stringify({tool_name:"Bash",tool_input:{command:process.argv[1]}}))' "$cmd")" \
+    | node "$CH" >/dev/null 2>&1
+  local code=$?
+  [ "$code" -eq "$expect" ] && ok || bad "$(printf '%-58s exit=%s expected=%s' "$label" "$code" "$expect")"
+}
+# True positives: the attribution trailer, in both shapes the wording rules
+# name, including the realistic case -- a multi-line -m built with a heredoc
+# substitution, which is how a multi-line commit message is usually composed.
+ch_assert 2 "$(printf 'git commit -m "$(cat <<%s\nfix: correct the thing\n\nCo-Authored-By: someone <x@example.com>\n%s\n)"' "'EOF'" "EOF")" \
+  'trailer inside a heredoc-built -m argument'
+ch_assert 2 'git commit -m "fix: done, Generated with a tool"' \
+  '"Generated with" line'
+ch_assert 2 'git commit --amend -m "fix: same, Co-Authored-By: x <x@example.com>"' \
+  'trailer on an amend'
+# True positives: the leak words, each in the shape that is actually
+# unambiguous -- see the comments in commit-hygiene.mjs for what was tried
+# and dropped, and why.
+ch_assert 2 'git commit -m "fix: as decided in this claude session"' \
+  'a Claude session reference'
+ch_assert 2 'git commit -m "fix: per our chat session notes"' \
+  'a chat session reference'
+ch_assert 2 'git commit -m "docs: update HANDOFF.md with the next step"' \
+  'a planning-artifact filename'
+ch_assert 2 'git commit -m "chore: bump temp/feature-x/planning/notes"' \
+  'a path into a planning-artifacts directory'
+ch_assert 2 'git commit -m "fix: see the handoff notes for context"' \
+  'a handoff reference'
+ch_assert 2 'git commit -m "feat: implement phase 3 of the roadmap"' \
+  'a roadmap-phase reference'
+ch_assert 2 'git commit -m "docs: add the roadmap artifact for this feature"' \
+  'a roadmap-artifact reference'
+# False positives this must NOT produce: each leak word collides with a
+# genuinely common, legitimate phrase in ordinary engineering commits, and an
+# earlier draft of this hook denied every one of them.
+ch_assert 0 'git commit -m "fix: expire the session cookie after logout"' \
+  'an ordinary session-cookie fix must pass'
+ch_assert 0 'git commit -m "feat: get the current session from the store"' \
+  '"the current session" must pass'
+ch_assert 0 'git commit -m "fix: this session leaks a socket on reconnect"' \
+  '"this session" with no AI qualifier must pass'
+ch_assert 0 'git commit -m "docs: update the public roadmap page for Q3"' \
+  'a bare mention of a product roadmap must pass'
+ch_assert 0 'git commit -m "feat: ship phase 2 of the onboarding rollout"' \
+  'a bare phase number outside a roadmap must pass'
+ch_assert 0 'git commit -m "fix: apply ADR-0010 pagination adapter, closes #42"' \
+  'a real ADR citation must pass -- this is what an earlier, dropped decision-id pattern would have denied'
+ch_assert 0 'git commit -m "chore: bump decision-tree dependency to 2.1.0"' \
+  '"decision" as an ordinary word must pass'
+# Ordinary work and the subcommand-name trap: git commit-graph/commit-tree
+# are real subcommands, not "git commit" with a suffix.
+ch_assert 0 'git commit -m "fix: correct the off-by-one in pagination"' \
+  'an ordinary commit message must pass'
+ch_assert 0 'git commit-graph write' \
+  'commit-graph must not match as git commit'
+ch_assert 0 'git commit-tree -m x HEAD^{tree}' \
+  'commit-tree must not match as git commit'
+ch_assert 0 'git log --oneline -20' \
+  'a non-commit git command must pass untouched'
+# A commit with no -m and no message file has no text to inspect at all.
+ch_assert 0 'git commit' \
+  'a bare git commit (no message text to inspect) must pass'
+# -F/--file: the message text can live in a file rather than -m.
+CHF="$(mktemp -d)"
+printf 'fix: normal title\n\nCo-Authored-By: someone <x@example.com>\n' > "$CHF/msg.txt"
+ch_assert 2 "git commit -F $CHF/msg.txt" \
+  'a trailer inside a -F message file must be caught'
+printf 'fix: an ordinary message with nothing wrong in it\n' > "$CHF/clean.txt"
+ch_assert 0 "git commit --file=$CHF/clean.txt" \
+  'a clean -F message file must pass, --file= spelling'
+rm -rf "$CHF"
+# Injection guarantee, same shape as project-facts and block-secrets: garbage
+# stdin must fail open, never take the tool call down with it.
+printf 'not json at all' | node "$CH" >/dev/null 2>&1
+[ $? -eq 0 ] && ok || bad "commit-hygiene must fail open on unparseable stdin"
+printf '{}' | node "$CH" >/dev/null 2>&1
+[ $? -eq 0 ] && ok || bad "commit-hygiene must pass an empty payload through"
+# Only Bash is inspected -- a path or string mentioning these words in
+# another tool's payload must not trip it.
+ch_notbash() {
+  printf '%s' "$(node -e 'process.stdout.write(JSON.stringify({tool_name:process.argv[1],tool_input:{file_path:process.argv[2]}}))' "$1" "$2")" \
+    | node "$CH" >/dev/null 2>&1
+  [ $? -eq 0 ] && ok || bad "a non-Bash tool must never be inspected: $1 $2"
+}
+ch_notbash Write '/tmp/HANDOFF.md'
+ch_notbash Read '/tmp/roadmap-notes.md'
+
+echo
 echo "-------------------------------------------"
 printf 'hooks: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ] || exit 1

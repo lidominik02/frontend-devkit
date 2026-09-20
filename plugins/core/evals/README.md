@@ -33,6 +33,9 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | --- | --- |
 | `investigating-bugs` | Diagnosing to a root cause without editing, and checking the layer that owns the data before the component that renders it |
 | `describing-changes` | Reading the commit convention from the file that enforces it, and reporting unrun gates as NOT RUN rather than implying they passed |
+| `shaping-commits` | Offering genuine alternatives on request, and basing the one-commit-or-several call on whether an intermediate commit would still build rather than splitting mechanically by file |
+| `commit-message-audience` | Whether the message describes the change for a colleague, or leaks the planning-artifact context (a session, a handoff, a phase, a roadmap) it was drafted alongside — even when paraphrased around the literal banned words |
+| `describing-changes-trigger` | Whether the `Skill` tool actually fires on the owner's own informal register, not only whether the description matches it in isolation |
 | `planning-features` | Producing durable on-disk artifacts that survive context loss, not a plan that exists only in the transcript |
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
 | `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute, and specifying the rewrite enough to act on |
