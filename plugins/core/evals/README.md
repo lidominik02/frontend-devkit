@@ -46,6 +46,10 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `anchoring-a-rewrite` | Whether an agentic rewrite points at a file that already does the thing, or paraphrases the convention — and whether it invents the path when it has none |
 | `dispatching-a-review` | Whether the read-only `reviewer` agent gets dispatched from ordinary wording, or the main thread reviews the diff itself |
 | `verifying-ui` | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
+| `qa-test-list` | Whether `plan` mode produces acceptance criteria mapped to positive/negative/edge cases naming a verifying check, or a flat list of things to click |
+| `qa-list-without-a-story` | Whether the no-story path derives criteria from the phase plan and diff and discloses the weaker source, rather than inventing a story to look ordinary |
+| `design-intent-skip` | Whether `run` reports the design-intent cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
+| `storybook-skip` | The same skip discipline for the Storybook cases, when no Storybook script exists |
 
 Two of these decide a component rather than only scoring an answer.
 

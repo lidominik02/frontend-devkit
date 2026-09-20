@@ -60,16 +60,17 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` (+ `references/rules-block.md`) · `describing-changes` (+ `references/shaping-commits.md`) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 2 shared scripts |
+| `core` | `reviewer` agent · `investigating-bugs` · `planning-features` (+ `references/rules-block.md`) · `describing-changes` (+ `references/shaping-commits.md`) · `testing-changes` (+ 3 reference files) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 2 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Only descriptions are always-on: **5.2k characters** of them with all three packs
-enabled — `core` contributes five listed entries (~3.6k), `vue` and `nuxt` one each
+Only descriptions are always-on: **6.1k characters** of them with all three packs
+enabled — `core` contributes six listed entries (~4.5k), `vue` and `nuxt` one each
 (~0.8k). `preparing-a-repo` and `optimizing-prompts` are excluded because they are
 `disable-model-invocation`. `verifying-ui` used to be the third; it is now listed as a
-trial (see below), and `planning-features` grew two new modes (`research`, `checkpoint`)
-into its own description — between them, most of why this figure grew from 4.3k.
+trial (see below); `planning-features` grew two new modes (`research`, `checkpoint`)
+into its own description; and `testing-changes` is a new, sixth entry — between them,
+why this figure grew from the original 4.3k.
 Skill bodies load on trigger; reference files load only when the body points at them, and
 a repo that enables just the pack matching its framework pays for one.
 
@@ -245,6 +246,36 @@ everyone.
 The only authority on that is the caller's own tool list, and a skill that inferred "no
 browser configured" from an absent `.mcp.json` would be confidently wrong in the common
 case — a user-scope install serves every project and appears in no file in the repo.
+
+### The QA list, and the two checks past the browser
+
+`/core:testing-changes` is lifecycle steps 6 and 7 as one skill with two modes.
+`plan <feature>` derives acceptance criteria from the user story and maps positive,
+negative and edge cases to each, naming which check verifies it, then stops for the
+owner's approval — an unapproved list is not a mandate to run anything, the same rule
+`planning-features`' phase plans hold. `run <feature>` executes the approved list: the
+browser cases through `verifying-ui`, a design-intent comparison against the design
+tool, and a Storybook check, each one establishing its own prerequisite and **skipping
+itself by name, with the reason**, when that prerequisite is absent — never a silent
+pass and never an omission from the report.
+
+**Design intent, never pixel parity.** A screenshot diff against a design frame reports
+every deliberate divergence as a defect, and a repository that intentionally departs
+from its frames fails that comparison for doing exactly what it meant to do. The check
+compares presence, hierarchy, states, token and naming alignment and copy instead — a
+divergence is a finding only when nothing in the repository's own decisions, ADRs or
+docs explains it. It drives the design tool's MCP read tools directly and must work in
+a repository with no project-local design skill at all; where one exists it is used as
+a bonus source of context, never a prerequisite. Twelve write- and execution-shaped
+tools under the `figma` key are withdrawn via `disallowed-tools`, the same strong
+removal `verifying-ui` uses for `evaluate_script` — checked against a real project's
+own settings on Claude Code 2.1.278, with the same "under any other key this misses"
+caveat `verifying-ui`'s own reference states for its two servers.
+
+**The hold moved into the body here too**, for the same reason `verifying-ui`'s did:
+`run` does not start until the turn carries an explicit release, stated as the skill's
+first instruction rather than enforced by hiding it — this skill has never carried
+`disable-model-invocation`, on the same reasoning that removed it from `verifying-ui`.
 
 ## Optional per-project override
 

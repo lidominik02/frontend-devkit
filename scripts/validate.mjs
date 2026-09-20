@@ -230,23 +230,50 @@ export function checkReferences() {
 // match against a name the server chooses. Nothing errors when a server renames
 // a tool: the block silently matches nothing and the table documenting it
 // quietly goes stale.
+//
+// Scans every skill with a `disallowed-tools` line, not just verifying-ui: a
+// second skill (testing-changes) blocks a second server's tools on the same
+// reasoning, and a check that only ever looked at verifying-ui would let that
+// second list drift with nothing to catch it.
 export function checkMcpNames() {
-  const skill = r('plugins/core/skills/verifying-ui/SKILL.md');
-  const table = r('plugins/core/skills/verifying-ui/references/browser-tools.md');
   const bad = [];
-  if (!fs.existsSync(skill) || !fs.existsSync(table)) {
-    return { name: 'mcp-names', findings: ['verifying-ui skill or browser-tools.md is missing'], ok: false };
+  let totalBlocked = 0;
+  const skillsRoots = fs
+    .readdirSync(r('plugins'))
+    .map((p) => r('plugins', p, 'skills'))
+    .filter((d) => fs.existsSync(d));
+
+  for (const skillsRoot of skillsRoots) {
+    for (const name of fs.readdirSync(skillsRoot)) {
+      const dir = path.join(skillsRoot, name);
+      const skill = path.join(dir, 'SKILL.md');
+      if (!fs.existsSync(skill)) continue;
+      const body = fs.readFileSync(skill, 'utf8');
+      const line = (body.match(/^disallowed-tools:(.*)$/m) || [, ''])[1];
+      const blocked = line.split(',').map((s) => s.trim()).filter((s) => s.startsWith('mcp__'));
+      if (!blocked.length) continue;
+      totalBlocked += blocked.length;
+
+      // The name may be documented anywhere under this skill's own directory —
+      // its main body or any of its references — not only one fixed file.
+      const docs = [skill];
+      const refsDir = path.join(dir, 'references');
+      if (fs.existsSync(refsDir)) {
+        for (const f of fs.readdirSync(refsDir)) if (f.endsWith('.md')) docs.push(path.join(refsDir, f));
+      }
+      const docText = docs.map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+
+      for (const full of blocked) {
+        const bare = full.split('__').pop();
+        if (!docText.includes('`' + bare + '`')) {
+          bad.push(`${rel(skill)}: ${full} is blocked but "${bare}" is undocumented anywhere under ${rel(dir)}`);
+        }
+      }
+    }
   }
-  const body = fs.readFileSync(skill, 'utf8');
-  const doc = fs.readFileSync(table, 'utf8');
-  const line = (body.match(/^disallowed-tools:(.*)$/m) || [, ''])[1];
-  const blocked = line.split(',').map((s) => s.trim()).filter((s) => s.startsWith('mcp__'));
-  for (const full of blocked) {
-    const bare = full.split('__').pop();
-    if (!doc.includes('`' + bare + '`')) bad.push(`${full} is blocked but absent from browser-tools.md`);
-  }
-  if (!blocked.length) bad.push('no mcp__ names blocked — did the field move?');
-  return { name: 'mcp-names', findings: bad, ok: bad.length === 0, count: blocked.length };
+
+  if (!totalBlocked) bad.push('no mcp__ names blocked anywhere — did every disallowed-tools field move?');
+  return { name: 'mcp-names', findings: bad, ok: bad.length === 0, count: totalBlocked };
 }
 
 // --- every script parses, every hook target exists ---------------------------
