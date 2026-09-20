@@ -21,6 +21,17 @@
 //   browserTools     browser MCP servers this PROJECT declares in .mcp.json,
 //                    and whether its settings approve them. Declared, never
 //                    available -- see detectBrowserTools.
+//   storybook        a Storybook script in package.json (aliases resolved),
+//                    reported the same way as devServer -- declared, never
+//                    bound -- plus whether a .storybook/ config exists.
+//   designReference  project-local skills that exist under .claude/skills/.
+//                    Whether the design tool's MCP is present in THIS session
+//                    is not a fact this script can read at all -- see
+//                    detectDesignReference -- so `available` here is always
+//                    null; the caller must check its own tool list.
+//   userStoryPath    .claude/project.json's userStoryPath override, or null.
+//                    No file-based detection exists for this one; a caller
+//                    applies its own default when it is null.
 //   overrides        .claude/project.json verbatim, or null
 //
 // Reading from the file that enforces a fact keeps it current; a copy in a
@@ -55,6 +66,12 @@ const GATE_ALIASES = /** @type {Record<string, string[]>} */ ({
 // against. Deliberately NOT a gate: every one of these starts a watcher, and
 // run-gates.mjs refuses those.
 const DEV_ALIASES = ['dev', 'serve', 'start'];
+
+// The script that starts Storybook's own dev server, in preference order.
+// Deliberately excludes `storybook:build`: that is a one-shot static build, a
+// gate-shaped command rather than a server a browser can be pointed at, which
+// is the same distinction DEV_ALIASES draws against `start`.
+const STORYBOOK_ALIASES = ['storybook', 'storybook:dev', 'sb'];
 
 // Browser MCP servers this devkit knows how to drive, matched on the launch
 // command rather than the server key. The key is whatever the author of the
@@ -178,17 +195,23 @@ function workspacePackages(dir) {
 // never "the default". A composite script that names several ports reports the
 // first, for the same reason: it is what the project wrote down, not a promise.
 //
-// `alias` says WHICH of DEV_ALIASES matched, because they are not equivalent.
-// A `start` script in a production-oriented setup serves a build rather than the
-// working tree, so a caller that verifies against it is looking at the last
-// build and not at the change. Reporting the alias puts that branch on a fact
-// instead of on string-matching `source`.
-/** @param {string} dir @param {string|null} pm */
-function detectDevServer(dir, pm) {
+// `alias` says WHICH of the candidate list matched, because they are not
+// equivalent -- a `start` script in a production-oriented setup serves a build
+// rather than the working tree, so a caller that verifies against it is
+// looking at the last build and not at the change. Reporting the alias puts
+// that branch on a fact instead of on string-matching `source`.
+//
+// Shared by detectDevServer and detectStorybook: both are "find the script
+// that serves something long-running, and read the port it names" -- the same
+// walk, the same port regex, the same declared-not-bound split. One copy of
+// that logic is what keeps the two from disagreeing about where a monorepo's
+// real package lives.
+/** @param {string} dir @param {string|null} pm @param {string[]} aliases @param {string} noun */
+function detectServerScript(dir, pm, aliases, noun) {
   const pkg = readJson(path.join(dir, 'package.json'));
   const monorepo = existsSync(path.join(dir, 'pnpm-workspace.yaml')) || Array.isArray(pkg?.workspaces);
   /** @param {Record<string, unknown>|undefined} scripts */
-  const pick = (scripts) => DEV_ALIASES.find((s) => typeof scripts?.[s] === 'string' && String(scripts[s]).trim() !== '');
+  const pick = (scripts) => aliases.find((s) => typeof scripts?.[s] === 'string' && String(scripts[s]).trim() !== '');
 
   let scripts = /** @type {Record<string, unknown>|undefined} */ (pkg?.scripts);
   let alias = pick(scripts);
@@ -209,7 +232,7 @@ function detectDevServer(dir, pm) {
     return {
       command: null,
       script: null,
-      source: monorepo ? 'no dev script in the root package.json or any workspace package' : 'no dev script in package.json',
+      source: monorepo ? `no ${noun} script in the root package.json or any workspace package` : `no ${noun} script in package.json`,
       declared: false,
       alias: null,
       workspace: null,
@@ -230,6 +253,11 @@ function detectDevServer(dir, pm) {
     workspace,
     declaredPort: port ? Number(port[1]) : null,
   };
+}
+
+/** @param {string} dir @param {string|null} pm */
+function detectDevServer(dir, pm) {
+  return detectServerScript(dir, pm, DEV_ALIASES, 'dev');
 }
 
 // Approval for a server declared in .mcp.json, read from the project's own
@@ -312,6 +340,57 @@ function detectBrowserTools(dir) {
     parsed,
     servers,
     declared: servers.length > 0,
+    available: null,
+  };
+}
+
+// Storybook itself is detected the same way a dev server is -- from the
+// project's own scripts -- plus one more signal a Storybook install always
+// leaves behind regardless of what its script is called.
+//
+// The config check walks every workspace package, not just the root: a root
+// script commonly delegates to one workspace via `--filter`, which is a root
+// script (so `server.workspace` is null) even though `.storybook/` itself
+// lives under that workspace, not the root. Checking the root alone would
+// report configPresent: false for exactly the monorepo shape this repo type
+// most often has -- the same failure detectDevServer's own walk exists to
+// avoid for the dev script itself.
+/** @param {string} dir @param {string|null} pm */
+function detectStorybook(dir, pm) {
+  const server = detectServerScript(dir, pm, STORYBOOK_ALIASES, 'Storybook');
+  const configPresent = existsSync(path.join(dir, '.storybook'))
+    || workspacePackages(dir).some((w) => existsSync(path.join(dir, w.rel, '.storybook')));
+  return { ...server, configPresent };
+}
+
+// What this can and cannot say. Whether the design tool's MCP is present in
+// THIS session is Claude Code's own runtime state -- a fact about the
+// session, not about the repository -- and a Node subprocess launched over
+// Bash has no API into it, the same way it has no API into the tool list any
+// other skill was granted. That check belongs to whichever skill calls this
+// script; it already knows its own tool grant and can try the tool directly.
+//
+// What IS a fact about the repository: which project-local skills exist.
+// This script cannot judge which one, if any, is a design workflow -- naming
+// it explicitly is what the .claude/project.json override is for.
+/** @param {string} dir */
+function detectDesignReference(dir) {
+  /** @type {string[]} */
+  const projectSkills = [];
+  try {
+    for (const e of readdirSync(path.join(dir, '.claude', 'skills'), { withFileTypes: true })) {
+      if (e.isDirectory() && existsSync(path.join(dir, '.claude', 'skills', e.name, 'SKILL.md'))) {
+        projectSkills.push(e.name);
+      }
+    }
+  } catch { /* no .claude/skills directory */ }
+  return {
+    projectSkills,
+    skill: null,
+    declared: projectSkills.length > 0,
+    source: projectSkills.length > 0 ? '.claude/skills' : 'none',
+    // Always null, on purpose -- see the comment above this function. Never
+    // read as "no design tool is available"; it means "this script cannot say".
     available: null,
   };
 }
@@ -475,20 +554,38 @@ export function detect(dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
     gates: detectGates(dir, pm.name),
     devServer: detectDevServer(dir, pm.name),
     browserTools: detectBrowserTools(dir),
+    storybook: detectStorybook(dir, pm.name),
+    designReference: detectDesignReference(dir),
+    userStoryPath: /** @type {string|null} */ (null),
     overrides: /** @type {Record<string, unknown>|null} */ (null),
   };
 
   // Optional override file, for the cases detection gets wrong. Never required.
   const override = readJson(path.join(dir, '.claude', 'project.json'));
-  if (override) {
+  if (override && typeof override === 'object' && !Array.isArray(override)) {
     facts.overrides = override;
-    if (override.baseBranch) facts.baseBranch = { name: override.baseBranch, source: '.claude/project.json' };
-    if (override.gates) {
+    if (typeof override.baseBranch === 'string') facts.baseBranch = { name: override.baseBranch, source: '.claude/project.json' };
+    if (override.gates && typeof override.gates === 'object' && !Array.isArray(override.gates)) {
       for (const [name, command] of Object.entries(override.gates)) {
         if (typeof command !== 'string' || name.startsWith('$')) continue;
         facts.gates[name] = { command, script: command, source: '.claude/project.json', declared: true, available: null };
       }
     }
+    // Same shape as the gates override: the value replaces the whole command,
+    // for a script named something detection does not recognise.
+    if (override.storybook && typeof override.storybook === 'object' && !Array.isArray(override.storybook)) {
+      const command = /** @type {any} */ (override.storybook).command;
+      if (typeof command === 'string') {
+        facts.storybook = { ...facts.storybook, command, script: command, source: '.claude/project.json', declared: true };
+      }
+    }
+    if (override.designReference && typeof override.designReference === 'object' && !Array.isArray(override.designReference)) {
+      const skill = /** @type {any} */ (override.designReference).skill;
+      if (typeof skill === 'string') {
+        facts.designReference = { ...facts.designReference, skill, declared: true, source: '.claude/project.json' };
+      }
+    }
+    if (typeof override.userStoryPath === 'string') facts.userStoryPath = override.userStoryPath;
   }
   return facts;
 }

@@ -205,6 +205,10 @@ inj '{ not json at all' ''                  'malformed package.json'
 inj '{"name":"x"}'      '{ broken'          'malformed project.json'
 inj 'null'              'null'              'literal null in both'
 inj '{"scripts":null}'  '{"gates":"str"}'   'wrong types throughout'
+inj '{"name":"x"}'      '{"storybook":7}'   'storybook override is not an object'
+inj '{"name":"x"}'      '{"designReference":"x"}' 'designReference override is a string, not an object'
+inj '{"name":"x"}'      '{"userStoryPath":9}' 'userStoryPath override is a number'
+inj '{"name":"x"}'      '["a","b"]'         'project.json is an array, not an object'
 # And the counterpart: run-gates must NOT be injected, because it exits 1 by
 # design on a failing gate. Asserted so the distinction stays visible if
 # anyone reaches for the same trick on the other script.
@@ -213,6 +217,91 @@ printf '{"scripts":{"lint":"false"}}' > "$GX/package.json"
 CLAUDE_PROJECT_DIR="$GX" node "$S/run-gates.mjs" --gate lint >/dev/null 2>&1
 [ $? -eq 1 ] && ok || bad "run-gates must exit 1 on a failing gate (hence: never inject it)"
 rm -rf "$GX"
+
+# storybook: detected from the project's own scripts, same as the dev server --
+# and must never become a gate for the same reason (it starts a watcher).
+# storybook:build must NOT match: that is a one-shot build, not a server.
+storybook_of() {
+  d="$(mktemp -d)"; mkdir -p "$d/.claude"
+  printf '%s' "$1" > "$d/package.json"
+  [ -n "${2:-}" ] && printf '%s' "$2" > "$d/.claude/project.json"
+  [ -n "${3:-}" ] && mkdir -p "$d/.storybook"
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const s = m.detect(process.env.CLAUDE_PROJECT_DIR).storybook;
+    console.log(JSON.stringify([s.declared, s.command, s.configPresent]));
+  });" 2>/dev/null
+  rm -rf "$d"
+}
+[ "$(storybook_of '{"scripts":{"storybook":"storybook dev -p 6006"}}' '' 'yes')" \
+  = '[true,"npm run storybook",true]' ] \
+  && ok || bad "a storybook script must be detected and configPresent read"
+[ "$(storybook_of '{"scripts":{"storybook:build":"storybook build"}}')" = '[false,null,false]' ] \
+  && ok || bad "storybook:build alone (a one-shot build) must not count as the server"
+[ "$(storybook_of '{"scripts":{"lint":"eslint ."}}')" = '[false,null,false]' ] \
+  && ok || bad "no storybook script must report declared false"
+[ "$(storybook_of '{"scripts":{"storybook":"storybook dev"}}' '{"storybook":7}')" \
+  = '[true,"npm run storybook",false]' ] \
+  && ok || bad "a malformed storybook override (not an object) must be ignored, detection kept"
+[ "$(storybook_of '{"scripts":{"lint":"eslint ."}}' '{"storybook":{"command":"pnpm dlx storybook@latest dev"}}')" \
+  = '[true,"pnpm dlx storybook@latest dev",false]' ] \
+  && ok || bad "a storybook override must be honoured when detection finds nothing"
+SBGATE="$(mktemp -d)"; printf '{"scripts":{"storybook":"storybook dev","lint":"true"}}' > "$SBGATE/package.json"
+CLAUDE_PROJECT_DIR="$SBGATE" node "$S/run-gates.mjs" --list --stage release 2>/dev/null | grep -q ' storybook ' \
+  && bad "the storybook script must not be picked up as a gate" || ok
+rm -rf "$SBGATE"
+# A root script that delegates to a workspace via --filter is itself a root
+# script, so its own `workspace` field is null even though .storybook/ lives
+# under the workspace -- configPresent must still find it there.
+SBMONO="$(mktemp -d)"; printf '{"name":"r","workspaces":["apps/*"],"scripts":{"storybook":"pnpm --filter web storybook"}}' > "$SBMONO/package.json"
+mkdir -p "$SBMONO/apps/web/.storybook"; printf '{}' > "$SBMONO/apps/web/package.json"
+[ "$(CLAUDE_PROJECT_DIR="$SBMONO" node -e "
+import('$S/project-facts.mjs').then(m => console.log(m.detect(process.env.CLAUDE_PROJECT_DIR).storybook.configPresent));" 2>/dev/null)" \
+  = 'true' ] && ok || bad "configPresent must find .storybook under a workspace, not only the root"
+rm -rf "$SBMONO"
+
+# designReference: this script can name which project-local skills exist; it
+# cannot know whether the design tool's MCP is present in the calling
+# session, so `available` must always be null -- never read as "none present".
+designref_of() {
+  d="$(mktemp -d)"; mkdir -p "$d/.claude/skills/web-fe-design"
+  printf '%s' "$1" > "$d/package.json"
+  printf 'x' > "$d/.claude/skills/web-fe-design/SKILL.md"
+  [ -n "${2:-}" ] && mkdir -p "$d/.claude" && printf '%s' "$2" > "$d/.claude/project.json"
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const r = m.detect(process.env.CLAUDE_PROJECT_DIR).designReference;
+    console.log(JSON.stringify([r.projectSkills, r.declared, r.skill, r.available]));
+  });" 2>/dev/null
+  rm -rf "$d"
+}
+[ "$(designref_of '{}')" = '[["web-fe-design"],true,null,null]' ] \
+  && ok || bad "a project-local skill must be listed, and available must stay null"
+[ "$(designref_of '{}' '{"designReference":{"skill":"web-fe-design"}}')" \
+  = '[["web-fe-design"],true,"web-fe-design",null]' ] \
+  && ok || bad "the override must name which project skill is the design one"
+[ "$(designref_of '{}' '{"designReference":"not-an-object"}')" \
+  = '[["web-fe-design"],true,null,null]' ] \
+  && ok || bad "a malformed designReference override must be ignored"
+NODESKILL="$(mktemp -d)"; printf '{}' > "$NODESKILL/package.json"
+[ "$(CLAUDE_PROJECT_DIR="$NODESKILL" node -e "
+import('$S/project-facts.mjs').then(m => console.log(JSON.stringify(m.detect(process.env.CLAUDE_PROJECT_DIR).designReference.projectSkills)));" 2>/dev/null)" \
+  = '[]' ] && ok || bad "a project with no .claude/skills must report an empty list, not throw"
+rm -rf "$NODESKILL"
+
+# userStoryPath: override-only, no file-based detection -- a caller applies
+# its own default when this is null.
+USP="$(mktemp -d)"; mkdir -p "$USP/.claude"; printf '{}' > "$USP/package.json"
+printf '{"userStoryPath":"docs/story.md"}' > "$USP/.claude/project.json"
+[ "$(CLAUDE_PROJECT_DIR="$USP" node -e "
+import('$S/project-facts.mjs').then(m => console.log(m.detect(process.env.CLAUDE_PROJECT_DIR).userStoryPath));" 2>/dev/null)" \
+  = 'docs/story.md' ] && ok || bad "userStoryPath override must be read through"
+rm -rf "$USP"
+USP2="$(mktemp -d)"; printf '{}' > "$USP2/package.json"
+[ "$(CLAUDE_PROJECT_DIR="$USP2" node -e "
+import('$S/project-facts.mjs').then(m => console.log(m.detect(process.env.CLAUDE_PROJECT_DIR).userStoryPath));" 2>/dev/null)" \
+  = 'null' ] && ok || bad "userStoryPath must default to null, never a guessed path"
+rm -rf "$USP2"
 
 # The stack value names the stack, not the pack, and `packs` maps one to the
 # other. A meta-framework must never report as the view library it builds on:
