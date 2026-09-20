@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether a form is modelled as state that can be submitted twice and can be rejected
 by the server, rather than as values plus a validate function.
 

@@ -72,11 +72,16 @@ An arm that merely enables the plugin and waits is measuring the field, not the 
 claude plugin eval . --ablation with-without
 ```
 
-**The harness runs, and every case here needs frontmatter before it will load.** Checked
-against 2.1.276: both files take a YAML header, and without one the case is rejected with
-`invalid case.yaml: graders: Required`. `claude plugin eval init --bare <name>` prints the
-canonical shape — `max_turns` and `allowed_tools` on `prompt.md`, `type` and `weight` on
-each grader.
+**The harness runs, and every case in every pack needs frontmatter before it will load.**
+Checked against 2.1.278: both files take a YAML header, and without one the case is rejected
+with `invalid case.yaml: graders: Required`. `claude plugin eval init --bare <name>` prints
+the canonical shape — `max_turns` and `allowed_tools` on `prompt.md`, `type` and `weight` on
+each grader. Every case in `core`, `vue` and `nuxt` carries it; a new case needs it too, and
+the harness is the fastest way to find out that it does not.
+
+**The harness writes into the plugin it evaluated.** Each run leaves a timestamped directory
+and an HTML report under `<plugin>/evals/results/`. That path is gitignored — it is a run
+record, not a marketplace file — so do not add one to a commit.
 
 **A typed skill needs its invocation inside `prompt.md`.** The harness runs one prompt in
 both arms, so a skill carrying `disable-model-invocation` — which cannot fire on
@@ -99,6 +104,24 @@ their criteria score the questions rather than the rewrite.
 
 Two runs of each arm, minimum — a single run tells you about sampling, not about the skill.
 The interface is undocumented on code.claude.com, so do not put it in a blocking CI job.
+
+**Assert the rig before reading any behaviour out of a run.** Running an arm by hand with
+`claude -p` rather than through the harness is the way to score per criterion line, and it
+has three ways to look healthy while measuring the wrong thing:
+
+- **Load the working tree with `--plugin-dir`, then check it took.** The init event must
+  carry `core@inline` for a with-plugin arm. An installed copy of this marketplace can be
+  months stale, and a run that reaches it reports the old skill's behaviour as the new one's.
+  Grep each transcript for `plugins/cache` and treat a hit as a void run.
+- **Put the slash invocation on line 1, and grant `Skill`.** A case's `prompt.md` opens with
+  YAML frontmatter, so a runner has to strip it *and* the blank lines behind it — anything
+  ahead of `/core:<skill>` leaves it as inert text. Under `--permission-prompts none` an
+  ungranted `Skill` call is denied outright, and a model that cannot invoke a skill carries
+  on without it: check the `Skill` tool result before reading anything else out of the run,
+  because a denial there voids it without looking like a failure.
+- **Give both arms the same MCP configuration.** Pass `--strict-mcp-config` in every arm,
+  with an empty `{"mcpServers":{}}` where the server under test is absent. Otherwise the
+  arms differ by every connector configured on the machine, not only by the variable.
 
 **A case that has the model write or diagnose a project gets a fresh, empty directory per
 run, and never this repository.** Anything a previous run left behind is a worked answer to

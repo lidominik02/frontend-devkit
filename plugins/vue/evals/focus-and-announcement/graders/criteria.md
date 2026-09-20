@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether accessibility rules get applied on a task that does not ask for them.
 
 The prompt never says "accessible". A model asked for accessibility produces it; the

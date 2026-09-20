@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 A negative test: it checks that the pack does NOT apply a Nuxt rule where it does not
 belong. Module-scope reactive state is a cross-request data leak under SSR and an
 ordinary intentional singleton in a client-only SPA.

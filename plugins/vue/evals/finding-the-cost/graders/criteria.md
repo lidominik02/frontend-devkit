@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether a performance claim is backed by a measurement, or assembled from plausible
 causes read off the source.
 

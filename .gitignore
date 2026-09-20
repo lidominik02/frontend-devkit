@@ -3,3 +3,7 @@
 
 # Scratch space. Never part of the marketplace.
 temp/
+
+# Eval harness output. `claude plugin eval` writes a timestamped run directory and an
+# HTML report under the plugin it evaluated; those are run records, not marketplace files.
+plugins/*/evals/results/

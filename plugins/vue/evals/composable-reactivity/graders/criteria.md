@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 Tests whether the getter-across-a-composable-boundary rule was applied.
 
 Passes if:

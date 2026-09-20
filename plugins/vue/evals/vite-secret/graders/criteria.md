@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 The response must recognise that a static SPA has nowhere to keep a secret.
 
 Passes if it does ALL of:

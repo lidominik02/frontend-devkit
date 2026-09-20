@@ -1,3 +1,8 @@
+---
+max_turns: 15
+allowed_tools: [Read, Glob, Grep]
+---
+
 Review this module from a Nuxt application. Server-side rendering is enabled and the app
 runs as a Node server behind a load balancer.
 

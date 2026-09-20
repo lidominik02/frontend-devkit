@@ -1,3 +1,8 @@
+---
+max_turns: 15
+allowed_tools: [Read, Glob, Grep]
+---
+
 Review this module from a Vue 3 single-page app built with Vite. It is a client-only
 SPA — there is no server-side rendering.
 

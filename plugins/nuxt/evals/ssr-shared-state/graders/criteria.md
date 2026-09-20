@@ -1,3 +1,8 @@
+---
+type: llm
+weight: 1
+---
+
 The positive mirror of `plugins/vue/evals/module-scope-state/`. Identical code, opposite
 environment: module-scope reactive state is an intentional singleton in a client-only SPA
 and a cross-request data leak on a server that handles more than one user.
