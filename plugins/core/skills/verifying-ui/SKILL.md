@@ -11,10 +11,17 @@ description: >-
   "check the empty state", "check dark mode", "why does it look wrong", or asks
   whether a visual change actually works. Reports what it could not observe rather
   than calling it fine, and says plainly when no browser tool is configured.
-disable-model-invocation: true
 disallowed-tools: mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__upload_file, mcp__playwright__browser_evaluate, mcp__playwright__browser_file_upload
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(git diff *) mcp__chrome-devtools__take_snapshot mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__list_console_messages mcp__chrome-devtools__get_console_message mcp__chrome-devtools__list_network_requests mcp__chrome-devtools__get_network_request mcp__chrome-devtools__navigate_page mcp__chrome-devtools__new_page mcp__chrome-devtools__list_pages mcp__chrome-devtools__select_page mcp__chrome-devtools__resize_page mcp__chrome-devtools__emulate mcp__chrome-devtools__wait_for mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_console_messages mcp__playwright__browser_network_requests mcp__playwright__browser_navigate mcp__playwright__browser_resize mcp__playwright__browser_wait_for Read Grep Glob
 ---
+
+**The hold comes first.** Verification does not run until it is released. If the turn
+does not carry an explicit release — the owner saying to check, test, or look at
+something now — stop before opening a browser and say what you would verify and how
+long it would likely take, then wait. This used to be enforced by hiding this skill
+from the model entirely; now that it can fire on its own, the hold has to be held here,
+in prose, instead. Reading this file, or being asked something adjacent, is not a
+release.
 
 You verify a change by looking at the running application. Everything else in this
 devkit is static: the type-checker, the linter, the tests and the reviewer all read
@@ -72,6 +79,11 @@ the wrong page and believing it:
 2. **Check whether it is already running before starting one.** A second dev server
    binds a different port and serves the same code, so nothing looks wrong; but if the
    first one is on an older branch you are verifying code that is not in your diff.
+   Starting a second one is also not a safe fallback if you skip this check: a dev
+   server bound to a port already in use commonly prompts interactively ("Port 5173 is
+   in use, try another one? (Y/n)") rather than exiting, which hangs a background shell
+   with no visible error — the run looks like it is still starting when it is actually
+   stuck waiting for a keypress nobody will give it.
 
 Start it in the background, wait for the ready line, and take the URL from there. When
 you are done, stop the server you started — and only that one.
@@ -103,6 +115,10 @@ roles, names, structure, and the element handles you need to interact. It tells 
 *what* is on the page. The screenshot tells you what it *looks like* and nothing else —
 it cannot distinguish a loading skeleton from an empty state, or an element that is
 invisible from one that is absent.
+
+**Look at the screenshot before writing anything about it.** Capturing one and moving
+on without reading it is the visual-layer version of claiming a gate passed that never
+ran — a screenshot nobody looked at proves exactly as much as no screenshot at all.
 
 Then read the console and the network before drawing a conclusion. **A page that looks
 correct and logs an error is a bug you have already found** — hydration mismatches,

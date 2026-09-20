@@ -223,6 +223,32 @@ a tool named in both lists is withdrawn, so the wildcard silently wins over the 
 - **`lighthouse_audit` is a score, not a review.** It catches contrast and missing
   labels; it cannot tell you the focus order is nonsense.
 
+## Manual contrast, when the audit tool cannot run
+
+`lighthouse_audit` is Chrome DevTools MCP only, needs a page it can navigate, and is one
+more round trip. When it is unavailable — no browser attached at all, or the audit itself
+times out — contrast is still checkable from two hex values and arithmetic, without
+rendering anything.
+
+WCAG's contrast ratio is `(L1 + 0.05) / (L2 + 0.05)`, where `L1` is the lighter colour's
+relative luminance and `L2` the darker one's, and relative luminance is:
+
+```
+for each of R, G, B (0-255, scaled to 0-1):
+  c = channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ^ 2.4
+L = 0.2126 * R + 0.7152 * G + 0.0722 * B
+```
+
+Normal text needs a ratio of at least 4.5:1; large text (18pt, or 14pt bold) and UI
+component boundaries need 3:1. Read the two colours from the snapshot or the source
+rather than guessing them off the screenshot — a screenshot is a JPEG or PNG render, and
+compression artifacts and anti-aliased edges make an eyedropper read on it unreliable
+right where the answer matters most, at the boundary between passing and failing.
+
+This is the one check in this skill that a browser cannot do better than arithmetic: two
+literal colours and a fixed formula have one right answer, and rendering them changes
+nothing about it.
+
 ## Why this is not bundled
 
 `core` installs in every repository, including ones with no user interface at all. A

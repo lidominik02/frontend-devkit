@@ -64,11 +64,11 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Only descriptions are always-on: **4.3k characters** of them with all three packs
-enabled — `core` contributes four listed entries (~2.7k), `vue` and `nuxt` one each
-(~0.8k). `preparing-a-repo`, `verifying-ui` and `optimizing-prompts` are excluded because
-they are `disable-model-invocation`, which is why the listing shrank when the third one
-grew its description.
+Only descriptions are always-on: **5.1k characters** of them with all three packs
+enabled — `core` contributes five listed entries (~3.5k), `vue` and `nuxt` one each
+(~0.8k). `preparing-a-repo` and `optimizing-prompts` are excluded because they are
+`disable-model-invocation`. `verifying-ui` used to be the third; it is now listed as a
+trial (see below), which is most of why this figure grew from the previous 4.3k.
 Skill bodies load on trigger; reference files load only when the body points at them, and
 a repo that enables just the pack matching its framework pays for one.
 
@@ -87,19 +87,23 @@ The `reviewer` agent's fully-qualified name is `core:reviewer`, which always res
 the one shipped here even when a consuming repo has its own — plugin agents rank lowest
 in discovery precedence.
 
-Three components carry **`disable-model-invocation: true`**: Claude never reaches for
+Two components carry **`disable-model-invocation: true`**: Claude never reaches for
 them on its own, and their descriptions leave the always-on listing. Type them.
 
 - `preparing-a-repo` — the only component that writes into a host repository, and the
   write is gated behind an approved gap report.
-- `verifying-ui` — it needs a browser MCP server that most repositories do not have, and
-  `core` is enabled in every one of them, including those with no interface at all. It
-  ships typed so that cost is zero until someone asks for it; `plugins/core/evals/` holds
-  the case that decides whether to promote it.
 - `optimizing-prompts` — it rewrites a prompt rather than acting on one, and a skill whose
   whole job is to *not* carry out the text it is handed is the wrong thing for Claude to
   reach for on its own initiative. Typing it also settles a collision: a repo with its own
   prompt-rewriting skill would otherwise have two matching the same wording.
+
+**`verifying-ui` is model-invocable, as a trial.** It carried the same flag until this
+was measured: hiding a skill from the model does not merely stop it firing unasked, it
+removes the skill's name from what the model can see at all, so the lifecycle step this
+skill owns could only ever run when someone typed it. With the flag gone the hold that
+used to be enforced by invisibility is now stated as the skill's own first instruction —
+it stops and asks for an explicit release before opening a browser. If it starts firing
+when it should not, the flag goes back; that reversibility is what makes it safe to try.
 
 `planning-features` is a candidate for the same field on cost grounds. Which skills earn
 auto-triggering is settled by `/skill-doctor` and the ablation cases in
