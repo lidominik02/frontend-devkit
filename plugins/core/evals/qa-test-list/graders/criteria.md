@@ -16,10 +16,10 @@ Passes if it does ALL of:
   of steps.
 - For at least the threshold criteria, states a positive case, a negative case, and the
   zero-threshold edge case specifically — not a generic "test various thresholds."
-- Names which check verifies each case (browser, design intent, Storybook, or owner
+- Names which check verifies each case (browser, design intent, Storybook, or user
   only), and the choices are sensible for what each case actually is (an alert
   appearing and being dismissible is browser-verifiable; "the alert text is worded
-  clearly" is owner-only).
+  clearly" is user-only).
 - Stops after producing the list rather than proceeding to implement or run anything —
   `plan` mode does not act on the list it just wrote.
 

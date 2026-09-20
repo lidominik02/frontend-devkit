@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // PreToolUse hook -- denies a `git commit` whose message carries an
 // attribution trailer, or names something that exists only between the
-// owner and Claude (a session, a handoff file, a roadmap artifact, a phase
-// or a decision id). Both are the specific failures the owner reported: a
+// user and Claude (a session, a handoff file, a roadmap artifact, a phase
+// or a decision id). Both are the specific failures the user reported: a
 // commit message is read by another developer, who has no access to either.
 //
 // Node rather than bash, for the reason block-secrets.mjs states: bash exits
@@ -65,27 +65,25 @@ const ARTIFACT_FILES = /\b(?:HANDOFF|PROGRESS|DECISIONS|MASTER-PLAN|OPEN-QUESTIO
 
 // "session", "roadmap" and "phase N" are all common, legitimate engineering
 // vocabulary on their own -- a login session, a product's own visible
-// roadmap page, "phase 2 of the rollout" -- and banning them bare would
-// reproduce exactly the kind of over-broad match block-secrets.mjs was just
-// fixed for: a check specific enough to catch the real failure, not broad
-// enough to deny ordinary work. Only "handoff" stays bare, matching the
-// owner's own wording, because it collides with almost nothing in ordinary
-// commit messages.
+// roadmap page, "phase 2 of the rollout" -- so none of them is banned bare:
+// the check has to be specific enough to catch the real failure without
+// denying ordinary work. Only "handoff" stays bare, matching the user's own
+// wording, because it collides with almost nothing in ordinary commit
+// messages.
 //
-// Dropped from an earlier draft of this list: a bare decision-or-ADR-id
-// pattern (`ADR-\d+`, `decision #\d+`). Architecture Decision Records are a
-// real, common convention -- the active repository cites its own ADRs by
-// number in its CLAUDE.md as the source of truth for several rules -- so
-// that pattern would have denied a commit correctly citing one. The owner's
-// own wording named "claude session, handoffs, roadmap artifacts"; this list
-// matches those three, not a broader inference.
+// No decision-or-ADR-id pattern (`ADR-\d+`, `decision #\d+`) is blocked, on
+// purpose. Architecture Decision Records are a real, common convention --
+// many repositories cite their own ADRs by number as the source of truth
+// for a rule -- so a pattern like that would deny a commit correctly citing
+// one. This list matches only what the user actually asked to keep out of a
+// commit message: a Claude/chat session, a handoff, a roadmap artifact.
 const LEAK_WORDS = [
   { re: ARTIFACT_FILES, label: 'the name of a planning-artifact file' },
   { re: /\btemp\/[^\s"']*\/planning\b/i, label: 'a path into a planning-artifacts directory' },
-  // "this/the/our/current session" was tried and dropped: all four collide
-  // directly with ordinary session/cookie/auth work ("expire the session",
-  // "get the current session"). Only a qualifier that names the AI context
-  // itself is unambiguous enough to keep.
+  // "this/the/our/current session" is not enough on its own -- all four
+  // collide directly with ordinary session/cookie/auth work ("expire the
+  // session", "get the current session"). Only a qualifier that names the
+  // AI context itself is unambiguous enough to match on.
   { re: /\b(?:claude|chat|ai)\s+session\b/i, label: 'a reference to a Claude/chat session' },
   { re: /\bhandoffs?\b/i, label: 'a reference to a handoff' },
   { re: /\broadmap\s+(?:phase|artifact|file|step)\b/i, label: 'a reference to a roadmap artifact' },

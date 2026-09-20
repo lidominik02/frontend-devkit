@@ -40,7 +40,7 @@ Every case gets exactly one of:
   states, tokens, naming or copy.
 - **Storybook** — anything about a shared component's story existing and rendering
   correctly in isolation, independent of the feature's own page.
-- **owner only** — nothing here can check it: does the copy read naturally, does the
+- **user only** — nothing here can check it: does the copy read naturally, does the
   feature actually solve the business problem, anything requiring a judgment no
   automated check makes. Naming this honestly is not a gap in the list — a case that
   claims a check that cannot verify it is worse than one that admits it needs a human.
@@ -54,7 +54,7 @@ Every case gets exactly one of:
 derived from the phase plan and the diff">
 
 ### <Criterion, stated as a claim>
-- Positive: <case> — verified by: <browser | design intent | Storybook | owner only>
+- Positive: <case> — verified by: <browser | design intent | Storybook | user only>
 - Negative: <case> — verified by: <…>
 - Edge: <case> — verified by: <…>
 - Edge: <case> — verified by: <…>    (only the ones that matter for this criterion)

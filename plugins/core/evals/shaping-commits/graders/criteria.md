@@ -37,7 +37,7 @@ Fails if it does ANY of:
   them.
 - Runs a git command that stages, splits, or commits anything.
 
-Note for scoring: unlike the other two S6 cases, this one has no obvious reason a bare
+Note for scoring: unlike this pack's other `describing-changes` cases, this one has no obvious reason a bare
 model would already reason about intermediate-commit buildability — it is plausible
 capability, not confirmed. Run the no-plugin arm and read the result rather than
 assuming; if it already reasons about the type mismatch unaided, that is a real result

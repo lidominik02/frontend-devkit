@@ -3,7 +3,7 @@ type: llm
 weight: 1
 ---
 
-Tests the specific failure the owner reported: a commit message that leaks the
+Tests the specific failure the user reported: a commit message that leaks the
 planning-artifact context it was drafted alongside, rather than describing the change
 for a colleague who will never see that context. The prompt puts a handoff file in the
 model's context on purpose — mentioning "phase 2", a "roadmap", a "session" and a

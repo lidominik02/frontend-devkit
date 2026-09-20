@@ -585,7 +585,7 @@ rm -rf "$V"
 
 echo
 echo "commit-hygiene: no attribution trailer, and nothing only Claude and the"
-echo "owner can see, in a git commit message"
+echo "user can see, in a git commit message"
 CH="$S/commit-hygiene.mjs"
 ch_assert() {
   local expect="$1"; local cmd="$2"; local label="$3"

@@ -2,14 +2,14 @@
 name: testing-changes
 description: >-
   Lifecycle steps 6 and 7: a QA test list derived from the user story and approved by the
-  owner, then three checks against that approved list — a browser check, a design-intent
+  user, then three checks against that approved list — a browser check, a design-intent
   comparison against the design tool, and a Storybook check — each skipping itself out
   loud when its prerequisite is absent. Two modes: `plan <feature>` derives acceptance
   criteria and positive/negative/edge cases and stops for approval; `run <feature>` runs
   the approved checks and reports Observed, Not observed, Skipped and Findings. Use when
   the user says "make a test list for this", "what should QA check", "run the QA list",
   "test this against the story", or asks whether a feature is ready to ship against its
-  acceptance criteria. Verification does not start until the owner releases it — see the
+  acceptance criteria. Verification does not start until the user releases it — see the
   hold below — so being asked something adjacent is not enough to begin `run`.
 argument-hint: "[plan|run] [feature]"
 disallowed-tools: mcp__figma__use_figma, mcp__figma__create_new_file, mcp__figma__generate_figma_design, mcp__figma__generate_diagram, mcp__figma__generate_deck, mcp__figma__upload_assets, mcp__figma__add_code_connect_map, mcp__figma__send_code_connect_mappings, mcp__figma__create_shader, mcp__figma__update_shader, mcp__figma__create_generative_plugin, mcp__figma__update_generative_plugin
@@ -21,7 +21,7 @@ carries an explicit release. If it does not, say what you would check and how lo
 would likely take, then wait. `plan` mode itself is not held — deriving a list from a
 story is not verification — but nothing in `run` executes without release.
 
-You produce two things, in order: a test list the owner approves, then a report against
+You produce two things, in order: a test list the user approves, then a report against
 that approved list. Neither step invents what it cannot find — a story that does not
 exist, a design frame nobody gave you, a Storybook that is not installed — every one of
 those is a named skip, never a silent pass.
@@ -44,7 +44,7 @@ those is a named skip, never a silent pass.
    per criterion. `references/qa-test-list.md` has the format and what makes an edge case
    worth listing rather than padding.
 3. **Name the check that verifies each case**: browser, design intent, Storybook, or
-   "owner only" for what nothing here can verify (does the copy read naturally, does the
+   "user only" for what nothing here can verify (does the copy read naturally, does the
    feature actually solve the stated problem). Every case gets exactly one.
 4. **If the story and the phase plan disagree**, the story wins — it is closer to what the
    feature is actually for — and record the conflict rather than silently picking one.
@@ -96,7 +96,7 @@ those is a named skip, never a silent pass.
 <cases with no findings — never omit a case silently>
 ```
 
-8. **Stop.** Fix nothing until the owner approves the findings — this mirrors
+8. **Stop.** Fix nothing until the user approves the findings — this mirrors
    `core:reviewer`'s report-then-wait shape exactly, for the same reason: a component
    that fixes what it finds stops checking and starts implementing.
 
@@ -107,7 +107,7 @@ those is a named skip, never a silent pass.
   missing prerequisite is a skip, never a fabrication.
 - **Score pixels.** Presence, hierarchy, states, tokens, naming, copy — never a rendered
   diff. See `references/design-intent.md` for why.
-- **Fix a finding before the owner approves it.** Report and wait, the same discipline
+- **Fix a finding before the user approves it.** Report and wait, the same discipline
   `core:reviewer` holds.
 - **Silently omit a case from the report** — Observed, Not observed, Skipped and Findings
   together must account for every case on the approved list.

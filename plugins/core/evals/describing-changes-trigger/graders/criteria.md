@@ -3,19 +3,17 @@ type: llm
 weight: 1
 ---
 
-Tests firing, not writing quality — this is the case Q2 flagged as unresolved: the
-description fires correctly on the owner's real phrasings when judged in isolation
-(confirmed by `trigger-tester` against the frontmatter alone), yet the skill had still
-never fired in this repository across two days it was listed and eleven commits were
-authored. Something between "the description matches" and "the Skill tool gets called"
-was not happening, and this case exists to catch it going forward rather than re-argue
-Q2's open question.
+Tests firing, not writing quality. `describing-changes`' description matches this kind of
+request when judged on its frontmatter alone, but observed usage showed the skill going
+long stretches with no `Skill` tool call at all despite matching phrasing appearing
+repeatedly — something between "the description matches" and "the Skill tool gets called"
+was not happening. This case exists to catch that going forward.
 
-The prompt deliberately uses the owner's own informal register ("give me a commit msg,
-keep it short but informative") rather than an invented phrasing — the one case in this
-pack where matching real usage is the point, not a contamination risk, because the
-question under test is whether this exact register fires the skill, not whether the
-model can write a good message unaided.
+The prompt deliberately uses an informal, realistic register ("give me a commit msg, keep
+it short but informative") rather than an invented phrasing — the one case in this pack
+where matching real usage is the point, not a contamination risk, because the question
+under test is whether this exact register fires the skill, not whether the model can
+write a good message unaided.
 
 Passes if it does ALL of:
 - A `Skill` tool call naming `describing-changes` (or `core:describing-changes`) appears
@@ -40,8 +38,8 @@ Fails if it does ANY of:
 Note for scoring: run this in the **with-plugin arm only** — there is no baseline
 question here, since a no-plugin arm has no skill to fire. What this measures across
 repeated runs is the fire rate itself; a single pass or fail says little; run it enough
-times to distinguish "occasionally does not fire" from "reliably does not fire outside
-`trigger-tester`'s isolated judgment," and re-run this case after S12 archives the
-personal components — Q3 found every one of this skill's real fires uncontested by
-another `core` description, but the fact of firing at all may still be suppressed by a
-personal component claiming the same informal register first.
+times to distinguish "occasionally does not fire" from "reliably does not fire." If a
+repository also has its own personal or project-local skill claiming the same informal
+register, re-run this case after removing it — a competing skill of the same shape can
+suppress this one's firing even when this one's own fires, when they happen, are never
+contested by another `core` description.

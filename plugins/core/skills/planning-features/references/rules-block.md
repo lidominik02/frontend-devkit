@@ -9,10 +9,10 @@ default it replaced.
 - Three phases: research, plan, implementation — each in its own session unless told
   otherwise.
 - Implementation runs in the main thread. No delegated implementation subagent.
-- Code review happens on request, after the owner has read the code. Never automatic.
+- Code review happens on request, after the user has read the code. Never automatic.
 - Verification is held to Prettier, ESLint and typecheck until released. No test suite,
-  no build, no Storybook, no browser check runs before the owner says so.
-- Commit only once a drafted message is accepted. The owner pushes.
+  no build, no Storybook, no browser check runs before the user says so.
+- Commit only once a drafted message is accepted. The user pushes.
 - Artifacts are written in English. Non-English input is quoted verbatim, then
   translated — never paraphrased in place of the original.
 ```

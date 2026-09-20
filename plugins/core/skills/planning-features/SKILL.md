@@ -56,8 +56,8 @@ way any decision is recorded — with what it replaced.
 ## The lifecycle stage
 
 `HANDOFF.md` names exactly one of these: `research` → `plan (awaiting approval)` →
-`implement` → `owner reads the code` → `review (on request)` → `fix findings` →
-`QA list (awaiting approval)` → `testing` → `owner's check` → `commit (drafted,
+`implement` → `user reads the code` → `review (on request)` → `fix findings` →
+`QA list (awaiting approval)` → `testing` → `user's check` → `commit (drafted,
 awaiting acceptance)` → `pushed`. Each happens in the main thread except where a
 component owns it explicitly — `core:reviewer`, `core:testing-changes`,
 `core:describing-changes` — so `resume` can say what happens next and who does it,
@@ -149,11 +149,11 @@ that planning just built, and a fresh subagent would start cold and re-derive it
 3. Implement exactly that phase's scope. Reuse before writing new code.
 4. Run the gates that exist. Report any that do not.
 5. **Report done and stop — do not hand the diff to `core:reviewer` automatically.**
-   The owner reads the code first; review happens only when they ask for it. Say what
-   manual checks the owner should still do before merging — anything the fast gates do
+   The user reads the code first; review happens only when they ask for it. Say what
+   manual checks the user should still do before merging — anything the fast gates do
    not cover for this change.
 6. Checkpoint: `PROGRESS.md` → Done (never Done with a step skipped — record what
-   actually happened), `HANDOFF.md` → stage `owner reads the code`, next action stated.
+   actually happened), `HANDOFF.md` → stage `user reads the code`, next action stated.
 
 ## Mode: `resume`
 
@@ -184,7 +184,7 @@ pick up in a new session or is better finished in this one, and why.
   detail is produced one phase at a time, because phase 4's plan is invariably wrong
   before phases 1–3 are built.
 - **Implement without an approved plan.**
-- **Hand a diff to `core:reviewer`, or start any review, unasked.** The owner reads
+- **Hand a diff to `core:reviewer`, or start any review, unasked.** The user reads
   the code and asks for the review; this is the default, not a preference to detect.
 - **Run a test suite, a build, Storybook, or a browser check before the rules block
   releases it.**

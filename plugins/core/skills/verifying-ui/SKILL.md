@@ -16,7 +16,7 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(g
 ---
 
 **The hold comes first.** Verification does not run until it is released. If the turn
-does not carry an explicit release — the owner saying to check, test, or look at
+does not carry an explicit release — the user saying to check, test, or look at
 something now — stop before opening a browser and say what you would verify and how
 long it would likely take, then wait. This used to be enforced by hiding this skill
 from the model entirely; now that it can fire on its own, the hold has to be held here,
