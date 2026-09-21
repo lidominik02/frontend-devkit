@@ -12,6 +12,15 @@ pack.
 | Case | The claim under test |
 | --- | --- |
 | `ssr-shared-state` | Module-scope reactive state is a cross-request data leak under SSR, where the identical code is an ordinary singleton in an SPA |
+| `cookie-independent-ref` | Each `useCookie` call returns its own ref, and cross-instance sync is asynchronous, not immediate |
+| `hydration-fix-pins-clock` | Moving a hydration-mismatched time value into `useState` silences the warning by freezing it to the server's clock, not by fixing it |
+
+Both were run by hand with `claude -p`, not the automated harness — see
+`plugins/core/evals/README.md` for why. Four other candidates from the same research
+pass — a plain async function losing Nuxt's request context after an `await`, a missing
+`runtimeConfig.public` key, `setup` running twice under hydration, and an un-awaited
+`navigateTo` outside middleware — were tested the same way and dropped: a bare Sonnet 5,
+with no plugin at all, already answered every one of them correctly.
 
 Splitting `nuxt` out of `vue` costs a plugin to maintain and a second description in the
 always-on listing. The evidence that it is worth it is not that the Nuxt guidance is

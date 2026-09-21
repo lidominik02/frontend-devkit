@@ -94,6 +94,18 @@ the harness is the fastest way to find out that it does not.
 and an HTML report under `<plugin>/evals/results/`. That path is gitignored — it is a run
 record, not a marketplace file — so do not add one to a commit.
 
+**The harness cannot resolve a marketplace dependency inside its own sandbox, checked
+against 2.1.278.** Running `claude plugin eval vue@frontend-devkit` or
+`nuxt@frontend-devkit` fails with `dependency-unsatisfied: Dependency "core" is not
+installed`, even with `core` installed and enabled — the sandbox's dependency check
+cannot see it, and the with-plugin arm silently loads no plugin at all, so the
+comparison measures nothing. `vue` and `nuxt` cases cannot be run through the automated
+harness until this is fixed upstream. The fallback is a manual `claude -p` pair: once
+bare, once with `--plugin-dir` pointing at `core`, `vue` and (for a `nuxt` case) `nuxt`
+directly from the working tree, disabling the persistently-installed copies for the
+run so nothing loads twice. Grade each pair against the case's own `graders/criteria.md`
+by hand.
+
 **A typed skill needs its invocation inside `prompt.md`.** The harness runs one prompt in
 both arms, so a skill carrying `disable-model-invocation` — which cannot fire on
 description — would otherwise have no with-plugin arm at all. Putting

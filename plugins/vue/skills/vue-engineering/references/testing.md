@@ -55,6 +55,20 @@ for a duration. A timeout is a race that passes on your machine and fails in CI.
 Seed state through the API or a fixture rather than clicking through setup UI. A login
 flow re-run in fifty specs is fifty slow specs and one flaky one.
 
+**Reading a file relative to the test's own location under Vitest + jsdom needs
+`process.cwd()`, not `import.meta.url`.** The `fileURLToPath(new URL('../fixture.json',
+import.meta.url))` idiom that works in `vite.config.ts` throws
+`ERR_INVALID_URL_SCHEME` inside a test file transformed by Vite under
+`environment: 'jsdom'`, because `import.meta.url` there resolves to a virtual dev-server
+URL (`http://localhost:.../@fs/...`) rather than a real `file://` path — `new URL(...)`
+against it yields `protocol: 'http:'`, which `fileURLToPath()` rejects. This is **not**
+the well-known jsdom global-`URL`-shadowing gotcha, and importing `URL` explicitly from
+`node:url` does not fix it — the rewritten string itself is the problem, not which `URL`
+class evaluates it. The tell, if you log the value instead of assuming which bug this is:
+the printed `.href` starts with `http://localhost:…/@fs/…`. Resolve from `process.cwd()`
+instead, which is stable because both `pnpm --filter <pkg> <script>` and running
+`vitest` directly inside a workspace package set cwd to that package's directory.
+
 ## What the official guide does not cover
 
 vuejs.org's testing page still centres Cypress component testing and does not mention

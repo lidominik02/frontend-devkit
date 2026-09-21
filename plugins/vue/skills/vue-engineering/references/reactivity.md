@@ -104,6 +104,33 @@ the same reason. Register them synchronously.
 For cleanup tied to a watcher's own re-run, prefer `onWatcherCleanup()` (3.5+)
 over the `onCleanup` callback argument — it works from nested functions too.
 
+## Extending a binding without touching its shared source
+
+A `disabled`/`class`/`style` object bound with `v-bind` is often built from a `computed`
+shared across several elements — a toolbar's buttons all disabling together while a
+request is in flight, say. Adding a *new* condition that should only affect one of those
+elements is easy to get wrong by folding it into the shared conditional:
+
+```ts
+// Wrong: every consumer of `toolbarState` now reacts to `noPermission`,
+// not just the one button that actually needs to.
+const toolbarState = computed(() => ({
+  disabled: isLoading.value || noPermission.value,
+}))
+```
+
+Spread the shared object and override just the one key, at the one call site that needs
+the extra condition:
+
+```html
+<button v-bind="{ ...toolbarState, disabled: toolbarState.disabled || noPermission }">
+```
+
+The spread must come **before** the override key in the object literal — an object
+literal keeps the last value for a repeated key, so the override has to be textually
+after the spread to win. This keeps the shared conditional's other consumers unaffected
+by a condition that is only true at this one call site.
+
 ## Template refs
 
 On 3.5+, `useTemplateRef('name')` is the current API and is what to reach for.

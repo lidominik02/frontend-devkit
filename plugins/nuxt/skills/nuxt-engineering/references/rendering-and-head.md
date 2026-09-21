@@ -37,6 +37,14 @@ Anything that differs between the two renders causes it:
    as the real content, or the page shifts layout when it swaps — the skeleton rule from
    the `vue` pack, with an SSR-specific cause.
 
+**Not an escape hatch: moving a time- or locale-derived value into `useState`.** This is
+correct alone and wrong in combination with the fix above it. `useState` is per-request,
+not per-render — its value is computed once on the server and serialised into the
+payload, so a value fixed there stays at the **server's** clock and locale for the rest
+of that request's session, never advancing to the visitor's own. It looks like a fix
+because the mismatch warning goes away; it has actually removed the client's chance to
+ever show its own time. See `ssr-state.md` for what `useState` is and is not for.
+
 `<ClientOnly>` is a cost, not a fix: its content is absent from the HTML, invisible to
 crawlers, and unavailable with JavaScript off. Reach for it after the first three.
 

@@ -72,8 +72,13 @@ Anything derived from *this* request has to be read from the request, not from a
   fix for the most common SSR auth bug: a plain `$fetch('/api/me')` on the server sends
   no cookies, because there is no browser attaching them, so it returns 401 or, worse,
   an anonymous response that then gets cached and rendered for a logged-in user.
-- **`useCookie(name, opts)`** — an SSR-safe reactive cookie. Writing to it sets the
-  cookie; it is the right way to persist something small across requests.
+- **`useCookie(name, opts)`** — an SSR-safe reactive cookie, but **each call returns its
+  own ref**, not a shared one. Two components calling `useCookie('theme')` do not read or
+  write the same object. They stay in sync anyway — writing to one updates the cookie, and
+  Nuxt re-reads it into the other on navigation and, on the client, over a broadcast
+  channel — but that sync is asynchronous. Code that writes in one component and reads
+  the *other* component's ref on the very next line, expecting the write to already be
+  visible, is racing a channel message that has not arrived yet.
 
 A credential must not be put in `useState`. The payload is HTML that reaches the
 browser; anything in it is public to that user and to anything that can read the page.

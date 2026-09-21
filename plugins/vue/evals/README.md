@@ -17,6 +17,26 @@ pack.
 | `focus-and-announcement` | Whether accessibility rules get applied on a task that never asks for them — focus after a removal, a live region for a count that changes, names that distinguish one control from another |
 | `submit-state` | Whether a form is modelled as state that can be submitted twice and rejected by the server, rather than as values plus a validate function |
 | `finding-the-cost` | Whether a performance claim is backed by a measurement, or assembled from plausible causes read off the source |
+| `binding-composition-spread` | Extending a shared binding for one consumer via a spread-and-override rather than folding the new condition into the shared source (which leaks it to every other consumer) |
+| `vitest-jsdom-import-meta-url` | `import.meta.url` under Vitest + jsdom resolves to a virtual dev-server URL, not a `file://` path — and that it is not the well-known jsdom `URL`-shadowing bug |
+
+Both were run by hand with `claude -p`, not the automated harness — see
+`plugins/core/evals/README.md` for why. Five other candidates from the same research
+pass — a shared per-instance loading flag beating a boolean under overlapping requests,
+`cn()`/tailwind-merge's last-argument-wins override order, re-subscribing to a
+DOM mutation made outside Vue's reactivity, a mock handler's generic losing its
+connection to the response schema, and a named Tailwind group requiring its literal
+marker class on the right ancestor — were tested the same way and dropped: a bare
+Sonnet 5 already answered every one of them correctly. A sixth, whether
+`@storybook/vue3`'s `render` needs to return a function or a bare VNode to dodge
+`vue/one-component-per-file`, was dropped because both arms converged on the same
+(bare-VNode) fix, which resolves the reported lint error either way. A seventh — that
+TanStack Query v5's `MutationFunction` type requires a `context` second parameter —
+is real (verified against `@tanstack/query-core`'s own shipped `.d.ts`, checked at
+5.90.19) but was dropped anyway: both a plain reference note and a version citing the
+exact verified type still lost to the model's own confident, wrong prior in every run,
+so the content was not earning its cost. Recorded here rather than silently forgotten,
+in case a future run — or a differently-worded note — closes it.
 
 `composable-reactivity` and `vite-secret` are capability cases: the pack earns its place
 only if the baseline arm gets them wrong. `module-scope-state` is expected to pass at
