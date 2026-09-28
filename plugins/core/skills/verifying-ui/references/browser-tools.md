@@ -192,20 +192,25 @@ tools are withdrawn and the rest of the server is untouched.
   about to be typed into what.
 - **Extension and PWA installs** change the machine, not the page.
 
-Both lists are keyed to the two recommended server keys. **Under any other key every name
-here misses**, and the whole server stays in the pool. The grants degrade to prompts, which
-is the harmless direction; the two removals degrade to prompts as well, which is not —
-`evaluate_script` is then one approval away, and the list above is back to being a rule you
-hold rather than one the frontmatter enforces. Checked against 2.1.278.
+The grants are keyed to the two recommended server keys; the removals are not. **Under any
+other key every grant misses**, and the tool prompts instead, which is the harmless
+direction. The removals put a wildcard in the server segment, `mcp__*__evaluate_script`,
+so they hold under any key: on Claude Code 2.1.283, under the key a plugin-provided server
+gets (`plugin_chrome-devtools-mcp_chrome-devtools`), `mcp__*__evaluate_script` withdrew
+`evaluate_script` although `--allowedTools` granted it, and left `take_snapshot` callable.
+The wildcard withdraws each of the four names from every server, which is right only
+because none of them is a tool this loop may call on any server. The withdrawal is scoped to
+the invocation of this skill: on 2.1.283 a blocked tool was absent from the session's tool
+list with the skill invoked as a slash command, and listed with the plugin loaded but the
+skill not invoked; a model-fired invocation is unobserved.
 
-A key is also sanitised before the prefix is built, so the miss can happen while the config
+A key is also sanitised before the prefix is built, so a grant can miss while the config
 looks right: `chrome.devtools` resolves to `mcp__chrome_devtools__*`, matching none of the
-hyphenated names above although the server connects and every tool works. If you are
-attaching a server under a key that is not `chrome-devtools` or `playwright`, assume this
-file's guarantees are absent and say so rather than relying on them. It is the reason the
-prose above says *why* each tool is withheld instead of just listing them.
+hyphenated grants above although the server connects and every tool works. If you are
+attaching a server under a key that is not `chrome-devtools` or `playwright`, expect every
+observation to prompt; the removals still hold.
 
-**Do not collapse either list into a wildcard.** `mcp__chrome-devtools__*` in
+**Never put the wildcard in the tool segment.** `mcp__chrome-devtools__*` in
 `disallowed-tools` withdraws the whole server — including every tool this loop needs — and
 a tool named in both lists is withdrawn, so the wildcard silently wins over the grants.
 

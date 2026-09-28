@@ -63,7 +63,7 @@ Copy `templates/prompt.md` and `templates/criteria.md` from this skill, then:
   other than what it claims.
 - **`passes if` / `fails if` must be decidable by someone who has not read the
   skill.** Quote the observable behaviour, not the reasoning you hope produced it.
-- **`core`'s bar is higher.** It is enabled in every repository and carries four
+- **`core`'s bar is higher.** It is enabled in every repository and carries ten
   listed descriptions against a pack's one, so a `core` rule that passes baseline
   wastes several times as much.
 

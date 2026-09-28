@@ -12,10 +12,10 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | passes | passes | **remove** — the model already knew |
 | fails | fails | rewrite, or accept it is out of reach |
 
-**`core`'s bar is higher than a framework pack's.** `core` carries four listed
-descriptions against a framework pack's one — about 2.7k characters to 0.8k — and it is
-enabled in every repository, so that cost is paid in every session of every project. A
-pack at least only loads where its framework is. A `core` skill that passes baseline is
+**`core`'s bar is higher than a framework pack's.** `core` carries ten listed
+descriptions — eight skills and two agents — against a framework pack's one, about 3.7k
+characters to 0.6k, and it is enabled in every repository, so that cost is paid in every
+session of every project. A pack at least only loads where its framework is. A `core` skill that passes baseline is
 several times the waste, and `/skill-doctor` will tell you what it actually costs.
 
 Cases fall into two kinds. **Capability**: the model cannot solve it unaided — a
@@ -36,31 +36,40 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `shaping-commits` | Offering genuine alternatives on request, and basing the one-commit-or-several call on whether an intermediate commit would still build rather than splitting mechanically by file |
 | `commit-message-audience` | Whether the message describes the change for a colleague, or leaks the planning-artifact context (a session, a handoff, a phase, a roadmap) it was drafted alongside — even when paraphrased around the literal banned words |
 | `describing-changes-trigger` | Whether the `Skill` tool actually fires on the user's own informal register, not only whether the description matches it in isolation |
-| `planning-features` | Producing durable on-disk artifacts that survive context loss, not a plan that exists only in the transcript |
-| `roadmap-rules-preamble` | Whether the user's rules block defaults get recorded durably in the artifacts when none are given, not just recited in chat |
-| `checkpoint-resume` | Whether `checkpoint` mode has somewhere to put ad-hoc work with no roadmap, rather than forcing one or writing nothing durable |
-| `feature-understanding` | Whether `MASTER-PLAN.md` records what is being built and why — including the reason behind a stated business rule — before it records how |
-| `conflicting-inputs` | Whether the source-of-truth ladder (confirmed rule > user story > visual reference) is applied when sources disagree, rather than silently following one |
+| `planning-from-spec` | Whether `PLAN.md` is built from `SPEC.md` — named vertical-slice tasks, the Global Constraints verbatim, every success criterion and Review Focus entry owned by a task, decisions not code, no commit step, only the fast gates in Done when — and whether an owned open question blocks only its task instead of the plan |
+| `planning-default-rules` | Whether planning records the default rules on disk — in `HANDOFF.md` — when the user sets none, and whether the rules it states are the current set rather than a retired one |
+| `checkpoint-kickoff` | Whether `checkpoint` mode has somewhere durable to put ad-hoc work with no plan, stays honest about what is verified, and ends with a paste-ready kickoff prompt |
+| `clarifying-rule-rationale` | Whether `clarifying-features` keeps a business rule's reason beside it in `SPEC.md`, and asks for the reason of a rule given without one instead of inventing it |
+| `clarifying-conflicting-sources` | Whether conflicting sources become a question whose recommendation follows authority — a confirmed rule over the story over the design, a derived document never over its source — recorded as a decision naming the losing source |
+| `clarifying-frontier` | Whether work with no story is clarified facts first — the classification with its reasons, a user's claim about the code checked, a rule's reason asked, forms with the recommended option first, no question the repository answers, nothing built — and whether a small change takes the in-chat design route instead |
+| `executing-pause` | Whether subagent-per-task execution builds task 1 through an implementer, reviews it, and stops at the pause before task 2, without touching the git index |
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
 | `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute, and specifying the rewrite enough to act on |
 | `anchoring-a-rewrite` | Whether an agentic rewrite points at a file that already does the thing, or paraphrases the convention — and whether it invents the path when it has none |
-| `dispatching-a-review` | Whether the read-only `reviewer` agent gets dispatched from ordinary wording, or the main thread reviews the diff itself |
+| `reviewing-changes-trigger` | Whether ordinary pre-merge wording starts `reviewing-changes`, and whether the review stays in `core:reviewer` workers — the right base, a verify pass, gates reported or NOT RUN, a report file, nothing edited — rather than in the main thread |
+| `review-uncommitted-scope` | Whether the reviewed diff covers the branch's commits, the uncommitted edit and the untracked file, and leaves out commits already on the remote base and `temp/` |
+| `review-spec-axis` | Whether the spec axis reports a named state the code lacks, leaves an EXTRA criterion alone and flags a behaviour no source asks for — and says it is NOT RUN when there is no spec, rather than inventing intent |
 | `verifying-ui` | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
 | `qa-test-list` | Whether `plan` mode produces acceptance criteria mapped to positive/negative/edge cases naming a verifying check, or a flat list of things to click |
-| `qa-list-without-a-story` | Whether the no-story path derives criteria from the phase plan and diff and discloses the weaker source, rather than inventing a story to look ordinary |
+| `qa-list-without-a-spec` | Whether, with no spec and no written requirement, `plan` derives criteria from the plan's task and the diff and discloses the weaker source, rather than inventing a story to look ordinary |
 | `design-intent-skip` | Whether `run` reports the design-intent cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
 | `storybook-skip` | The same skip discipline for the Storybook cases, when no Storybook script exists |
 
 Two of these decide a component rather than only scoring an answer.
 
-`dispatching-a-review` scores the **agent**. A pass at baseline means the agent's own
-description is already dispatching it, so a dispatcher skill would be a second trigger
-surface competing with the first — and the rule here is to prune before adding.
+`reviewing-changes-trigger` decides the **`reviewing-changes` description and the chain behind
+it**. `reviewing-changes` is what dispatches the reviewer — the `reviewer` agent's own
+description says it is not for direct use — so the untyped prompt asks two things: whether
+the description fires on the words a user types before a merge request, and whether the
+review then stays in `core:reviewer` workers. A with-plugin run that reviews in the main
+thread says which half to change, depending on whether the skill fired.
 
-`verifying-ui` ships `disable-model-invocation`, so it is absent from the always-on
-listing and its cost is zero until someone types it. Its case carries the promotion
-question: whether the model reaches for a browser with any discipline unprompted, and
-therefore whether the listing cost would buy anything.
+`verifying-ui` is listed, as a trial: its description is in the always-on listing and it
+can fire unprompted, so its hold on verification is the body's first instruction. Its case
+carries the trial's question — in the arm where the skill is present but not typed, whether
+it fires on the wording, holds until released, and looks with more discipline than the arm
+with `core` disabled — and therefore whether the listing cost buys anything, or
+`disable-model-invocation` goes back.
 
 It is also the case with the most arms, because it varies two things at once. The
 environment: **a browser MCP server present, and none** — the second is not a degenerate
@@ -71,10 +80,10 @@ says which combinations answer which question; run the environments against both
 than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
-that is the whole point of the field, and it now applies to four of the eight cases here.
-Enabling the plugin is not enough: type `/core:verifying-ui`, `/core:preparing-a-repo` or
-`/core:optimizing-prompts` — the last of these covers two cases — to start that arm, and
-keep the baseline arm's prompt identical apart from the invocation.
+that is the whole point of the field, and it applies to three of the twenty-three cases
+here. Enabling the plugin is not enough: type `/core:preparing-a-repo` or
+`/core:optimizing-prompts` — the second covers two cases — to start that arm, and keep the
+baseline arm's prompt identical apart from the invocation.
 An arm that merely enables the plugin and waits is measuring the field, not the skill.
 
 ## Running them
@@ -146,6 +155,34 @@ has three ways to look healthy while measuring the wrong thing:
   with an empty `{"mcpServers":{}}` where the server under test is absent. Otherwise the
   arms differ by every connector configured on the machine, not only by the variable.
 
+**A hand-run case carries its own environment and its own answers.** A case that needs a
+real repository, or whose component asks through forms — `clarifying-features`' rounds,
+`planning-features`' approval, `executing-plans`' pause — is hand-run, or scored only up to
+and including its first form. Its `criteria.md` holds a **Fixture** section, which the
+runner builds in a fresh directory before each run and checks with the rig commands it
+lists, and a **Scripted answers** section: the option to pick for each form, in order, and
+where to end the session. Run a case with scripted answers interactively (`claude`, not
+`-p`) so each form can be answered; `claude --help` on 2.1.283 marks neither `--plugin-dir`
+nor `--strict-mcp-config` as print-only. Pass the prompt's `allowed_tools` as
+`--allowedTools` and approve no other tool mid-run. A hand-run is graded per criterion line
+against those two sections, and a run whose rig check failed is void, not a fail.
+
+**User-level instructions reach both arms unless the run keeps them out.**
+`~/.claude/CLAUDE.md` and `~/.claude/rules/` load with or without the plugin, so a
+baseline can pass a line because the runner's own instructions state it. Observed on
+2.1.283: `--bare` skips CLAUDE.md auto-discovery and hooks but still loads every installed
+plugin — it is not a no-plugin arm, so the installed copies are still disabled for the run
+— and under a subscription login a `--bare` run fails with `api_error`, `apiKeySource` none.
+`claude --help` on 2.1.283 names `ANTHROPIC_API_KEY`, or an `apiKeyHelper` passed with
+`--settings`, as the only Anthropic auth under `--bare`; the second route is unobserved.
+"An API key", here and in each case's criteria, means either. A hand-run therefore isolates
+user-level instructions only by running every arm with `--bare` and an API key, which also
+turns the `core` hooks off in every arm: score a line that depends on a hook N/A. Where
+that is unavailable, a case that user-level instructions could contaminate names the lines
+whose content a runner's instructions may already state, and on such a machine those lines
+are non-discriminating rather than evidence for retention. The rig check records which
+applied.
+
 **A case that has the model write or diagnose a project gets a fresh, empty directory per
 run, and never this repository.** Anything a previous run left behind is a worked answer to
 the same task lying in the workspace, and the next run reads it instead of solving it;
@@ -157,7 +194,7 @@ choice the criteria can score rather than something the environment decided.
 
 `core` has one wrinkle a framework pack does not. Its skills trigger on description, so
 a baseline arm has to disable the whole plugin rather than merely avoid naming the
-skill — and disabling the plugin also removes the three hooks. A `core`-off arm
+skill — and disabling the plugin also removes the four hooks. A `core`-off arm
 therefore has no Stop-hook gate check either, which matters when scoring anything that
 claims something was verified. Note which arm you were in before crediting an honest
 verification section to the skill.

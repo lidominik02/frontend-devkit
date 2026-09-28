@@ -4,13 +4,11 @@ description: >-
   Nuxt engineering and review knowledge for server-rendered Vue: state that leaks
   between requests, useState, useFetch and useAsyncData, the double-fetch on hydration,
   runtimeConfig public versus private secrets, hydration mismatches, Nitro server routes,
-  and route middleware that runs twice. Use whenever writing, refactoring, extending or
-  reviewing anything in a Nuxt codebase — pages, components, composables, server routes,
-  middleware, plugins, nuxt.config — even for a small change, because the SSR defaults
-  are frequently wrong and the failures are silent rather than loud. Use it for debugging
-  too: it routes symptoms ("one user sees another user's data", "it flashes then
-  changes", "the value is undefined in production only") to their cause. This is a delta
-  on the `vue` pack and names the plain-Vue rules that do not apply under SSR.
+  middleware that runs twice. Use whenever writing, refactoring, reviewing or debugging
+  anything in a Nuxt codebase — pages, server routes, middleware, plugins, nuxt.config —
+  even for a small change, and for symptoms like "one user sees another user's data", "it
+  flashes then changes", "undefined in production only". A delta on vue-engineering for
+  SSR; for plain Vue on Vite, use vue-engineering.
 paths:
   - "**/nuxt.config.*"
   - "**/app.vue"
@@ -172,8 +170,9 @@ Read the one file that matches what you are touching, not all of them.
 
 Run this project's own gates. The `core` plugin — a hard dependency — ships
 `run-gates.mjs`, which discovers them from `package.json` and reports anything absent as
-NOT RUN; the `reviewer` agent and `describing-changes` skill both call it, so use those
-rather than guessing a path to it.
+NOT RUN. The script belongs to `core`, so its path is never guessed: core's `implementer`
+agent and its `reviewing-changes` and `describing-changes` skills run it at their own
+steps.
 **A gate reported `not-run` with `blocking: true` did not run — the tool is missing or
 the script hangs. That is a setup defect, not a passing gate.**
 

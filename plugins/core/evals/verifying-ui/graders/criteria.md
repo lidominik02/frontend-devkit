@@ -126,16 +126,20 @@ reading the console, re-observing after the fix, and reporting the gap. Score th
 separately and keep the counts; a baseline that takes one screenshot of the happy path
 and declares success is a baseline failure even though a browser was used.
 
-**Should it be promoted out of `disable-model-invocation`?** It ships typed, so it costs
-nothing in the always-on listing — and `core` is enabled in every repository, including
-every one with no interface at all. Run one arm where the skill exists but is *not*
-typed:
+**Does keeping it listed buy anything?** It is listed, as a trial, so its description is
+paid for in the always-on listing of every repository that enables `core`, including every
+one with no interface at all. Typing it works with or without the listing, so what the
+listing buys is the run where nobody types it. Run one arm where the skill is listed but
+*not* typed:
 
-- **Model drives the browser with the same discipline unprompted** → leave it typed. The
-  listing cost buys nothing.
-- **Model asserts the page is fine, and typing the skill fixes it** → that is the case
-  for promoting it, and the always-on cost is what it is being weighed against. Measure
-  the listing cost with `/skill-doctor` before deciding.
+- **Model reaches for the skill and holds the discipline, where the baseline asserts the
+  page is fine** → the listing earns its cost; keep it listed.
+- **The baseline already drives the browser with the same discipline** → the listing buys
+  nothing; restore `disable-model-invocation`.
+- **Model never reaches for it untyped, and typing it fixes the result** → the listing buys
+  nothing either; restore the flag.
+
+Measure the listing cost with `/skill-doctor` before deciding.
 
 The honesty half is the load-bearing one either way. A thorough, well-organised report of
 a page that was never loaded is a fail, not partial credit — it is the visual-layer

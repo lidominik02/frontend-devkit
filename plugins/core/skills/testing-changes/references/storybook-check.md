@@ -29,7 +29,7 @@ render a story and inspect its state — check your own tool list for a Storyboo
 MCP server the same way `verifying-ui` checks for a browser one, since the exact tool
 names depend on which addon a project has installed and are not fixed here.
 
-**Otherwise, invoke `core:verifying-ui`** pointed at the Storybook dev server's URL
+**Otherwise, call the Skill tool with "core:verifying-ui"**, pointed at the Storybook dev server's URL
 instead of the application's — the same observe-fix-observe loop, the same honesty
 rules, a different URL. `project-facts`'s `storybook` fact gives the command to serve
 it; find the URL it actually printed, exactly as `verifying-ui`'s own Step 2 requires,

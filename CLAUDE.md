@@ -58,9 +58,10 @@ node scripts/pack-graph.mjs    # pack layering, derived from the manifests
 
 `scripts/validate.mjs` checks frontmatter (description present, under the 1024-char
 packaging cap, skill name matching its directory, every field one Claude Code actually
-reads), the always-on description budget against the figure `README.md` publishes, that
-every cited `.md` resolves from the file citing it, that every blocked `mcp__` tool
-appears in `browser-tools.md`, and that every `.mjs` parses. `claude plugin validate --strict` does **not** read component frontmatter, which
+reads, no `<` or `>` in any value), the always-on description budget against the figure
+and ceiling `README.md` publishes, that
+every cited `.md` resolves from the file citing it, that every blocked `mcp__` tool is
+documented under the skill that blocks it, and that every `.mjs` parses. `claude plugin validate --strict` does **not** read component frontmatter, which
 is why that allowlist lives here.
 
 Run both before pushing. The Stop hook runs the first automatically when anything under
@@ -87,7 +88,7 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 | `/new-pack` | Scaffold a framework pack and wire it in everywhere |
 | `/pack-parity` | Check the delta contract for drift, for every family the manifests declare |
 | `/body-vs-reference-audit` | Which parts of a body have earned their place there |
-| `/cli-upgrade-check` | Revalidate against a newer CLI and move the pin |
+| `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
 | `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
 | `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants above |

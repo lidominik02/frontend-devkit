@@ -1,17 +1,13 @@
 ---
 name: verifying-ui
 description: >-
-  Verify a UI change by looking at it in a real browser instead of asserting that
-  it works. Drives a browser MCP server — Chrome DevTools MCP or Playwright MCP —
-  through an observe-fix-observe loop: serves the app, reads the URL the dev server
-  actually printed, takes an accessibility snapshot and a screenshot, reads the
-  console and the network, and drives the page to the states that only exist at
-  runtime. Use when the user says "check how this looks", "verify the UI", "does
-  this render correctly", "take a screenshot of the page", "open it in the browser",
-  "check the empty state", "check dark mode", "why does it look wrong", or asks
-  whether a visual change actually works. Reports what it could not observe rather
-  than calling it fine, and says plainly when no browser tool is configured.
-disallowed-tools: mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__upload_file, mcp__playwright__browser_evaluate, mcp__playwright__browser_file_upload
+  Verifies a UI change by observing it in a real browser through a browser MCP server,
+  instead of asserting that it works. Use when the user says "check how this looks",
+  "verify the UI", "does this render correctly", "take a screenshot of the page", "open
+  it in the browser", "check the empty state", "check dark mode", "why does it look
+  wrong", or asks whether a visual change actually works. For a QA list or a run against
+  acceptance criteria, use testing-changes.
+disallowed-tools: mcp__*__evaluate_script, mcp__*__upload_file, mcp__*__browser_evaluate, mcp__*__browser_file_upload
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(git diff *) mcp__chrome-devtools__take_snapshot mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__list_console_messages mcp__chrome-devtools__get_console_message mcp__chrome-devtools__list_network_requests mcp__chrome-devtools__get_network_request mcp__chrome-devtools__navigate_page mcp__chrome-devtools__new_page mcp__chrome-devtools__list_pages mcp__chrome-devtools__select_page mcp__chrome-devtools__resize_page mcp__chrome-devtools__emulate mcp__chrome-devtools__wait_for mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_console_messages mcp__playwright__browser_network_requests mcp__playwright__browser_navigate mcp__playwright__browser_resize mcp__playwright__browser_wait_for Read Grep Glob
 ---
 
@@ -170,8 +166,11 @@ Verified at: <the URL actually loaded>
 - <path:line or component> — what renders wrong, and the evidence you saw
 
 ### Console / network
-- <errors and warnings, verbatim>  |  clean
+- <errors and warnings, verbatim, with the page they came from>  |  clean
 ```
+
+Every observation and finding carries the URL it came from. A snapshot or network entry
+already names it; a console line names no page, so write the page next to it.
 
 **Not observed** is a required section, not an apology. A verification that lists three
 states and silently omits the four it could not reach reads as complete coverage, which
@@ -185,9 +184,6 @@ is worse than a short honest list.
   verified when the list is empty on screen, not when the code that handles it reads
   correctly.
 - **Trust `declaredPort`, or any remembered default, over the URL the server printed.**
-- **Report an observation without the URL it came from.** The snapshot tells you the URL,
-  so there is no excuse for an unlabelled finding — and the console does not, so that one
-  has to be tied to the page by hand.
 - **Re-observe without re-establishing the state under test.** See step 5, and
   `references/runtime-checks.md` for the full mechanics.
 - **Call it fixed without re-observing.** See step 5.

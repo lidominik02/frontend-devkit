@@ -13,7 +13,7 @@
 // not found" and has to re-read. That is why this runs a formatter only, never
 // a fixer that changes semantics.
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -51,6 +51,14 @@ function findLocalBin(fromDir, stopDir, bin) {
   return existsSync(atRoot) ? atRoot : null;
 }
 
+/** Whether `file` resolves to a path inside `dir`, symlinks followed on both sides.
+ * @param {string} dir @param {string} file */
+function inside(dir, file) {
+  let rel;
+  try { rel = path.relative(realpathSync(dir), realpathSync(file)); } catch { return false; }
+  return rel !== '' && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
+}
+
 /** @param {string} bin @param {string[]} args */
 function run(bin, args) {
   spawnSync(bin, args, { stdio: 'ignore', timeout: 30_000 });
@@ -67,6 +75,9 @@ function main(input) {
   if (!existsSync(file) || !statSync(file).isFile()) return;
 
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  // A file outside the project (the user's auto-memory, an --add-dir directory) is not
+  // the project's to format, yet findLocalBin's fallback would run the project's formatter.
+  if (!inside(projectDir, file)) return;
   const fileDir = path.dirname(path.resolve(file));
 
   // An explicit format command in the project manifest wins, provided it names

@@ -5,12 +5,6 @@ on:
     branches: [main]
   pull_request:
 
-# Pinned deliberately. Validator behaviour moves between patch releases: flags
-# appear and warnings become errors, so an unpinned global install turns an
-# unrelated upstream change into a red build on a commit that touched nothing.
-env:
-  CLAUDE_CODE_VERSION: '2.1.250'
-
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -37,16 +31,17 @@ jobs:
       #                skill name matching its directory, and every field one
       #                Claude Code actually reads — `--strict` flags unknown keys
       #                in plugin.json but NOT in component frontmatter (verified
-      #                against 2.1.250 and 2.1.276), so a misspelled
-      #                `disallowed-tools` silently stops being enforced.
+      #                against 2.1.250, 2.1.276 and 2.1.283), so a misspelled
+      #                `disallowed-tools` silently stops being enforced. Also
+      #                rejects a `<` or `>` in any frontmatter value.
       #   budget       the always-on description total still matches the figure
-      #                README.md publishes.
+      #                README.md publishes and stays under its ceiling.
       #   references   every cited .md resolves from the file citing it — a dead
       #                reference is followed at runtime and nothing else catches it.
-      #   mcp-names    every blocked mcp__ tool appears in browser-tools.md. This
-      #                is the one rule resting on a string match against a name a
-      #                server chooses: on a rename the block silently matches
-      #                nothing and the table quietly goes stale.
+      #   mcp-names    every blocked mcp__ tool is documented under the skill that
+      #                blocks it. This is the one rule resting on a string match
+      #                against a tool name a server chooses: when a server renames
+      #                a tool the block silently matches nothing.
       #   scripts      every .mjs parses, and every script hooks.json names exists.
       #
       # This is the same script the Stop hook runs locally. It lives in
@@ -55,9 +50,12 @@ jobs:
       - name: Marketplace checks
         run: node scripts/validate.mjs
 
+      # Unpinned on purpose: CI checks against the latest release. Validator
+      # behaviour moves between releases, so a red build on a commit that changed
+      # nothing is the signal to run /cli-upgrade-check.
       - name: Install Claude Code
         run: |
-          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          npm install -g @anthropic-ai/claude-code@latest
           claude --version
 
       # --strict turns an unrecognised field in plugin.json / marketplace.json into
@@ -69,7 +67,9 @@ jobs:
       #
       # --strict also fails on the missing `version`, which is omitted
       # deliberately so installs track the commit SHA. This step therefore runs
-      # strict and allows exactly that one finding.
+      # strict and allows exactly that one finding, matched on the text 2.1.283
+      # prints: bare for a plugin, prefixed `plugins[N] plugin.json →` for the
+      # marketplace.
       #
       # The pack list is derived from marketplace.json rather than hardcoded, so
       # adding a pack cannot leave it unvalidated here.
@@ -79,7 +79,7 @@ jobs:
           targets=". $(node -p "require('./.claude-plugin/marketplace.json').plugins.map(p => p.source).join(' ')")"
           for target in $targets; do
             out="$(claude plugin validate "$target" --strict 2>&1 || true)"
-            unexpected="$(printf '%s\n' "$out" | grep '❯' | grep -v 'version: No version specified' || true)"
+            unexpected="$(printf '%s\n' "$out" | grep '❯' | grep -vE '❯ (plugins\[[0-9]+\] plugin\.json → )?version: No version specified\. Consider adding a version following semver \(e\.g\., "1\.0\.0"\)$' || true)"
             if [ -n "$unexpected" ]; then
               echo "::error::$target has findings beyond the intended version warning"
               printf '%s\n' "$unexpected"

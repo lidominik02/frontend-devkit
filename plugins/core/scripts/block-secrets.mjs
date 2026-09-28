@@ -33,9 +33,12 @@
 let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (d) => { raw += d; });
-process.stdin.on('end', () => {
+process.stdin.on('end', async () => {
   try {
-    main(raw);
+    // Imported here rather than statically, so a missing lib reaches the catch
+    // below instead of failing module linking with a raw trace.
+    const { isCredentialPath } = await import('./lib/credential-paths.mjs');
+    main(raw, isCredentialPath);
   } catch (err) {
     // A hook that cannot evaluate its own policy must not take the session down
     // with it. Report loudly and let the call through: a permanently blocked
@@ -116,24 +119,8 @@ function stripHeredocBodies(text) {
   return out.join('\n');
 }
 
-/** @param {string} file */
-function isCredentialPath(file) {
-  // Templates are documentation, not secrets, and are the common case in a
-  // repo. Checked first so no rule below can override the exemption.
-  if (/\.(example|sample|template|dist)$/.test(file)) return false;
-  const base = file.split('/').pop() ?? '';
-  if (base === '.env' || base.startsWith('.env.')) return true;
-  if (/(^|\/)(secrets|\.ssh|\.gnupg)\//.test(file)) return true;
-  if (/\/\.aws\/credentials$/.test(file)) return true;
-  if (/\.(pem|p12|pfx|keystore|key)$/.test(file)) return true;
-  if (/(^|\/)id_(rsa|ed25519|ecdsa)(\.pub)?$/.test(file)) return true;
-  if (/serviceAccount[A-Za-z0-9_.-]*\.json$/.test(base)) return true;
-  if (base === 'credentials.json') return true;
-  return false;
-}
-
-/** @param {string} input */
-function main(input) {
+/** @param {string} input @param {(file: string) => boolean} isCredentialPath */
+function main(input, isCredentialPath) {
   /** @type {any} */
   let evt = {};
   try { evt = JSON.parse(input); } catch { process.exit(0); }

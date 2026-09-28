@@ -1,15 +1,12 @@
 ---
 name: describing-changes
 description: >-
-  Write a commit message and/or a merge request description for the current changes,
-  following this repository's own convention rather than a generic one. Reads
-  the project's own commitlint config, git remote and merge-request templates, so it
-  needs no configuration added to the repo. Use this whenever the
-  user says "write the commit message", "commit message for this", "generate an MR
-  description", "MR description", "PR description", "describe these changes",
-  "what should I call this commit", or asks for a changelog entry for work in progress
-  — even if they do not mention the convention, and even if they only ask for one of
-  the two. Works on GitLab merge requests and GitHub pull requests alike.
+  Writes a commit message or a merge request description for the current changes in
+  this repository's own convention, not a generic one. Use whenever the user says
+  "write the commit message", "commit message for this", "what should I call this
+  commit", "MR description", "PR description", "describe these changes", or asks for a
+  changelog entry — even without naming the convention, on GitLab or GitHub. For
+  "review this" or "is this safe to merge", use reviewing-changes.
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git log *) Bash(git diff *) Bash(git status *) Read Grep Glob
 ---
 
@@ -21,7 +18,9 @@ you look up — never a house style you assume.
 name anything that exists only between the two of you — a session, a handoff file, a
 roadmap artifact, a phase, a decision id. A colleague reading `git log` or the merge
 request has no access to any of that, so it reads as noise at best and as a private
-detail leaked at worst. Say what the change does and why; that is the whole job.
+detail leaked at worst. Every name in either one resolves from the repository alone, and
+a decision's reason is stated in its own words rather than by pointing at the note that
+recorded it. Say what the change does and why; that is the whole job.
 
 ## Step 1 — The facts, already loaded
 
@@ -56,7 +55,9 @@ git diff <baseBranch>...HEAD --stat
 ```
 
 Describe what the diff *does*, not what the branch is called. A branch named
-`fix/login` whose diff also adds a rate limiter needs both facts in the message.
+`fix/login` whose diff also adds a rate limiter needs both facts in the message. Where
+the diff and the stated intent or plan disagree, report the discrepancy alongside the
+message — that gap is usually a real bug or forgotten work in progress.
 
 ## Step 3 — Write the commit message
 
@@ -141,13 +142,6 @@ publishing it is their decision.
   wrong ID is worse than a blank.
 - **Claim any gate, test, or manual check passed when it did not run.** See step 4.
 - **Commit, push, or open an MR without explicit approval in this turn.**
-- **Impose a convention the repo does not use** because it is more standard.
-- **Describe the branch name or the plan instead of the diff.** If the diff and the
-  stated intent disagree, report the discrepancy — that gap is usually a real bug or
-  forgotten work in progress.
-- **Pad the body.** Short but informative. A body restating the subject is noise.
-- **Name a session, a handoff file, a roadmap artifact, a phase, or a decision id.**
-  The reader is a colleague, not a participant in this conversation.
 - **Rewrite history — amend, squash, or fold a change into an earlier commit —
   unasked.** This skill describes the current diff; it does not restructure past
   commits. `references/shaping-commits.md`'s "one commit or several" question is about

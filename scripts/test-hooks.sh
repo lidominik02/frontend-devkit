@@ -166,11 +166,39 @@ HEREDOC_DASH=$(printf "cat > /tmp/y <<-'EOF5'\n\t\tThis mentions %s, still just 
 assert "allow heredoc body under the <<- form" \
   "$S/block-secrets.mjs" "$(bash_event "$HEREDOC_DASH")" 0
 
+echo "block-secrets: a missing lib/ fails open with the designed message, not a raw trace"
+NOLIB="$(mktemp -d)"; cp "$S/block-secrets.mjs" "$NOLIB/"
+NOLIB_ERR="$(printf '%s' "$(file_event Read "/a/$DOTENV")" | node "$NOLIB/block-secrets.mjs" 2>&1 >/dev/null)"
+NOLIB_CODE=$?
+[ "$NOLIB_CODE" -eq 0 ] && printf '%s' "$NOLIB_ERR" | grep -q 'could not evaluate, allowing through' && ok \
+  || bad "block-secrets without lib/ must exit 0 with 'could not evaluate' (exit=$NOLIB_CODE)"
+rm -rf "$NOLIB"
+
 echo
 echo "format-on-write: must never block, whatever it is given"
 assert "missing file"  "$S/format-on-write.mjs" "$(file_event Write "/nope/gone.ts")" 0
 assert "empty payload" "$S/format-on-write.mjs" '{}' 0
 assert "garbage stdin" "$S/format-on-write.mjs" 'not json at all' 0
+
+echo "format-on-write: formats inside the project only, judged by resolved path"
+# The fake prettier sits in the project, where the hook finds it for any file.
+FW="$(mktemp -d)"; FWP="$FW/proj"; FWO="$FW/memory"; FWLOG="$FW/formatted"
+mkdir -p "$FWP/node_modules/.bin" "$FWP/src" "$FWO"
+printf '#!/bin/sh\nprintf "%%s\\n" "$@" >> "%s"\n' "$FWLOG" > "$FWP/node_modules/.bin/prettier"
+chmod +x "$FWP/node_modules/.bin/prettier"
+printf 'x\n' > "$FWP/src/a.ts"; printf 'x\n' > "$FWO/note.md"
+ln -s "$FWO/note.md" "$FWP/linked.md"; ln -s "$FWP" "$FW/proj-link"
+fw() { printf '%s' "$(file_event Write "$2")" | CLAUDE_PROJECT_DIR="$1" node "$S/format-on-write.mjs" >/dev/null 2>&1; }
+formatted() { [ -f "$FWLOG" ] && grep -qxF -- "$1" "$FWLOG"; }
+fw "$FWP" "$FWP/src/a.ts"
+formatted "$FWP/src/a.ts" && ok || bad "a file inside the project must be formatted"
+fw "$FWP" "$FWO/note.md"
+formatted "$FWO/note.md" && bad "a file outside the project, such as the user's auto-memory, must not be formatted" || ok
+fw "$FWP" "$FWP/linked.md"
+formatted "$FWP/linked.md" && bad "a symlink in the project that resolves outside it must not be formatted" || ok
+fw "$FW/proj-link" "$FW/proj-link/src/a.ts"
+formatted "$FW/proj-link/src/a.ts" && ok || bad "a project reached through a symlink must still be formatted"
+rm -rf "$FW"
 
 echo
 echo "project-facts: must describe any project without config, and never throw"
@@ -486,6 +514,64 @@ CLAUDE_PROJECT_DIR="$DV" node "$S/run-gates.mjs" --list --stage release 2>/dev/n
 rm -rf "$DV"
 
 echo
+echo "project-facts / run-gates: a wrong working directory is not a project without gates"
+# Below the git top level with no package.json, or outside git with none, is a
+# wrong directory. A git top level with no package.json is a real project.
+PR="$(mktemp -d)"; (cd "$PR" && git init -q . 2>/dev/null)
+mkdir -p "$PR/sub/dir" "$PR/pkg" "$PR/cfg/.claude"
+printf '{}' > "$PR/pkg/package.json"; printf '{}' > "$PR/cfg/.claude/project.json"
+printf '{}' > "$PR/sub/dir/tsconfig.json"
+NG="$(mktemp -d)"
+root_of() {
+  CLAUDE_PROJECT_DIR="$1" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const f = m.detect(process.env.CLAUDE_PROJECT_DIR);
+    const wrong = (s) => s.startsWith('not a project root');
+    console.log(JSON.stringify([f.projectRoot.isRoot, wrong(f.gates.lint.source), wrong(f.devServer.source)]));
+  });" 2>/dev/null
+}
+[ "$(root_of "$PR")" = '[true,false,false]' ] \
+  && ok || bad "a git top level with no package.json must stay a project"
+[ "$(root_of "$PR/sub/dir")" = '[false,true,true]' ] \
+  && ok || bad "below the git top level with no package.json must be reported as not a project root"
+[ "$(root_of "$NG")" = '[false,true,true]' ] \
+  && ok || bad "outside git with no package.json must be reported as not a project root"
+[ "$(root_of "$PR/pkg")" = '[true,false,false]' ] \
+  && ok || bad "a subdirectory with its own package.json must be a project"
+[ "$(root_of "$PR/cfg")" = '[true,false,false]' ] \
+  && ok || bad "a subdirectory with a .claude/project.json must be a project"
+for d in "$PR/sub/dir" "$NG/gone"; do
+  CLAUDE_PROJECT_DIR="$d" node "$S/project-facts.mjs" >/dev/null 2>&1 \
+    && ok || bad "injected project-facts must exit 0 in $d"
+done
+RGL="$(CLAUDE_PROJECT_DIR="$PR/sub/dir" node "$S/run-gates.mjs" --list 2>/dev/null)"
+printf '%s' "$RGL" | grep -q 'not a project root' \
+  && ok || bad "run-gates --list in a wrong directory must say it is not a project root"
+printf '%s' "$RGL" | grep -q 'has no [a-z]* script' \
+  && bad "run-gates --list in a wrong directory must not report a missing script" || ok
+# Exit 1, so it cannot pass; not blocking, so the Stop hook stays silent there.
+wrongdir_json() {
+  node -e "
+  const r = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+  const ok = r.passed === false && r.project.root === false && r.typecheckMissing === false
+    && r.results.length > 0
+    && r.results.every(x => x.status === 'not-run' && x.blocking === false && x.reason.startsWith('not a project root'));
+  process.exit(ok ? 0 : 1);"
+}
+for d in "$PR/sub/dir" "$NG"; do
+  RGJ="$(CLAUDE_PROJECT_DIR="$d" node "$S/run-gates.mjs" --json 2>/dev/null)"; RGC=$?
+  [ "$RGC" -eq 1 ] && printf '%s' "$RGJ" | wrongdir_json 2>/dev/null \
+    && ok || bad "run-gates in a wrong directory must exit 1 with non-blocking not-run results ($d, exit=$RGC)"
+done
+CLAUDE_PROJECT_DIR="$PR" node "$S/run-gates.mjs" --list 2>/dev/null | grep -q 'this project has no lint script' \
+  && ok || bad "run-gates at a git top level with no package.json must still report no lint script"
+CLAUDE_PROJECT_DIR="$PR" node "$S/run-gates.mjs" >/dev/null 2>&1 \
+  && ok || bad "run-gates at a git top level with no package.json must exit 0"
+WD_OUT="$(printf '{"stop_hook_active":false}' | CLAUDE_PROJECT_DIR="$PR/sub/dir" node "$S/verify-before-done.mjs" 2>/dev/null)"
+[ $? -eq 0 ] && [ -z "$WD_OUT" ] && ok || bad "the Stop hook must stay silent in a wrong directory"
+rm -rf "$PR" "$NG"
+
+echo
 echo "run-gates: the distinction between a broken build and a broken toolchain"
 G="$(mktemp -d)"; (cd "$G" && git init -q . 2>/dev/null)
 rg() { CLAUDE_PROJECT_DIR="$G" node "$S/run-gates.mjs" "$@" >/dev/null 2>&1; echo $?; }
@@ -583,6 +669,90 @@ mkdir -p "$V/.claude" && printf '{"verifyOnStop":false}' > "$V/.claude/project.j
 [ -z "$(vb '{"stop_hook_active":false}')" ] && ok || bad "verifyOnStop:false must opt out"
 rm -rf "$V"
 
+echo "verify-before-done: an unchanged green tree is not re-verified, a red one always is"
+# The lint gate appends to a counter outside the repo, so a skipped run is told
+# apart from a silent pass without changing the tree being fingerprinted.
+VS="$(mktemp -d)"; VST="$(mktemp -d)"; RUNS="$VST/gate-runs"
+vcommit() { git -C "$1" -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false \
+  commit -q --no-verify -m "$2" >/dev/null 2>&1; }
+(cd "$VS" && git init -q . 2>/dev/null)
+printf '{"scripts":{"lint":"echo run >> %s"}}' "$RUNS" > "$VS/package.json"
+git -C "$VS" add package.json && vcommit "$VS" init
+printf 'a' > "$VS/work.txt"
+# State files go to os.tmpdir(); a private TMPDIR keeps them removable.
+vsd() { printf '%s' "$2" | TMPDIR="$VST" CLAUDE_PROJECT_DIR="$1" node "$S/verify-before-done.mjs" 2>/dev/null; }
+vs() { vsd "$VS" "$1"; }
+runs() { if [ -f "$RUNS" ]; then wc -l < "$RUNS" | tr -d ' '; else echo 0; fi; }
+
+SP="{\"session_id\":\"vbd-pass-$$\",\"stop_hook_active\":false}"
+[ -z "$(vs "{\"session_id\":\"vbd-pass-$$\",\"stop_hook_active\":false,\"background_tasks\":[]}")" ] \
+  && [ "$(runs)" -eq 1 ] && ok || bad "the first Stop in a session must run the gates (runs=$(runs))"
+[ -z "$(vs "$SP")" ] && [ "$(runs)" -eq 1 ] \
+  && ok || bad "an unchanged tree after a passing run must skip the gates (runs=$(runs))"
+printf 'b' >> "$VS/work.txt"
+vs "$SP" >/dev/null
+[ "$(runs)" -eq 2 ] && ok || bad "editing an untracked file must re-run the gates (runs=$(runs))"
+
+vs '{"stop_hook_active":false}' >/dev/null; vs '{"stop_hook_active":false}' >/dev/null
+[ "$(runs)" -eq 4 ] && ok || bad "a payload without session_id must always run the gates (runs=$(runs))"
+
+BG_OUT="$(vs "{\"session_id\":\"vbd-bg-$$\",\"stop_hook_active\":false,\"background_tasks\":[{\"id\":\"b1\",\"type\":\"subagent\",\"status\":\"running\",\"description\":\"writes files\"}]}")"
+BG_CODE=$?
+[ "$BG_CODE" -eq 0 ] && [ -z "$BG_OUT" ] && [ "$(runs)" -eq 4 ] \
+  && ok || bad "in-flight background_tasks must exit 0 without running the gates (exit=$BG_CODE runs=$(runs))"
+# A background shell such as a dev server can run all session: it must not turn the gates off.
+vs "{\"session_id\":\"vbd-shell-$$\",\"stop_hook_active\":false,\"background_tasks\":[{\"id\":\"s1\",\"type\":\"shell\",\"status\":\"running\",\"description\":\"dev server\",\"command\":\"npm run dev\"}]}" >/dev/null
+[ "$(runs)" -eq 5 ] && ok || bad "a running background shell must not skip the gates (runs=$(runs))"
+vs "{\"session_id\":\"vbd-done-$$\",\"stop_hook_active\":false,\"background_tasks\":[{\"id\":\"b2\",\"type\":\"subagent\",\"status\":\"completed\",\"description\":\"done\"}]}" >/dev/null
+[ "$(runs)" -eq 6 ] && ok || bad "a subagent that is not running must not skip the gates (runs=$(runs))"
+vs "{\"session_id\":\"vbd-mixed-$$\",\"stop_hook_active\":false,\"background_tasks\":[{\"id\":\"s2\",\"type\":\"shell\",\"status\":\"running\",\"description\":\"dev server\",\"command\":\"npm run dev\"},{\"id\":\"b3\",\"type\":\"subagent\",\"status\":\"running\",\"description\":\"writes files\",\"agent_type\":\"general-purpose\"}]}" >/dev/null
+[ "$(runs)" -eq 6 ] && ok || bad "a running subagent next to a shell must still skip the gates (runs=$(runs))"
+
+printf '{"scripts":{"lint":"echo run >> %s && exit 1"}}' "$RUNS" > "$VS/package.json"
+SF="{\"session_id\":\"vbd-fail-$$\",\"stop_hook_active\":false}"
+vs "$SF" | grep -q '"decision": *"block"' && ok || bad "a failing gate must block the first Stop in a session"
+vs "$SF" | grep -q '"decision": *"block"' && [ "$(runs)" -eq 8 ] \
+  && ok || bad "an unchanged tree after a failing run must run the gates and block again (runs=$(runs))"
+
+# A branch switch carrying the same uncommitted edit leaves status and the diff
+# identical while the committed content under it changes.
+VB="$(mktemp -d)"; (cd "$VB" && git init -q . 2>/dev/null)
+printf '{"scripts":{"lint":"test ! -f broken"}}' > "$VB/package.json"
+printf 'notes\n' > "$VB/notes.txt"
+git -C "$VB" add package.json notes.txt && vcommit "$VB" init
+git -C "$VB" checkout -q -b red 2>/dev/null
+printf 'x' > "$VB/broken"; git -C "$VB" add broken && vcommit "$VB" red
+git -C "$VB" checkout -q - 2>/dev/null
+printf 'edit\n' >> "$VB/notes.txt"
+SB="{\"session_id\":\"vbd-branch-$$\",\"stop_hook_active\":false}"
+[ -z "$(vsd "$VB" "$SB")" ] && ok || bad "the green branch must pass before the switch"
+git -C "$VB" checkout -q red 2>/dev/null
+vsd "$VB" "$SB" | grep -q '"decision": *"block"' \
+  && ok || bad "a branch switch carrying the same edit must re-run the gates and block"
+rm -rf "$VB"
+
+# A repository with no commit yet has no HEAD to diff against, and must still skip.
+VU="$(mktemp -d)"; (cd "$VU" && git init -q . 2>/dev/null)
+printf '{"scripts":{"lint":"echo run >> %s"}}' "$RUNS" > "$VU/package.json"
+SU="{\"session_id\":\"vbd-unborn-$$\",\"stop_hook_active\":false}"
+vsd "$VU" "$SU" >/dev/null; vsd "$VU" "$SU" >/dev/null
+[ "$(runs)" -eq 9 ] && ok || bad "an unchanged tree on an unborn branch must skip the second Stop (runs=$(runs))"
+rm -rf "$VU"
+
+# A project in a subdirectory of its repository: untracked content anywhere in
+# the repository is part of the tree, as status already reports it.
+VM="$(mktemp -d)"; (cd "$VM" && git init -q . 2>/dev/null); mkdir -p "$VM/web" "$VM/shared"
+printf '{"scripts":{"lint":"echo run >> %s"}}' "$RUNS" > "$VM/web/package.json"
+git -C "$VM" add web/package.json && vcommit "$VM" init
+printf 'a' > "$VM/web/new.ts"; printf 'a' > "$VM/shared/util.ts"
+SM="{\"session_id\":\"vbd-subdir-$$\",\"stop_hook_active\":false}"
+vsd "$VM/web" "$SM" >/dev/null; vsd "$VM/web" "$SM" >/dev/null
+[ "$(runs)" -eq 10 ] && ok || bad "an unchanged tree in a subdirectory project must skip the second Stop (runs=$(runs))"
+printf 'b' >> "$VM/shared/util.ts"
+vsd "$VM/web" "$SM" >/dev/null
+[ "$(runs)" -eq 11 ] && ok || bad "an untracked edit outside a subdirectory project must re-run the gates (runs=$(runs))"
+rm -rf "$VM" "$VS" "$VST"
+
 echo
 echo "commit-hygiene: no attribution trailer, and nothing only Claude and the"
 echo "user can see, in a git commit message"
@@ -612,6 +782,10 @@ ch_assert 2 'git commit -m "fix: per our chat session notes"' \
   'a chat session reference'
 ch_assert 2 'git commit -m "docs: update HANDOFF.md with the next step"' \
   'a planning-artifact filename'
+ch_assert 2 'git commit -m "feat: add the endpoint CONTRACT-GAPS.md asked for"' \
+  'the contract-gaps artifact filename'
+ch_assert 0 'git commit -m "docs: update SPEC.md with the new rate limits"' \
+  "a repository's own SPEC.md must pass"
 ch_assert 2 'git commit -m "chore: bump temp/feature-x/planning/notes"' \
   'a path into a planning-artifacts directory'
 ch_assert 2 'git commit -m "fix: see the handoff notes for context"' \
@@ -637,16 +811,192 @@ ch_assert 0 'git commit -m "fix: apply ADR-0010 pagination adapter, closes #42"'
   'a real ADR citation must pass -- this is what an earlier, dropped decision-id pattern would have denied'
 ch_assert 0 'git commit -m "chore: bump decision-tree dependency to 2.1.0"' \
   '"decision" as an ordinary word must pass'
-# Ordinary work and the subcommand-name trap: git commit-graph/commit-tree
-# are real subcommands, not "git commit" with a suffix.
+# Ordinary work and the subcommand-name trap: git commit-graph is a real
+# subcommand, not "git commit" with a suffix.
 ch_assert 0 'git commit -m "fix: correct the off-by-one in pagination"' \
   'an ordinary commit message must pass'
 ch_assert 0 'git commit-graph write' \
   'commit-graph must not match as git commit'
-ch_assert 0 'git commit-tree -m x HEAD^{tree}' \
-  'commit-tree must not match as git commit'
+ch_assert 0 'git -C /r commit-graph write' \
+  'commit-graph behind a global option must not match either'
 ch_assert 0 'git log --oneline -20' \
   'a non-commit git command must pass untouched'
+# A plumbing commit runs neither the repository's hooks nor this one's message
+# checks, so it is denied whatever the message says and wherever it comes from.
+ch_assert 2 'git commit-tree HEAD^{tree} -m "x"' \
+  'commit-tree with -m must be denied outright'
+ch_assert 2 'echo x | git commit-tree HEAD^{tree}' \
+  'commit-tree reading its message from stdin must be denied'
+ch_assert 2 'git -C /r commit-tree HEAD^{tree} -F /tmp/msg.txt' \
+  'commit-tree with -F behind a global option must be denied'
+# A global option that takes a separate value must not hide the subcommand, or
+# every message check above is skipped for that spelling.
+ch_assert 2 'git -C /r commit -m "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a trailer behind git -C <path> must be caught'
+ch_assert 2 'git -c user.name=x commit -m "fix: see the handoff notes"' \
+  'a leak word behind git -c <k=v> must be caught'
+ch_assert 0 'git -c user.name=x commit -m "fix: ok"' \
+  'a clean message behind git -c <k=v> must pass'
+ch_assert 2 'git --git-dir /r/.git --work-tree /r commit -m "docs: update HANDOFF.md"' \
+  'space-separated --git-dir/--work-tree must not hide the subcommand'
+ch_assert 2 'git --config-env foo.bar=HOME commit-tree HEAD^{tree} -m x' \
+  'commit-tree behind --config-env <name=var> must be denied'
+ch_assert 2 'git --attr-source HEAD commit-tree HEAD^{tree} -m x' \
+  'commit-tree behind --attr-source <tree> must be denied'
+ch_assert 2 'git --config-env foo.bar=HOME commit -m "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a trailer behind --config-env must be caught'
+ch_assert 2 'git --attr-source HEAD commit -m "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a trailer behind --attr-source must be caught'
+ch_assert 2 "$(printf 'echo "unterminated\ngit --config-env foo.bar=HOME commit-tree HEAD^{tree} -m x')" \
+  'the plain-text fallback must skip the same value-taking options'
+# Only the message is checked: a leak word in an option value or a pathspec is
+# part of the command, not of what another developer reads.
+ch_assert 0 'git -C /home/me/work/handoff-service commit -m "fix: correct the rounding"' \
+  'a leak word in a global option value is not the message'
+ch_assert 0 'git commit -m "feat: panel" -- src/handoffs/Panel.vue' \
+  'a leak word in a pathspec is not the message'
+# git accepts bundled and abbreviated option spellings, and a --trailer lands
+# in the message, so each is a message source.
+ch_assert 2 'git commit -am "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a trailer in a bundled -am must be caught'
+ch_assert 2 'git commit --mess "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a trailer behind an abbreviated --message must be caught'
+ch_assert 2 'git commit -m "fix: x" --trailer "Co-Authored-By: y <y@example.com>"' \
+  'an attribution --trailer must be caught'
+# git 2.43.0 writes a --trailer key=value as "key: value".
+ch_assert 2 'git commit -m "fix: x" --trailer "Co-authored-by=y <y@example.com>"' \
+  'an attribution --trailer with = as its separator must be caught'
+ch_assert 0 'git commit -m "fix: x" --trailer "Reviewed-by=y <y@example.com>"' \
+  'a --trailer with = and a non-attribution key must pass'
+ch_assert 2 "$(printf 'echo "unterminated\ngit commit -m x --trailer=Co-authored-by=y')" \
+  'the plain-text fallback must read a --trailer key=value the same way'
+# The command is read the way a shell reads it: quoting cannot hide a
+# subcommand, and naming one inside a message or a heredoc is not running it.
+ch_assert 2 'git "commit-tree" HEAD^{tree} -m "x"' \
+  'a quoted commit-tree must be denied'
+ch_assert 2 "git comm''it-tree HEAD^{tree} -m x" \
+  'a commit-tree assembled from quoted pieces must be denied'
+ch_assert 2 'git "commit" -m "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a quoted commit must still get the message checks'
+ch_assert 0 'git commit -m "docs: mention git commit-tree in the guide"' \
+  'a message naming commit-tree is not a commit-tree call'
+ch_assert 0 "$(printf "cat > /tmp/notes.md <<'EOF'\nnever run git commit-tree directly\nEOF")" \
+  'a heredoc body naming commit-tree is data, not a command'
+ch_assert 0 'git add HANDOFF.md && git commit -m "fix: ok"' \
+  'a leak word in another command is not the commit message'
+# The usual heredoc-built message often has an odd apostrophe; its body is not
+# shell syntax, so it must not send the command to the whole-string fallback.
+ch_assert 0 "$(printf 'git add HANDOFF.md && git commit -m "$(cat <<%s\nfix: %s drop the last row\nEOF\n)"' "'EOF'" "don't")" \
+  'an apostrophe in a heredoc-built -m keeps the leak-word check on the message'
+ch_assert 2 "$(printf 'git add HANDOFF.md && git commit -m "$(cat <<%s\nfix: %s drop the last row\n\nCo-Authored-By: y <y@example.com>\nEOF\n)"' "'EOF'" "don't")" \
+  'a trailer in a heredoc-built -m with an apostrophe must be caught'
+ch_assert 0 "$(printf 'git commit -m "$(cat <<%s\ndocs: explain why git commit-tree %s allowed\nEOF\n)"' "'EOF'" "isn't")" \
+  'a heredoc-built message naming commit-tree is not a commit-tree call'
+# Inside $(...), a << with no delimiter line is an arithmetic shift, and bash
+# 5.2.21 ends a heredoc body at a line that starts with its delimiter and ")".
+ch_assert 0 "$(printf 'git add HANDOFF.md && git commit -m "fix: shift $(echo $((1<<2))\n)"')" \
+  'an arithmetic shift inside $(...) is not a heredoc'
+ch_assert 0 'git add HANDOFF.md && git commit -m "fix: shift $((1<<(2)))"' \
+  'a shift of a parenthesised operand inside $(...) is not a heredoc'
+ch_assert 0 "$(printf 'git add HANDOFF.md && git commit -m "$(cat <<%s\nfix: x\nEOF)"' "'EOF'")" \
+  'a heredoc delimiter line that closes its $(...) ends the body'
+ch_assert 2 "$(printf 'git commit -m "$(cat <<%s\nfix: x\n\nCo-Authored-By: y <y@example.com>\nEOF)"' "'EOF'")" \
+  'a trailer in a heredoc whose delimiter line closes its $(...) must be caught'
+ch_assert 2 "$(printf 'echo "$(echo $((1<<2))\ngit commit-tree HEAD^{tree} -m x\n)"')" \
+  'a command on the line after a shift inside $(...) must still be judged'
+# A heredoc or here-string fed to a shell is its script, and a script piped or
+# redirected into one can come from anywhere in the command.
+ch_assert 2 "$(printf "bash <<'EOF'\ngit add -A\ngit commit -m \"feat: x\n\nCo-Authored-By: y <y@example.com>\"\nEOF")" \
+  'a commit in a heredoc script fed to bash must be judged'
+ch_assert 2 "$(printf "bash -s <<'EOF'\ngit commit-tree HEAD^{tree} -m x\nEOF")" \
+  'commit-tree in a heredoc read by bash -s must be denied'
+ch_assert 2 "bash <<< 'git commit-tree HEAD^{tree} -m x'" \
+  'commit-tree in a here-string fed to bash must be denied'
+ch_assert 2 "echo 'git commit-tree HEAD^{tree} -m x' | sh" \
+  'commit-tree piped into sh must be denied'
+ch_assert 2 "bash < <(echo 'git commit-tree HEAD^{tree} -m x')" \
+  'commit-tree redirected into bash must be denied'
+ch_assert 0 "$(printf "bash <<'EOF'\necho git commit-tree\nEOF")" \
+  'a heredoc script is judged as commands, so echo in it stays text'
+# A process substitution is one word and a substitution, not a separator.
+ch_assert 2 "git commit -F <(printf 'fix: x\n\nCo-Authored-By: y <y@example.com>\n')" \
+  'a message read from -F <(...) must be scanned'
+ch_assert 2 'cat <(git commit-tree HEAD^{tree} -m x)' \
+  'commit-tree inside a process substitution must be denied'
+ch_assert 2 "bash -c 'git commit-tree HEAD^{tree} -m x'" \
+  'commit-tree inside bash -c must be denied'
+ch_assert 2 'git update-ref HEAD "$(git commit-tree HEAD^{tree} -p HEAD -m x)"' \
+  'commit-tree inside a command substitution must be denied'
+ch_assert 2 'GIT_DIR=/r/.git git commit -m "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a leading assignment must not hide the commit'
+ch_assert 2 'command git commit -m "fix: x, Co-Authored-By: y <y@example.com>"' \
+  'a command prefix must not hide the commit'
+ch_assert 2 'printf "fix: x\n\nCo-Authored-By: y\n" | git commit -F -' \
+  'a message piped into commit -F - must be scanned'
+ch_assert 2 "$(printf "git commit -F - <<'EOF'\nfix: x\n\nCo-Authored-By: y <y@example.com>\nEOF")" \
+  'a heredoc message read by commit -F - must be scanned'
+ch_assert 2 "$(printf "git commit -aF - <<'EOF'\nfix: x\n\nCo-Authored-By: y <y@example.com>\nEOF")" \
+  'a heredoc message read by a bundled -aF - must be scanned'
+ch_assert 2 'printf "fix: x\n\nCo-Authored-By: y\n" | git commit -F /dev/fd/0' \
+  'a message piped into a /dev/fd stdin alias must be scanned'
+# The whole-command scan reads a --trailer key=value as the "key: value" git
+# interpret-trailers writes (git 2.43.0), whichever command carries it.
+ch_assert 2 "printf 'fix: x\n' | git interpret-trailers --trailer \"Co-authored-by=X\" | git commit -F -" \
+  'a key=value attribution trailer piped into commit -F - must be caught'
+ch_assert 2 "git commit -F <(printf 'fix: x\n' | git interpret-trailers --trailer Co-authored-by=X)" \
+  'a key=value attribution trailer read from -F <(...) must be caught'
+ch_assert 0 "printf 'fix: x\n' | git interpret-trailers --trailer \"Reviewed-by=X\" | git commit -F -" \
+  'a key=value non-attribution trailer piped into commit -F - must pass'
+ch_assert 2 'git commit -m "fix: x, Co-Authored-By: y <y@example.com>' \
+  'an unterminated quote must fall back to the plain-text scan'
+# A hook that outlives its timeout lets the call through unjudged, so a failed
+# plain-text match must not backtrack exponentially over repeated options.
+node - "$CH" <<'NODE' && ok || bad "the plain-text fallback must finish fast on 40 quoted -c values"
+const { spawnSync } = require('child_process');
+const command = `echo "unterminated\ngit ${'-c "a=b" '.repeat(40)}status`;
+const r = spawnSync('node', [process.argv[2]], { input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }), timeout: 5000 });
+process.exit(r.status === 0 ? 0 : 1);
+NODE
+# A head that may run its arguments cannot hide a git invocation behind it --
+# unknown heads fail closed rather than depending on a list of wrappers.
+while IFS= read -r c; do
+  ch_assert 2 "$c" "deny: $c"
+done <<'EOF'
+sudo git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+sudo -u root git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+doas git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+nice git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+timeout 5 git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+ionice -c3 git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+stdbuf -oL git commit -m "fix: x, Co-Authored-By: y <y@example.com>"
+xargs -I{} git commit-tree {} <<< tree
+sudo bash -c 'git commit-tree HEAD^{tree} -m x'
+EOF
+# ...while a head that never runs its arguments leaves "git commit-tree" as text.
+while IFS= read -r c; do
+  ch_assert 0 "$c" "allow: $c"
+done <<'EOF'
+echo git commit-tree
+printf '%s' "git commit-tree"
+printf '%s\n' git commit-tree
+grep -rn git commit-tree docs/
+egrep git commit-tree notes.txt
+fgrep git commit-tree notes.txt
+rg git commit-tree
+ag git commit-tree
+cat git commit-tree
+less git commit-tree
+man git commit-tree
+which git commit-tree
+type git commit-tree
+command -v git commit-tree
+test -e git commit-tree
+[ -e git commit-tree ]
+true git commit-tree
+false git commit-tree
+: git commit-tree
+git log --grep commit-tree
+EOF
 # A commit with no -m and no message file has no text to inspect at all.
 ch_assert 0 'git commit' \
   'a bare git commit (no message text to inspect) must pass'
@@ -658,6 +1008,16 @@ ch_assert 2 "git commit -F $CHF/msg.txt" \
 printf 'fix: an ordinary message with nothing wrong in it\n' > "$CHF/clean.txt"
 ch_assert 0 "git commit --file=$CHF/clean.txt" \
   'a clean -F message file must pass, --file= spelling'
+ch_assert 2 "git commit -sF $CHF/msg.txt" \
+  'a trailer in a file named by a bundled -sF must be caught'
+ch_assert 0 "git add HANDOFF.md && git commit -F $CHF/clean.txt" \
+  'a readable message file is judged on its own text'
+# The hook runs before the command, so a file the same call writes is not
+# there yet, or is a stale copy: the whole command is scanned instead.
+ch_assert 2 "$(printf "cat > %s <<'EOF'\nfeat: x\n\nCo-Authored-By: y <y@example.com>\nEOF\ngit commit -F %s" "$CHF/new.txt" "$CHF/new.txt")" \
+  'a message file written earlier in the same call must be scanned'
+ch_assert 2 "$(printf "cat > %s <<'EOF'\nfeat: x\n\nCo-Authored-By: y <y@example.com>\nEOF\ngit commit -F %s" "$CHF/clean.txt" "$CHF/clean.txt")" \
+  'a stale clean message file the same call rewrites must not hide the new text'
 rm -rf "$CHF"
 # Injection guarantee, same shape as project-facts and block-secrets: garbage
 # stdin must fail open, never take the tool call down with it.

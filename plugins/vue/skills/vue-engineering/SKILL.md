@@ -1,15 +1,13 @@
 ---
 name: vue-engineering
 description: >-
-  Vue 3 engineering and review knowledge for Vite single-page apps: reactivity that
-  silently stops updating, composables, Vue Router guards, client versus server state,
-  build-time config and secrets that reach the browser bundle, explicit imports, and
-  testing. Use whenever writing, refactoring, extending or reviewing anything in a Vue
-  codebase — components, composables, stores, routes, config — even for a small change,
-  because the defaults here are frequently wrong and the failures are silent rather than
-  loud. Use it for debugging too: it routes common symptoms ("the list stops updating",
-  "the value is stale", "it works until I reload") to their cause. This is for plain Vue
-  on Vite; a Nuxt app inverts several of these rules and needs its own guidance.
+  Vue 3 engineering and review knowledge for plain Vue single-page apps on Vite:
+  reactivity that silently stops updating, composables, Vue Router guards, client versus
+  server state, build-time config and secrets that reach the browser bundle, explicit
+  imports, testing. Use whenever writing, refactoring, reviewing or debugging anything in
+  a Vue codebase — components, composables, stores, routes, config — even for a small
+  change, and for symptoms like "the list stops updating", "the value is stale", "it
+  works until I reload". For a server-rendered Nuxt app, use nuxt-engineering instead.
 paths:
   - "**/*.vue"
   - "**/vite.config.*"
@@ -20,7 +18,8 @@ paths:
 
 # Vue 3 engineering
 
-**First, if this project depends on `nuxt`: stop and read `nuxt-engineering` instead.**
+**First, if this project depends on `nuxt`: stop and call the Skill tool with
+"nuxt:nuxt-engineering" instead.**
 This pack is for plain Vue on Vite, and roughly half of what follows inverts under
 server rendering — module-scope state, auto-imports, secrets, and where server data
 belongs. The `nuxt` pack is a delta on this one and names every rule here that does not
@@ -133,9 +132,9 @@ Route by what is actually happening, not by which API you suspect.
 
 Run this project's own gates. The `core` plugin — a hard dependency of this one — ships
 `run-gates.mjs`, which discovers them from `package.json` and reports anything absent as
-NOT RUN; the `reviewer` agent and `describing-changes` skill both call it, so use those
-rather than guessing a path to it. Failing that, read the `scripts` block yourself and
-run what is actually there.
+NOT RUN. The script belongs to `core`, so its path is never guessed: core's `implementer`
+agent and its `reviewing-changes` and `describing-changes` skills run it at their own
+steps. Failing that, read the `scripts` block yourself and run what is actually there.
 **A gate reported `not-run` with `blocking: true` did not run — the tool is missing or
 the script hangs. That is a setup defect, not a passing gate.**
 
@@ -158,8 +157,8 @@ Do not claim a gate passed that you did not run.
 - **Apply Nuxt guidance.** `useFetch`, `useAsyncData`, `useState`, `runtimeConfig`,
   Nitro server routes and auto-imports do not exist here, and module-scope state is an
   ordinary singleton in an SPA rather than the cross-request leak it is under SSR. That
-  guidance lives in the `nuxt` pack; invoke `nuxt-engineering` rather than importing its
-  conclusions into this one.
+  guidance lives in the `nuxt` pack; call the Skill tool with "nuxt:nuxt-engineering"
+  rather than importing its conclusions into this one.
 - **State a version-gated API as fact** without checking what is installed.
 - **Bulk-convert files the task did not ask about** — no drive-by TypeScript migrations
   or refactors of adjacent code.

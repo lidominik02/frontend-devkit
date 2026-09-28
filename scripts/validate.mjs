@@ -25,7 +25,7 @@ const rel = (p) => path.relative(ROOT, p) || p;
 // --- frontmatter ------------------------------------------------------------
 
 // `claude plugin validate --strict` flags unknown fields in plugin.json but NOT
-// in component frontmatter (verified against 2.1.250 and 2.1.276), so a typo
+// in component frontmatter (verified against 2.1.250, 2.1.276 and 2.1.283), so a typo
 // there loads as silence: misspell `disable-model-invocation` and the skill
 // quietly becomes model-invocable, misspell `disallowed-tools` and a guardrail
 // quietly stops being enforced. Hence these allowlists.
@@ -35,11 +35,15 @@ const KNOWN_SKILL = [
   'effort', 'context', 'agent', 'background', 'shell', 'license', 'compatibility',
   'metadata', 'hooks',
 ];
+// `omitClaudeMd` verified against 2.1.283: documented, and in the binary's agent schema.
 const KNOWN_AGENT = [
-  'name', 'description', 'tools', 'disallowedTools', 'model', 'permissionMode',
-  'maxTurns', 'skills', 'mcpServers', 'hooks', 'memory', 'background', 'effort',
-  'isolation', 'color', 'initialPrompt', 'experimental',
+  'name', 'description', 'tools', 'disallowedTools', 'model',
+  'maxTurns', 'skills', 'mcpServers', 'hooks', 'memory', 'background', 'omitClaudeMd',
+  'effort', 'isolation', 'color', 'initialPrompt', 'experimental',
 ];
+// `permissionMode: plan` held a project agent in plan mode and not a plugin agent (2.1.283).
+// `hooks` and `mcpServers` stay accepted: unobserved for a plugin agent.
+const IGNORED_IN_PLUGIN_AGENT = ['permissionMode'];
 
 // 1024 is the Agent Skills spec's hard limit: past it a skill cannot be packaged
 // or uploaded, even though Claude Code itself tolerates roughly 1536.
@@ -50,20 +54,28 @@ export function frontmatter(text) {
   return m ? m[1] : null;
 }
 
-// Folded scalars (`description: >-`) continue until the next top-level key, so
-// the value has to be gathered across lines rather than read off one.
+// The description as one line, read from the same parse as every other frontmatter check,
+// so the cap, the budget and the angle-bracket check measure the same text.
 export function describe(text) {
-  const fm = frontmatter(text);
-  if (fm === null) return null;
-  const lines = fm.split('\n');
-  const i = lines.findIndex((l) => /^description:/.test(l));
-  if (i < 0) return null;
-  const body = [lines[i].replace(/^description:\s*>?-?\s*/, '')];
-  for (let j = i + 1; j < lines.length; j++) {
-    if (/^[A-Za-z_$-]+:/.test(lines[j])) break;
-    body.push(lines[j].trim());
+  const entry = frontmatterValues(text).find(([k]) => k === 'description');
+  return entry ? entry[1].replace(/\s+/g, ' ').trim() : null;
+}
+
+// Each top-level key with its value. A folded scalar (`description: >-`) continues until
+// the next top-level key, and its header is YAML syntax, not part of the value.
+/** @returns {Array<[string, string]>} */
+export function frontmatterValues(text) {
+  const out = [];
+  for (const line of (frontmatter(text) ?? '').split('\n')) {
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):(.*)$/);
+    if (m) {
+      const rest = m[2].trim();
+      out.push([m[1], /^[>|]([+-][1-9]?|[1-9][+-]?)?(\s+#.*)?$/.test(rest) ? '' : rest]);
+    } else if (out.length) {
+      out[out.length - 1][1] += `\n${line.trim()}`;
+    }
   }
-  return body.join(' ').replace(/\s+/g, ' ').trim();
+  return out;
 }
 
 export function isListed(text) {
@@ -102,11 +114,14 @@ export function checkFrontmatter(files = components()) {
       if (name !== dir) bad.push(`${rel(p)} -> name "${name}" must match directory "${dir}"`);
     }
     const known = isSkill ? KNOWN_SKILL : KNOWN_AGENT;
-    for (const line of (frontmatter(text) ?? '').split('\n')) {
-      const k = (line.match(/^([A-Za-z_][A-Za-z0-9_-]*):/) || [])[1];
-      if (k && !known.includes(k)) {
+    for (const [k, value] of frontmatterValues(text)) {
+      if (!isSkill && IGNORED_IN_PLUGIN_AGENT.includes(k)) {
+        bad.push(`${rel(p)} -> '${k}' is ignored in a plugin agent; only a project agent honours it (observed on 2.1.283)`);
+      } else if (!known.includes(k)) {
         bad.push(`${rel(p)} -> unknown frontmatter field '${k}'; it will be ignored at load time`);
       }
+      // Skill packaging validation rejects a description containing `<` or `>`.
+      if (/[<>]/.test(value)) bad.push(`${rel(p)} -> ${k} contains an angle bracket`);
     }
   }
   return { name: 'frontmatter', findings: bad, ok: bad.length === 0 };
@@ -139,6 +154,7 @@ export function checkBudget() {
   const { listed, packs } = budget();
   const readme = fs.readFileSync(r('README.md'), 'utf8');
   const claimed = readme.match(/\*\*([\d.]+)k characters\*\*/);
+  const ceiling = readme.match(/The ceiling is\s+([\d,]+)\s+characters/);
   const bad = [];
   if (!claimed) {
     bad.push('README.md no longer states the always-on listing cost — did the sentence move?');
@@ -150,6 +166,12 @@ export function checkBudget() {
         `Per pack: ${Object.entries(packs).map(([k, v]) => `${k} ${v}`).join(', ')}`
       );
     }
+  }
+  if (!ceiling) {
+    bad.push('README.md no longer states the always-on ceiling ("The ceiling is N characters") — did the sentence move?');
+  } else {
+    const max = Number(ceiling[1].replace(/,/g, ''));
+    if (listed > max) bad.push(`always-on listing is ${listed} chars, over the ${max}-char ceiling README.md publishes`);
   }
   return { name: 'budget', findings: bad, ok: bad.length === 0, listed, packs };
 }

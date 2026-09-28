@@ -1,14 +1,12 @@
 ---
 name: investigating-bugs
 description: >-
-  Diagnose a reported bug to its root cause and determine which layer owns it —
-  frontend, backend, or the identity/auth layer — without changing any code. Produces
-  a written diagnosis with file:line evidence and a proposed fix, so the fix can be
-  applied deliberately afterwards. Use this whenever the user says "investigate this
-  bug", "find the root cause", "why is X broken", "is this a frontend or backend bug",
-  "debug this", "diagnose this", or pastes a bug report or stack trace — even if they
-  seem to want an immediate fix, because diagnosing first is what prevents fixing the
-  symptom. Also use when a bug crosses repositories and ownership is unclear.
+  Diagnoses a reported bug to its root cause and the layer that owns it — frontend,
+  backend or identity/auth — without changing any code. Use whenever the user says
+  "investigate this bug", "find the root cause", "why is X broken", "is this a frontend
+  or backend bug", "debug this", "diagnose this", or pastes a bug report or stack trace,
+  even when they seem to want an immediate fix. Diagnosis only; for "why does it look
+  wrong" use verifying-ui.
 disallowed-tools: Edit, Write, NotebookEdit, MultiEdit
 ---
 
@@ -95,7 +93,7 @@ hypothesis, and you must label it as one.
 <specific change, and which repo/file it belongs in>
 
 ### Confidence
-Confirmed | Likely | Inconclusive — and what would settle it
+Confirmed (an unbroken chain of read code) | Likely | Inconclusive — and what would settle it
 
 ### Related risks
 <other call sites with the same defect, and any gap that let this ship>
@@ -121,7 +119,6 @@ When the backend is read-only context rather than a repo you change:
   for this turn rather than merely discouraged: you will still see them in your own schema,
   and the call is refused when you make it, so this is not negotiable mid-conversation. Propose the fix in the report; applying it is a separate,
   deliberate step.
-- **Present a hypothesis as a confirmed cause.** Label confidence honestly.
 - **Blame the UI before checking the data and the token claims it renders.**
 - **Stop at the first plausible cause** without following the chain to something that
   actually explains the symptom.

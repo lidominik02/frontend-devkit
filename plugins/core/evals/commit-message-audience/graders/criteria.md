@@ -45,9 +45,9 @@ pass in the no-plugin arm would not mean the model produced this unaided — it 
 the global config already told it, which is not evidence about `describing-changes`
 either way.
 
-To get a real baseline for this case, run the no-plugin arm with `--bare` (which skips
-CLAUDE.md auto-discovery, per the CLI's own description of the flag) rather than merely
-disabling the plugin, or run it before `~/.claude/CLAUDE.md` exists at all. Comparing an
+To get a real baseline for this case, isolate user-level instructions in both arms as the
+evals README's hand-run section describes (`--bare` with an API key, which also turns the
+hooks off in both arms), or run it on a machine where `~/.claude/CLAUDE.md` does not exist. Comparing an
 ordinary no-plugin arm against the with-plugin arm still answers a real, separate
 question -- whether the skill's own body adds anything on top of the global rule, such as
 the buildability reasoning and the alternatives shape from `references/shaping-commits.md`

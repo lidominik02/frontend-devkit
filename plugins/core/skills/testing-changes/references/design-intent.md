@@ -10,7 +10,7 @@ to do. This check compares *intent*, not pixels: presence, hierarchy, states, to
 naming alignment, and copy. A divergence is a finding only when nothing in the
 repository's own decisions, ADRs or docs explains it.
 
-## Reaching the frame
+## Reaching the design
 
 **Never require a project-local design skill.** This check drives the design tool's own
 MCP read tools directly and must work in a repository that has none. Where a project
@@ -18,11 +18,23 @@ does have its own design skill, detect it via `project-facts`'s `designReference
 use it as a bonus source of context — which frame is authoritative, what the naming
 convention is — never as a prerequisite.
 
-Establish the frame from, in order: a frame id or link the approved test list names,
-else the feature's own story or plan if it names one, else ask rather than guess which
-frame this feature corresponds to. **Never invent a screen** — a case with no reachable
-frame is a skip for that case specifically, named in the report, not a case verified
-against a frame you assumed.
+Establish the design from, in order: SPEC.md's Design section — the source's type, its
+location or link, how to reach it, and its coverage — with the PLAN.md task's Design field
+for the exact screens and states the task built; else a frame id, link or file the
+approved test list names; else ask rather than guess which design this feature
+corresponds to. **Never invent a screen** — a case with no reachable design is a skip for
+that case specifically, named in the report, not a case verified against a frame you
+assumed.
+
+**The source's type decides what can be compared.** Token alignment needs bound
+variables, so it applies only where the source carries them — frames read through the
+design tool:
+
+- **Frames read through the design tool** — everything under "What to compare".
+- **Screenshots, or an export under `temp/<feature>/design/`** — presence, hierarchy,
+  states and copy, against the images.
+- **A proposal the user approved** — the proposal file SPEC Design names, not a frame:
+  presence, the states it lists, and the tokens and components it names.
 
 **Write tools stay denied regardless of what is reachable.** This check reads a design;
 it never edits one. If a write-shaped tool is somehow the only way to read what is
@@ -41,11 +53,16 @@ project's own settings on Claude Code 2.1.278:
 `generate_deck`, `upload_assets`, `add_code_connect_map`, `send_code_connect_mappings`,
 `create_shader`, `update_shader`, `create_generative_plugin`, `update_generative_plugin`.
 
-**Under any other key every one of these names misses**, the same caveat
-`verifying-ui`'s own reference states for its two servers: a key sanitised from something
-other than `figma` builds a different tool prefix, the removal matches nothing, and the
-whole server stays in the pool with nothing here to say so. If a design tool is attached
-under a non-standard key, say so plainly and do not rely on this list.
+**The removal holds under any server key.** Each entry is written `mcp__*__<tool>`, a
+wildcard in the server segment: on Claude Code 2.1.283, `mcp__figma__use_figma` did not
+block the same tool on a server keyed `claude_ai_Figma` — the key a claude.ai connector
+gets — while `mcp__*__use_figma` blocked it and left that server's `get_screenshot`
+callable. The wildcard withdraws each name from every server, which is right because this
+check may call none of the twelve on any server. The withdrawal is scoped to the invocation
+of this skill: on 2.1.283 a blocked tool was absent from the session's tool list with the
+skill invoked as a slash command, and listed with the plugin loaded but the skill not
+invoked; a model-fired invocation is unobserved. A wildcard in the tool segment withdraws
+the whole server, the read tools included, so it stays wrong here.
 
 **A design tool's default read output is often framework-opinionated** — generated code
 mentioned in a read call may default to a stack this repository does not use (React and
@@ -79,10 +96,11 @@ equivalent of it — not a literal string match across languages.
 
 ## Citing a finding
 
-Every finding cites the frame (its name or id) and the specific bound variable or node
-it compares against — the same discipline `core:reviewer` holds for `file:line`. A
-finding that says "the button color looks different" without naming the frame's token
-and the rendered value is not actionable and should not be reported as one.
+Every finding cites the design (the frame's name or id, the image file, or the proposal's
+entry) and, for a frame, the specific bound variable or node it compares against — the
+same discipline `core:reviewer` holds for `file:line`. A finding that says "the button
+color looks different" without naming the frame's token and the rendered value is not
+actionable and should not be reported as one.
 
 ## What is NOT a finding
 
@@ -90,6 +108,8 @@ and the rendered value is not actionable and should not be reported as one.
   already explains. Cite the explanation rather than silently passing over the
   divergence — the reader should see that it was checked, not assume it was missed.
 - A state the frame does not show at all — nothing to compare against.
+- A screen or state SPEC Design's coverage lists as missing — the design has nothing to
+  say about it.
 - A responsive behaviour the frame, being one fixed size, cannot represent.
 - Copy that is correctly localized to a language the frame was not authored in.
 - A repository-documented substitution (a font fallback, an icon set swap) already

@@ -6,6 +6,9 @@
 // detect() returns these top-level keys, in this order:
 //
 //   dir              the directory being described
+//   projectRoot      whether dir is a project root: it has a package.json or a
+//                    .claude/project.json, or it is the git top level. When it
+//                    is not, every "no script" source below gives the reason.
 //   packageManager   package.json "packageManager", else the lockfile
 //   stack            dependencies, plus which framework packs serve it
 //   baseBranch       git symbolic-ref refs/remotes/origin/HEAD
@@ -395,6 +398,19 @@ function detectDesignReference(dir) {
   };
 }
 
+// Reported, never resolved to the top level: that would describe a wrong directory
+// inside another repository as that repository, and a workspace folder as the root.
+/** @param {string} dir */
+function detectProjectRoot(dir) {
+  const marker = existsSync(path.join(dir, 'package.json')) || existsSync(path.join(dir, '.claude', 'project.json'));
+  // git 2.43.0 prints the resolved top level, then the path below it: empty at the top.
+  const out = git(dir, ['rev-parse', '--show-toplevel', '--show-prefix']);
+  const [gitTopLevel = null, prefix = ''] = out === null ? [] : out.split('\n');
+  const isRoot = marker || (gitTopLevel !== null && prefix === '');
+  const where = gitTopLevel ? `is below the git top level ${gitTopLevel}` : 'is not inside a git work tree';
+  return { isRoot, gitTopLevel, reason: isRoot ? null : `not a project root: ${dir} has no package.json and ${where}` };
+}
+
 /** @param {string} dir */
 function detectBaseBranch(dir) {
   const head = git(dir, ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
@@ -545,6 +561,7 @@ export function detect(dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
   const pm = detectPackageManager(dir);
   const facts = {
     dir,
+    projectRoot: detectProjectRoot(dir),
     packageManager: pm,
     stack: detectStack(dir),
     baseBranch: detectBaseBranch(dir),
@@ -559,6 +576,13 @@ export function detect(dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
     userStoryPath: /** @type {string|null} */ (null),
     overrides: /** @type {Record<string, unknown>|null} */ (null),
   };
+
+  const notRoot = facts.projectRoot.reason;
+  if (notRoot) {
+    for (const g of Object.values(facts.gates)) if (!g.declared) g.source = notRoot;
+    if (!facts.devServer.declared) facts.devServer.source = notRoot;
+    if (!facts.storybook.declared) facts.storybook.source = notRoot;
+  }
 
   // Optional override file, for the cases detection gets wrong. Never required.
   const override = readJson(path.join(dir, '.claude', 'project.json'));

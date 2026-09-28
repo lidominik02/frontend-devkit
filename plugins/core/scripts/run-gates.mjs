@@ -30,6 +30,9 @@
 //          A gate the project simply does not have is reported, but does not
 //          fail the run -- otherwise the exit code would be permanently red on
 //          a gate-poor repo, and an exit code people ignore protects nothing.
+//          A directory that is not a project root (projectRoot in
+//          project-facts.mjs) also exits 1: nothing there can have passed. Its
+//          gates are not-run without `blocking`, so the Stop hook stays silent.
 
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -85,7 +88,10 @@ const wanted = oneGate ? [oneGate] : (stages[stageName] ?? STAGES.fast);
 function resolve(name) {
   const gate = facts.gates[name];
   if (!gate || !gate.command) {
-    return { run: false, command: null, reason: `this project has no ${name} script`, blocking: false };
+    const reason = facts.projectRoot.reason
+      ? `${facts.projectRoot.reason} -- cd to the project root and run this again`
+      : `this project has no ${name} script`;
+    return { run: false, command: null, reason, blocking: false };
   }
   if (gate.script && WATCHER.test(gate.script)) {
     return {
@@ -187,7 +193,7 @@ const brokenSetup = notRun.filter((r) => r.blocking);
 //
 // Only where types exist. Warning a shell-and-markdown repo to add `tsc` would
 // train people to skip the warning.
-const typecheckMissing = !facts.gates.typecheck?.command && facts.stack.typed;
+const typecheckMissing = facts.projectRoot.isRoot && !facts.gates.typecheck?.command && facts.stack.typed;
 // Two flags, not one. Nuxt and a plain Vue SPA both need template checking, but
 // the command that delivers it and the file the strictness setting goes in are
 // different, and giving a Nuxt repo the SPA answer produces a gate that passes
@@ -228,9 +234,9 @@ const typecheckVacuous = nuxt
 if (asJson) {
   process.stdout.write(JSON.stringify({
     stage: oneGate ? `gate:${oneGate}` : stageName,
-    project: { dir: facts.dir, stack: facts.stack.stack, packageManager: facts.packageManager.name, baseBranch: facts.baseBranch.name },
+    project: { dir: facts.dir, root: facts.projectRoot.isRoot, stack: facts.stack.stack, packageManager: facts.packageManager.name, baseBranch: facts.baseBranch.name },
     results,
-    passed: failed.length === 0 && brokenSetup.length === 0,
+    passed: failed.length === 0 && brokenSetup.length === 0 && facts.projectRoot.isRoot,
     typecheckMissing,
     typescriptTooNewForVueTsc,
     typecheckVacuous,
@@ -294,4 +300,4 @@ if (asJson) {
   }
 }
 
-process.exit(failed.length > 0 || brokenSetup.length > 0 ? 1 : 0);
+process.exit(failed.length > 0 || brokenSetup.length > 0 || !facts.projectRoot.isRoot ? 1 : 0);
