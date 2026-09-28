@@ -32,11 +32,13 @@ way.
 
 ## Recording an override
 
-An override that holds for the rest of the feature gets a DECISIONS.md line, with the
-default it replaced in the rejected-alternative slot:
+An override that holds for the rest of the feature gets a DECISIONS.md entry, with the
+default it replaced under Rejected:
 
 ```
-D7 — 2026-03-14 — run the full gates after every task — default: fast gates only until released — the user, when approving the plan
+- **D7** · 2026-03-14 · run the full gates after every task
+  - Rejected: the default, fast gates only until released
+  - Source: the user, when approving the plan
 ```
 
-A one-off override for a single turn gets no line.
+A one-off override for a single turn gets no entry.

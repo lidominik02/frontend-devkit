@@ -62,7 +62,7 @@ below.
 and never opens a new phase file. clarifying-features `gap` writes the first SPEC.md, from
 the sources its `gap` entry names, then `plan` writes PLAN.md in `plan-format.md`, and each
 of its tasks, not the phase, gets a PROGRESS.md row. MASTER-PLAN.md, the phase files, research.md and
-ASSUMPTIONS.md stay where they are, unedited, as the archive. DECISIONS.md takes new lines
+ASSUMPTIONS.md stay where they are, unedited, as the archive. DECISIONS.md takes new entries
 as usual, and the old phase table stays in PROGRESS.md above the new task table.
 
 **Rules.** The rules MASTER-PLAN.md records are the user's own rules for this feature, even
@@ -70,13 +70,13 @@ where they copy an earlier default. Record them in HANDOFF.md verbatim, as
 `Rules: the user's own: …`,
 never as "the default rules block", which names today's defaults in `rules-block.md`. Ask
 once, with one AskUserQuestion form, whether they still govern — keep them, or switch to
-the default rules block — and record the answer as a DECISIONS.md line; a later session
-reads that line and does not ask again. Until the user answers, the old rules govern: a
+the default rules block — and record the answer as a DECISIONS.md entry; a later session
+reads that entry and does not ask again. Until the user answers, the old rules govern: a
 rule that holds review until the user asks still holds it.
 
 **History.** When an old HANDOFF.md is rewritten into this shape, its history sections — a
 log of what was done, an earlier account of where things stood — move into the PROGRESS.md
-ledger, one line per event, so HANDOFF.md describes only the present (rule 4 above).
+ledger, one entry per event, so HANDOFF.md describes only the present (rule 4 above).
 
 | Old stage | New stage |
 | --- | --- |

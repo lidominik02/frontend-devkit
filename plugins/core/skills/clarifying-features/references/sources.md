@@ -83,8 +83,8 @@ For a UI task with no design, propose one from the repository's own patterns:
 
 Write the proposal to `temp/<feature>/planning/research/design-proposal.md`, one short entry
 per screen and state, and ask with a decision form: Build on the proposal (recommended),
-Change the proposal, Wait for a design (an OPEN-QUESTIONS.md line with owner `designer` that
-blocks every UI task). The approved proposal becomes the design source: a DECISIONS.md line
+Change the proposal, Wait for a design (an OPEN-QUESTIONS.md entry with owner `designer` that
+blocks every UI task). The approved proposal becomes the design source: a DECISIONS.md entry
 with the rejected alternative, and SPEC Design with the type "a proposal the user approved",
 the proposal file as its location, and its coverage.
 
@@ -98,7 +98,7 @@ per-field validation errors included. For each missing piece:
   precedent as the recommended option, cited by path;
 - no precedent — a question with a reasonable-user default, said to be one;
 - only the designer can answer (a new visual pattern, a brand decision) — an
-  OPEN-QUESTIONS.md line with owner `designer` and what it blocks.
+  OPEN-QUESTIONS.md entry with owner `designer` and what it blocks.
 
 SPEC Design's coverage is then partial, naming the screens and states the design lacks.
 
@@ -107,7 +107,7 @@ SPEC Design's coverage is then partial, naming the screens and states the design
 Round 1 decides it: the feature involves the API when it needs anything the frontend cannot
 deliver alone, as the CONTRACT-GAPS.md section of the artifact contract defines it. Check
 against the contract the code research found — the API client, its types, a schema the
-repository keeps. Each gap becomes a CONTRACT-GAPS.md line the moment it surfaces, in any
+repository keeps. Each gap becomes a CONTRACT-GAPS.md entry the moment it surfaces, in any
 round, not in a batch at the end, and SPEC Contract names it. Bounded work that finds an API
 need is no longer bounded.
 

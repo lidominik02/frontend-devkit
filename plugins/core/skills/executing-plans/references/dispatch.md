@@ -95,7 +95,7 @@ The same table applies to a fix round's return.
 | --- | --- |
 | `DONE` | Diff the task and check the report against the code, then the task review |
 | `DONE_WITH_CONCERNS` | Weigh each concern first. One that changes the scope or the product is the user's: stop and ask. Otherwise as `DONE`, with the concerns in the pause brief |
-| `NEEDS_CONTEXT` | Answer from SPEC.md or DECISIONS.md, citing the line, and send the answer to the same implementer. When neither answers it: ask the user with one form, record the answer as a DECISIONS.md line, then continue the implementer |
+| `NEEDS_CONTEXT` | Answer from SPEC.md or DECISIONS.md, citing the line, and send the answer to the same implementer. When neither answers it: ask the user with one form, record the answer as a DECISIONS.md entry, then continue the implementer |
 | `BLOCKED` | Stop, report what blocks it, and ask |
 
 ## Fix rounds
@@ -105,7 +105,7 @@ For the task review's open critical and important findings, in this order:
 1. **Decision check.** Check each against DECISIONS.md and SPEC.md. One that contradicts a
    recorded decision or an EXTRA-tagged criterion goes to no implementer: ask with an
    AskUserQuestion form naming D<n> — Keep D<n> (recommended: the user decided it), or
-   Change it. Keep writes a `ruling` ledger line; Change writes a DECISIONS.md line that
+   Change it. Keep writes a `ruling` ledger entry; Change writes a DECISIONS.md entry that
    supersedes D<n>, and the finding joins the round.
 2. **Rounds 1 and 2:** the fix-round message below to the same implementer, with SendMessage
    to the agent id the dispatch returned when that tool is available. When it cannot be
@@ -182,8 +182,8 @@ A `package.json` format script, which project-facts.mjs also reports as `gates.f
 not the pass: it can name the whole repository (`prettier --write .`), and what it reformats
 beyond the touched files lands in the task's diff. When nothing resolves for a file — no
 recognised manifest formatter, no local prettier, an extension none of them covers, or a
-formatter that cannot run — the task's ledger line ends with
-`— no format pass: <each such file>`.
+formatter that cannot run — the task's ledger entry gains the sub-item
+`No format pass: <each such file>`.
 
 ## Forms
 
@@ -197,7 +197,7 @@ Continue without pausing, Stop. Stop leaves HANDOFF.md with the next task as the
 and the kickoff prompt rewritten to match.
 
 **Deviation.** One AskUserQuestion form naming the change: Keep it as planned (recommended),
-or Change it, which writes a DECISIONS.md line (superseding D<n> when it changes one).
+or Change it, which writes a DECISIONS.md entry (superseding D<n> when it changes one).
 
 **Blocked tasks at the end of the run.** One AskUserQuestion form: Review what is built
 now, which goes on as the end of the run does when every task is Done, or Wait, which
@@ -216,7 +216,7 @@ Defer for a PLAUSIBLE one, Keep as designed for one that conflicts with a decisi
 | The implementer cannot be continued | No SendMessage tool, or the agent is gone | A fresh `core:implementer` with the brief, the report and the findings — or the answer to its question |
 | `snapshot.mjs` exits 1 | Not a git work tree, a required clean filter failed (Git LFS sets `required`), or a base that names no tree | Stop and report its stderr. Never review without a diff |
 | A diff holds a file's content unfiltered | A clean filter that is not `required` failed: git stores the content unfiltered, and `snapshot.mjs` exits 0 with nothing on stderr (git 2.43.0) | No stop: the diff is still the working state. Name the file and its filter to the reviewer |
-| The recorded pre-execution tree is gone: `git cat-file -e <tree>^{tree}` exits non-zero | No ref holds the tree, and a `git gc` past its prune expiry deleted it (git 2.43.0) | Say so and ask with one form — Review from the merge-base (recommended; it also covers work that predates the run), or Stop — and record the answer in a `pruned` ledger line. A recorded merge-base answer settles every later run; a recorded `stopped` is asked again |
+| The recorded pre-execution tree is gone: `git cat-file -e <tree>^{tree}` exits non-zero | No ref holds the tree, and a `git gc` past its prune expiry deleted it (git 2.43.0) | Say so and ask with one form — Review from the merge-base (recommended; it also covers work that predates the run), or Stop — and record the answer in a `pruned` ledger entry. A recorded merge-base answer settles every later run; a recorded `stopped` is asked again |
 | A gate hangs, or is refused as a watcher | The gate's script never exits | `run-gates.mjs` reports it not-run with `blocking: true`: a setup defect, not a task failure, so no fix round. Report it NOT RUN; the task stays open with the gate named |
 | `run-gates.mjs` exits 1 with `passed: false` and `project.root: false`, every gate not-run with the reason "not a project root … cd to the project root and run this again" | The working directory is wrong: it has no `package.json` or `.claude/project.json` and is not the git top level | cd to the project root and re-run. Not a task failure: no fix round, and nothing from that run is recorded as a gate result |
 | The user committed or staged between tasks | Normal | Nothing to do: the snapshot diff from the task's base tree still isolates the task |

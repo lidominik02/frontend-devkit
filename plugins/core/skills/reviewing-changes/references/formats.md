@@ -75,8 +75,8 @@ Overall: CONFIRMED <n> critical · <n> important · <n> minor — PLAUSIBLE <n> 
    - fix: <the finder's suggestion>
    ```
 
-3. **Conflicts with a decision** holds each finding that contradicts a DECISIONS line or an
-   EXTRA-tagged criterion, in the same block, headed by the line
+3. **Conflicts with a decision** holds each finding that contradicts a DECISIONS.md entry or
+   an EXTRA-tagged criterion, in the same block, headed by the line
    `conflicts with D<n> — the user decides`.
 4. **Predates the change** holds the PREDATES_CHANGE blocks. They are not blocking.
 5. **Refuted** holds one line each: `<id> — <summary> — guard: <the quoted line> (<file:line>)`.
@@ -109,10 +109,19 @@ Overall: ADDRESSED <n> — NOT ADDRESSED <n> — set aside by the user <n> — n
 
 **Prior findings** holds one block per finding as the reviewer returns it: the id, ADDRESSED
 or NOT ADDRESSED, the `file:line`, the three evidence lines, and `untested` where it
-applies. **Set aside by the user** holds one line per prior finding left out of the dispatch:
-`<id> — <summary> — <the PROGRESS.md ledger line, verbatim>`; without a feature it says
-`none`. **New findings** are unverified — no `verify` runs in `re-review` — so their
-verdict stays empty.
+applies. **Set aside by the user** holds one entry per prior finding left out of the
+dispatch, `- <id> — <summary>`, with the PROGRESS.md ledger entry that set it aside pasted
+verbatim beneath it, one level deeper; without a feature it says `none`:
+
+```
+- Q3 — the empty list shows no message
+  - 2026-10-01 · deferred · Q3 minor
+    - Finding: the empty list shows no message (src/list.ts:42)
+    - Report: temp/cart/review/01-review.md
+```
+
+**New findings** are unverified — no `verify` runs in `re-review` — so their verdict stays
+empty.
 
 ## The chat brief
 

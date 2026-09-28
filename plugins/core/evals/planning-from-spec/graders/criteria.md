@@ -148,13 +148,19 @@ export function totalRevenue(invoices: Invoice[]): number {
 After the commit, outside git, under `temp/multi-currency/planning/`:
 
 - `SPEC.md` — exactly the first markdown block the prompt pastes.
-- `OPEN-QUESTIONS.md` — exactly the one-line block the prompt pastes.
+- `OPEN-QUESTIONS.md` — exactly the second markdown block the prompt pastes.
 - `DECISIONS.md`:
 
   ```
-  D1 — 2026-09-18 — support EUR, USD and GBP only — every ISO currency — the product owner: "those three cover every customer we bill"
-  D2 — 2026-09-18 — a failed rates request blocks issuing, with the error copy in SPEC States — fall back to EUR — SPEC States
-  D3 — 2026-09-18 — show today's rate beside each option in the currency selector — plain currency codes — the user accepted it as an extra
+  - **D1** · 2026-09-18 · support EUR, USD and GBP only
+    - Rejected: every ISO currency
+    - Source: the product owner: "those three cover every customer we bill"
+  - **D2** · 2026-09-18 · a failed rates request blocks issuing, with the error copy in SPEC States
+    - Rejected: fall back to EUR
+    - Source: SPEC States
+  - **D3** · 2026-09-18 · show today's rate beside each option in the currency selector
+    - Rejected: plain currency codes
+    - Source: the user accepted it as an extra
   ```
 
 - `HANDOFF.md`:

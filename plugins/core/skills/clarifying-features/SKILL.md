@@ -34,7 +34,7 @@ rules in `../planning-features/references/rules-block.md`.
 - **A gap handed back** — `gap`, or planning-features naming the gap that stopped its plan.
   Run one focused round on that gap only and update SPEC.md, DECISIONS.md and
   OPEN-QUESTIONS.md. An answer to an open question, once it arrives, is a `gap` too: record
-  it as a DECISIONS.md line, mark its OPEN-QUESTIONS.md line with that D number and update
+  it as a DECISIONS.md entry, add `Answered: D<n>` to its OPEN-QUESTIONS.md entry and update
   SPEC.md. Either way, then call the Skill tool with "core:planning-features" in `plan` mode
   for the feature. On a feature that already has a PLAN.md, `plan` rewrites only the tasks
   the new decision touches and keeps every Done task.
@@ -67,7 +67,7 @@ form:
 - **UI or not.** A change with no UI — a logic fix, monitoring — is classified "no design",
   and nothing about design is asked.
 - **API involved or not** — whether the feature needs anything the frontend cannot deliver
-  alone. When it does, each gap becomes a CONTRACT-GAPS.md line as it surfaces.
+  alone. When it does, each gap becomes a CONTRACT-GAPS.md entry as it surfaces.
 - **Sources.** Inventory the requirement sources and the design source, facts first. Look
   before asking: the links and notes in what the user gave, the files under
   `temp/<feature>/requirements/` and `temp/<feature>/design/`, and the design tool's read
@@ -133,7 +133,7 @@ No SPEC and no PLAN.
      a tree, and a question waits for the answer it depends on. Ask the whole frontier each
      round, as consecutive forms of at most four questions. Chat stays short; long material
      goes to files.
-   - Every answer becomes a DECISIONS.md line the same turn. Every assumption goes into the
+   - Every answer becomes a DECISIONS.md entry the same turn. Every assumption goes into the
      SPEC draft tagged ASSUMED. The SPEC draft is updated as each section settles.
    - Probe every business rule for its rationale; a rule with no rationale stays ASSUMED.
    - Cross-check what the user states against the code and the research ("the list already
@@ -142,7 +142,7 @@ No SPEC and no PLAN.
      the artifact contract's DECISIONS rule 4: a derived document never outranks its source.
    - No design for a UI task: propose one from the repository's own patterns — the closest
      existing feature, the design tokens, the shared components — as a decision form. The
-     approved proposal becomes the design source: a DECISIONS.md line, and SPEC Design
+     approved proposal becomes the design source: a DECISIONS.md entry, and SPEC Design
      names it.
    - Design gaps: check the design against the SPEC's States and the user flow. Each missing
      state becomes a question with a proposal drawn from repository precedent; one only the
@@ -152,12 +152,12 @@ No SPEC and no PLAN.
      questionnaire per owner, `planning/questions-for-<owner>.md`, that the user can forward.
    - A visual question words cannot settle: offer a look at the frame through the design
      tool's read tools, or a throwaway prototype once the user releases it.
-   - A contract gap becomes a CONTRACT-GAPS.md line as it surfaces.
+   - A contract gap becomes a CONTRACT-GAPS.md entry as it surfaces.
 3. **Extras**, once the must-haves are settled: what goes beyond every source — UX polish,
    stricter validation, defensive handling — proposed in a separate block. The user decides
-   each. An accepted one becomes a DECISIONS.md line and an EXTRA-tagged success criterion,
+   each. An accepted one becomes a DECISIONS.md entry and an EXTRA-tagged success criterion,
    so the review treats it as asked for. One that changes behaviour the client can see also
-   gets an OPEN-QUESTIONS.md line for approval, owner `client` or `product owner`.
+   gets an OPEN-QUESTIONS.md entry for approval, owner `client` or `product owner`.
 4. **Exit gate.** The frontier is empty; OPEN-QUESTIONS.md blocks no task, or each blocking
    question is listed with what it blocks; and the self-check "an implementer could build
    this without asking" passes — walk every SPEC section (`references/question-rounds.md`),
@@ -171,8 +171,9 @@ No SPEC and no PLAN.
    action: write the plan. Then call the Skill tool with "core:planning-features" in `plan`
    mode for the feature, in this session.
 
-Under Claude Code plan mode, hold every artifact write — the DECISIONS.md lines and the SPEC
-draft included — until plan mode exits, then write what the rounds settled before going on.
+Under Claude Code plan mode, hold every artifact write — the DECISIONS.md entries and the
+SPEC draft included — until plan mode exits, then write what the rounds settled before
+going on.
 
 ## What this must NOT do
 

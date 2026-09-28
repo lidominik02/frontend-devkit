@@ -144,7 +144,7 @@ the work from them.
 ticket, notes in any language, a design, or nothing — and looks facts up in the repository,
 the design tool and the API contract rather than asking. The user answers only what no
 source can — product decisions, each rule's reason, the gaps — through AskUserQuestion
-forms, and each answer becomes a DECISIONS.md line. Code research runs in a background agent
+forms, and each answer becomes a DECISIONS.md entry. Code research runs in a background agent
 meanwhile. A small change — one surface, a few files, no new API need, no open product
 question — takes the bounded route instead: an in-chat design the user approves, built on
 the main thread and reviewed, with no SPEC and no PLAN. Bounded work that grows switches to
@@ -174,7 +174,7 @@ verifier. The report lands in `temp/<feature>/review/`, the stage becomes
 `user reads code + findings`, and the skill stops. When the rules governing the feature hold
 the review until the user asks for it — the user's own rules can, the defaults do not —
 `executing-plans` does not call `reviewing-changes`: it writes a `review held by rule`
-ledger line quoting the rule, sets the same stage with "no review ran" in `HANDOFF.md`
+ledger entry quoting the rule, sets the same stage with "no review ran" in `HANDOFF.md`
 Status, names the base the review would diff from in Next action, and stops.
 `executing-plans` fixes the findings the user chooses; `reviewing-changes` then re-reviews.
 Browser, design-tool and Storybook checks run only on request.

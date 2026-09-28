@@ -218,8 +218,12 @@ existing settings tables. Coverage: complete.
 Arm S, `temp/tag-manager/planning/DECISIONS.md`:
 
 ```
-D1 — 2026-09-22 — only unused tags can be deleted — delete and detach from items — SPEC Business rules
-D2 — 2026-09-22 — list tags alphabetically, ignoring case — list in creation order — the user accepted it as an extra
+- **D1** · 2026-09-22 · only unused tags can be deleted
+  - Rejected: delete and detach from items
+  - Source: SPEC Business rules
+- **D2** · 2026-09-22 · list tags alphabetically, ignoring case
+  - Rejected: list in creation order
+  - Source: the user accepted it as an extra
 ```
 
 Rig check in `work`: `git branch --show-current` prints `feature/tag-manager`;

@@ -38,7 +38,7 @@ Acceptance criteria:
 Steps:
 1. <what to decide or produce, and where>
 Done when: <the fast gates, by name> pass, and <the observation that proves the criteria>
-Blocked by: <task names, an open question as OPEN-QUESTIONS.md words it, or none>
+Blocked by: <task names, an open question by its OPEN-QUESTIONS.md id (OQ2), or none>
 Tier: mechanical | judgment
 Pause point: yes
 ```

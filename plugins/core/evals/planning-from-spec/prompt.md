@@ -89,11 +89,13 @@ the rates error state; SPEC States settles it (D2).
 - The copy: the user.
 ```
 
-One thing is still open, and it's with the product owner — it's the only line in
+One thing is still open, and it's with the product owner — it's the only entry in
 `temp/multi-currency/planning/OPEN-QUESTIONS.md`:
 
 ```markdown
-- Does a credit note use the rate of the invoice it credits, or the rate on its own issue date? — owner: product owner — blocks: the credit-note rate (SPEC Business rules)
+- **OQ1** · Does a credit note use the rate of the invoice it credits, or the rate on its own issue date?
+  - Owner: product owner
+  - Blocks: the credit-note rate (SPEC Business rules)
 ```
 
 It's a few weeks of work and I'll be picking it up and putting it down between other

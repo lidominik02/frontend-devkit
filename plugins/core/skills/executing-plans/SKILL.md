@@ -12,7 +12,7 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(n
 You carry out an approved plan, one task at a time. In subagent mode `core:implementer`
 workers write the code and a `core:reviewer` reviews each task; in inline mode this session
 writes it. In both, the plan, the gates and the artifacts decide when a task is done. Every
-`PROGRESS.md` ledger line takes its shape from `../planning-features/references/artifacts.md`.
+ledger, decision and question entry follows `../planning-features/references/artifacts.md`.
 
 In the feature lifecycle this runs after `planning-features`, which writes PLAN.md, takes the
 user's approval and the execution mode, and calls this skill or leaves a kickoff prompt for a
@@ -35,13 +35,14 @@ mode and, inline, the framework rules: steps 1, 3 and 7.
    what is already Done — a restarted run continues at the first task not Done. A task the
    user names is where the run starts, once every task in its Blocked by is Done and it is
    not blocked; otherwise name what blocks it and ask. A task whose Blocked by names an open
-   question — one `OPEN-QUESTIONS.md` has not marked answered — is blocked this run, and so
-   is every task whose Blocked by names a blocked task: each gets its `PROGRESS.md` row
-   Blocked and a `blocked` ledger line, and the run continues with the rest. A task not Done
-   whose Blocked by names a question now marked answered was planned before the answer: read
-   its Steps, Acceptance criteria and Interfaces against the `DECISIONS.md` line that
-   answered it, and when they contradict that line, stop before any task runs, name the
-   task, the line and what contradicts it, and offer planning-features `plan` to revise it.
+   question — by `OQ<n>` or, in an older feature, by its quoted wording, with no `Answered:`
+   sub-item or older free-text answer mark in `OPEN-QUESTIONS.md` — is blocked this run,
+   and so is every task whose Blocked by names a blocked task: each gets its `PROGRESS.md`
+   row Blocked and a `blocked` ledger entry, and the run continues with the rest. A task not
+   Done whose Blocked by names a question now answered was planned before the answer: read
+   its Steps, Acceptance criteria and Interfaces against the `DECISIONS.md` entry that
+   answered it, and when they contradict that entry, stop before any task runs, name the
+   task, the entry and what contradicts it, and offer planning-features `plan` to revise it.
 3. **Mode.** A mode named in the arguments is the user's choice. With none there and none
    recorded, ask with the mode form in the Forms section of `references/dispatch.md`.
    Record the mode in `HANDOFF.md` (`Execution mode:`).
@@ -51,7 +52,7 @@ mode and, inline, the framework rules: steps 1, 3 and 7.
    what each task's diff is checked against.
 5. **Baseline.** Run the fast gates once, so a failure that predates the run is never blamed
    on a task, and take the pre-execution tree — the base the final review diffs from. Record
-   both in one ledger line. A restarted run keeps the latest recorded tree. A ledger line
+   both in one ledger entry. A restarted run keeps the latest recorded tree. A ledger entry
    recording that tree pruned, with review from the merge-base, settles it for every later
    run; otherwise check it with `git cat-file -e <tree>^{tree}`. A failed check, and any
    gate run that reports a hung gate or a directory that is not a project root, go by the
@@ -102,11 +103,11 @@ section 4 in place of steps 2 to 7:
    as the Fix rounds section of `references/dispatch.md` says, its decision check first.
    A critical or important finding still open after round 3 stops the run for the user,
    unless it is a reversible plan defect, ruled on as section 3's Deviations says. Each
-   minor finding, from any round, gets a `deferred` ledger line; the final review sees the
+   minor finding, from any round, gets a `deferred` ledger entry; the final review sees the
    code again.
 8. **Close the task.** The row is Done only when every step ran and every gate in its Done
    when passed; otherwise it stays open and the ledger names what was skipped. One ledger
-   line: the task, the gates, the rounds, the review result.
+   entry: the task, the gates, the rounds, the review result.
 9. **Pause** after every task, unless the user chose "Continue without pausing" earlier in
    this run, with the pause brief and form in the Forms section of `references/dispatch.md`.
    Without pausing, the run still stops and asks wherever a step above says to.
@@ -125,15 +126,15 @@ section 4 in place of steps 2 and 3:
    files it touched and no others.
 3. **Gates.** `node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json`, its
    result read from its exit code and JSON, never through a pipe that drops the exit code.
-4. **Close** in one combined write: the task's `PROGRESS.md` row, its ledger line, and
+4. **Close** in one combined write: the task's `PROGRESS.md` row, its ledger entry, and
    `HANDOFF.md`'s stage and Next action moved on to the next task. Continue with it without
    pausing.
 
-**Deviations.** A change to what a plan step or a `DECISIONS.md` line says, or to what an
+**Deviations.** A change to what a plan step or a `DECISIONS.md` entry says, or to what an
 option the user picked promised, is asked with the deviation form in the Forms section of
 `references/dispatch.md`. Only a reversible plan defect — a wrong path, a mismatched
 interface name, a task order that cannot work — is ruled on without a form, each with its
-own `DECISIONS.md` line and a `ruling — plan defect` ledger line naming it.
+own `DECISIONS.md` entry and a `ruling · plan defect` ledger entry naming it.
 
 Stop and ask on an ambiguity `SPEC.md` and `DECISIONS.md` do not answer, on a product
 question, or on a gate failure the task caused and cannot fix — the baseline shows which
@@ -145,12 +146,12 @@ A plan task the user approved that names a git history or index operation verbat
 reset, a stash, a rebase, a fast-forward — is the only way this skill runs one. This
 session runs it in either mode, and nothing beyond what the task names:
 
-1. Create a backup ref at `git rev-parse HEAD` and name it in a `backup ref` ledger line.
+1. Create a backup ref at `git rev-parse HEAD` and name it in a `backup ref` ledger entry.
 2. Run the operation as the task words it. The conflicted files it leaves are code, changed
    before step 3 under the mode's own rules — in subagent mode by an implementer through
    section 2 steps 2 to 7, with a conflicts brief naming them (`references/dispatch.md`).
 3. Run the fast gates. When HEAD has moved, that run and a new pre-execution tree are the
-   new baseline: one `baseline retaken` ledger line naming the task and what the new base
+   new baseline: one `baseline retaken` ledger entry naming the task and what the new base
    leaves out of the final review — every Done task before it, each file its conflicts changed.
 4. Close the task by the mode's close step before any other work, so Next action never
    names an operation that already ran.
@@ -159,18 +160,18 @@ session runs it in either mode, and nothing beyond what the task names:
 
 The run's work stays uncommitted until the user commits it. However the run ends — here, or
 at a Stop on the pause form — run `snapshot.mjs take` once more and record the tree id as a
-recovery point: in a `recovery tree` ledger line and in `HANDOFF.md` Status. That Status
+recovery point: in a `recovery tree` ledger entry and in `HANDOFF.md` Status. That Status
 also names each stale `qa/` file and, for a review from a pre-execution tree, what the
-`baseline retaken` lines leave out of it.
+`baseline retaken` entries leave out of it.
 
 When every task is Done, call the Skill tool with "core:reviewing-changes", naming the
-feature and the base: the latest pre-execution tree, with what the `baseline retaken` lines
-leave out named as outside the review; or no base when the ledger records that tree pruned
-with review from the merge-base, so `reviewing-changes` takes the merge-base itself. It
-writes the report and sets the stage `user reads code + findings`. Then stop.
+feature and the base: the latest pre-execution tree, with what the `baseline retaken`
+entries leave out named as outside the review; or no base when the ledger records that tree
+pruned with review from the merge-base, so `reviewing-changes` takes the merge-base itself.
+It writes the report and sets the stage `user reads code + findings`. Then stop.
 
 When the rules that govern the feature hold the review until the user asks for it, do not
-call it: write a `review held by rule` ledger line quoting the rule, set the stage
+call it: write a `review held by rule` ledger entry quoting the rule, set the stage
 `user reads code + findings` with "no review ran" in Status, and name that base — the tree
 id or the merge-base — in Next action. Then stop.
 
@@ -187,8 +188,8 @@ The user has read the code and the review report and says what to do with each f
    re-review report after it, if any. Ask about each finding the user has not decided, in
    the fix-findings forms of the Forms section of `references/dispatch.md`.
 2. Record each finding the user defers or keeps as designed in its `deferred` or `ruling`
-   ledger line, which names its id and the report so `re-review` sets it aside. A decision
-   the user changes gets a new `DECISIONS.md` line that supersedes the old one.
+   ledger entry, which names its id and the report so `re-review` sets it aside. A decision
+   the user changes gets a new `DECISIONS.md` entry that supersedes the old one.
 3. Verify each finding before fixing it: open the cited `file:line` and confirm the failure
    scenario holds. One that does not is reported back with the evidence, not fixed; one the
    code cannot settle is reported as "cannot verify without X".

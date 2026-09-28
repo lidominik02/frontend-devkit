@@ -123,15 +123,16 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
 
 When the feature has `temp/<feature>/planning/HANDOFF.md`, update its stage at three
 points, rewrite its next action and kickoff prompt to match
-(`../planning-features/references/handoff-format.md`), and add one PROGRESS.md ledger line
+(`../planning-features/references/handoff-format.md`), and add one PROGRESS.md ledger entry
 for each:
 
 - After `plan` writes the list: `QA list (awaiting approval) — owner: the user`; ledger
-  `- <date> — QA list — awaiting approval — <list path>`.
+  `- <date> · QA list · awaiting approval` with the sub-item `- List: <list path>`.
 - When `run` starts: `testing — owner: testing-changes`; ledger
-  `- <date> — testing — started — <list path>`.
+  `- <date> · testing · started` with the sub-item `- List: <list path>`.
 - After the report: `user's check — owner: the user`; ledger
-  `- <date> — QA report — <n> findings, <n> skipped — <report path>`.
+  `- <date> · QA report · <n> findings, <n> skipped` with the sub-item
+  `- Report: <report path>`.
 
 Without a HANDOFF.md, nothing is written beyond the list and the report.
 

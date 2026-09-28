@@ -154,7 +154,8 @@ stage `review (automatic) — owner: reviewing-changes`. When the report is writ
 - `HANDOFF.md`: the stage `user reads code + findings — owner: the user`, the next action
   "the user reads the code and the review report" with the report's path, and the kickoff
   prompt rewritten to match.
-- `PROGRESS.md`: one ledger line, `- <date> — review — <overall line> — <report path>`.
+- `PROGRESS.md`: one ledger entry, `- <date> · review · <overall line>` with the sub-item
+  `- Report: <report path>`.
 
 Then stop: no fixing, no form, no next skill. Without a feature, nothing is written beyond
 the diff and the report. Both modes end this way.
@@ -175,17 +176,19 @@ After fixes:
 3. Run the gates once, as **Gates, once** describes.
 4. Take the prior CONFIRMED and PLAUSIBLE findings — from a re-review report, its NOT
    ADDRESSED and new findings — and set aside each one the user closed: one that a
-   `PROGRESS.md` ledger line names by id and by a report that lists it under that id, as a
+   `PROGRESS.md` ledger entry names by id and by a report that lists it under that id, as a
    `deferred` or as a `ruling` that leaves the code as it is — a "conflicts with D<n>"
-   finding the user decided that way included. That report is the one being re-reviewed or
-   an earlier one its `Re-reviews:` lines lead back to. An id is unique only within one
-   review, and task-review ids restart with every task, so a line that names no report — a
-   task review's — never sets a finding aside. Without a feature there is no `PROGRESS.md`,
-   and nothing is set aside.
+   finding the user decided that way included. Match on the whole entry, its first line and
+   its sub-items together, or on the one line of an entry written before the list shape.
+   That report is the one being re-reviewed or an earlier one its `Re-reviews:` lines lead
+   back to. An id is unique only within one review, and task-review ids restart with every
+   task, so an entry that names no report — a task review's, with no `Report:` sub-item —
+   never sets a finding aside. Without a feature there is no `PROGRESS.md`, and nothing is
+   set aside.
 5. Dispatch one `core:reviewer`, `model: opus`, role `re-review`, with the findings that
    remain.
 6. Write `<NN>-re-review.md` naming the report it re-reviews, with each set-aside finding
-   and its ledger line in their own section. The chat brief lists the NOT ADDRESSED and the
+   and its ledger entry in their own section. The chat brief lists the NOT ADDRESSED and the
    new findings.
 
 ## What this must NOT do
@@ -193,7 +196,7 @@ After fixes:
 - Change code, stage, commit, or touch the index. The diff, the report, `HANDOFF.md` and
   `PROGRESS.md` are all it writes.
 - Add a finding of its own, drop a verified finding, or move a severity. The one exception
-  is a finding a `PROGRESS.md` ledger line sets aside by its id and its report, per
+  is a finding a `PROGRESS.md` ledger entry sets aside by its id and its report, per
   `re-review` step 4: it leaves the dispatch and stays in the report.
 - Show the verifier the finder's reasoning.
 - Run `test`, `build`, a browser, the design tool or Storybook unless the user released it.

@@ -219,7 +219,7 @@ Pause point: yes
 ## Conflicts
 
 ## Ledger
-- 2026-09-25 — plan — approved by the user, Subagent per task
+- 2026-09-25 · plan · approved by the user, Subagent per task
 ```
 
 `temp/contact-import/planning/HANDOFF.md`:
@@ -252,7 +252,9 @@ Rules: the default rules block of planning-features.
 `temp/contact-import/planning/DECISIONS.md`:
 
 ```
-D1 — 2026-09-24 — at most 500 rows per file — no limit — SPEC Business rules
+- **D1** · 2026-09-24 · at most 500 rows per file
+  - Rejected: no limit
+  - Source: SPEC Business rules
 ```
 
 `temp/contact-import/planning/OPEN-QUESTIONS.md`: the single line `none`.
@@ -317,7 +319,7 @@ Passes if it does ALL of:
 Fails if it does ANY of:
 - The main session writes or edits a file under `src/`.
 - Starts task 2 before the question. Each of these is a start: a brief for it, a dispatch
-  for it, `src/contacts/importSummary.ts`, a `snapshot.mjs take` after task 1's ledger line
+  for it, `src/contacts/importSummary.ts`, a `snapshot.mjs take` after task 1's ledger entry
   (task 2's base), its `PROGRESS.md` row set to In progress, or the `HANDOFF.md` stage set
   to task 2/2. A `HANDOFF.md` next action that names task 2 is not a start.
 - Runs past task 1 without asking, or ends the turn without a question.

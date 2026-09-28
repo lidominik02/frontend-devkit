@@ -29,7 +29,7 @@ file and its fixed shape — read it before writing an artifact.
 1. Update the artifacts in the same turn as the work they record: a decision that exists
    only in the conversation is lost with the context window. `save` is an explicit
    checkpoint, not the only moment state is written.
-2. A decision that shaped the plan gets a `DECISIONS.md` line with the alternative it
+2. A decision that shaped the plan gets a `DECISIONS.md` entry with the alternative it
    rejected.
 3. When you create `temp/<feature>/` in a repo whose `temp/` is not gitignored, say so
    once. The artifacts stay untracked; what enters git is the user's call.
@@ -56,7 +56,7 @@ conversation.
 Before a form that decides an architecture or a product question, read
 `../clarifying-features/references/question-rounds.md` and hold the form to it. An
 architecture choice the SPEC leaves to the plan is asked here, and its answer gets a
-`DECISIONS.md` line; a product question goes back to clarifying-features, as `plan` step 2
+`DECISIONS.md` entry; a product question goes back to clarifying-features, as `plan` step 2
 says.
 
 ## Mode: `plan <feature>`
@@ -71,7 +71,7 @@ SPEC settled; what to build is already settled there.
    contract field — write no plan. Tell the user which gap stops it, hand back — call the
    Skill tool with "core:clarifying-features", naming the gap — and stop. An open question
    in `OPEN-QUESTIONS.md` with an owner does not stop the plan: every task is planned, and
-   a task the question blocks names it in Blocked by.
+   a task the question blocks names its id in Blocked by.
 3. **List the fast gates:** `node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --list
    --stage fast`. Every task's Done when names these gates, or says the repo has none and
    names the observation that stands in for them.
@@ -127,11 +127,11 @@ recommended), the other mode, "Approve plan, choose later", "Change the plan".
 When `PLAN.md` exists — clarifying-features calls `plan` after a `gap`, an arriving answer
 to an open question included — revise the plan rather than rewrite it:
 
-1. Read the new `DECISIONS.md` lines and rewrite only the tasks they touch, dropping an
+1. Read the new `DECISIONS.md` entries and rewrite only the tasks they touch, dropping an
    answered question from their Blocked by. A Done task is never rewritten: a change it
    needs becomes a new task after it.
 2. Keep every Done task and its `PROGRESS.md` row, the ledger and the recorded execution
-   mode. A new task gets its own row. Append a `plan revised` ledger line.
+   mode. A new task gets its own row. Append a `plan revised` ledger entry.
 3. Run the self-review on the changed tasks, and tell the user which tasks changed and how.
 4. Set the stage `plan (awaiting approval)` and ask with one form: Approve the changes
    (recommended), or Change the plan. On approval, continue in the recorded mode as
@@ -178,7 +178,7 @@ than resuming, which step 8 routes.
 ## Mode: `save`
 
 Bring every artifact in line with the repository now: the `PROGRESS.md` table and ledger,
-new `DECISIONS.md` lines, and a rewritten `HANDOFF.md` status, next action and kickoff
+new `DECISIONS.md` entries, and a rewritten `HANDOFF.md` status, next action and kickoff
 prompt. A task is Done when every step ran and every gate in its Done when passed; a task
 with a skipped step or an unrun gate stays open, and the ledger names what was skipped.
 

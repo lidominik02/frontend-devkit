@@ -26,7 +26,7 @@ An example question, one of three on a form. Header "Empty list". Question: "The
 shows the list populated only. What does an empty list show?" Options: "The shared
 empty-state component with a create action (recommended)" — consequence: matches the closest
 existing list, no new component. "A single line of text" — consequence: less to build,
-unlike every other list. "Ask the designer" — consequence: an OPEN-QUESTIONS.md line with
+unlike every other list. "Ask the designer" — consequence: an OPEN-QUESTIONS.md entry with
 owner `designer`, and the list task waits for the answer.
 
 ## Question kinds
@@ -40,13 +40,13 @@ owner `designer`, and the list task waits for the answer.
 | Conflict | Both sources quoted, each with its location | The authority order below |
 | Gap | What no source covers: a missing state, a validation limit, an edge case | Repository precedent; else a reasonable-user default, said to be one |
 | Extra | One extra, its cost, and whether the client would see it | Repository precedent and the cost; the user decides each |
-| Third-party | What only a named owner can answer, and what it blocks | An OPEN-QUESTIONS.md line; when it blocks nothing, a working answer tagged ASSUMED until the owner confirms |
+| Third-party | What only a named owner can answer, and what it blocks | An OPEN-QUESTIONS.md entry; when it blocks nothing, a working answer tagged ASSUMED until the owner confirms |
 
 **The authority order.** A rule its owner confirmed, then a written spec, then the design,
 then anything derived from them. A derived document — notes or a story written from the
 design — never outranks its source. The artifact contract states it as DECISIONS rule 4
 (`../../planning-features/references/artifacts.md`); a conflict is always a question, and
-its answer gets a DECISIONS.md line.
+its answer gets a DECISIONS.md entry.
 
 ## The cross-check probe
 
@@ -74,8 +74,8 @@ UX polish, stricter validation, defensive handling — is one question, with:
 - its cost: the files it touches, a new component, a new API need;
 - whether the client would see it.
 
-Options: include it, leave it out. An included extra becomes a DECISIONS.md line and an
-EXTRA-tagged success criterion. One the client would see also gets an OPEN-QUESTIONS.md line
+Options: include it, leave it out. An included extra becomes a DECISIONS.md entry and an
+EXTRA-tagged success criterion. One the client would see also gets an OPEN-QUESTIONS.md entry
 for approval, owner `client` or `product owner`. An extra that needs the API is a contract
 gap too.
 
@@ -99,7 +99,7 @@ build every task that touches it without asking anything? A section passes when:
 - **Review Focus** — names the failure modes the rules and the states imply.
 - **Architecture fit** — every asset has a path, and each was opened, not inferred from its
   name.
-- **Contract** — every endpoint and field either exists or has a CONTRACT-GAPS.md line.
+- **Contract** — every endpoint and field either exists or has a CONTRACT-GAPS.md entry.
 - **Out of scope** and **Deferred** — each deferred item has the trigger that brings it back.
 - **Verification seams** — every success criterion has its observation.
 
@@ -124,4 +124,4 @@ for a reader who has not seen the conversation:
 ```
 
 The user decides whether and how it reaches the owner. An answer that comes back becomes a
-DECISIONS.md line, and its OPEN-QUESTIONS.md line is marked with that D number.
+DECISIONS.md entry, and its OPEN-QUESTIONS.md entry gains `Answered: D<n>`.
