@@ -354,6 +354,22 @@ stack_of() {
 [ "$(stack_of '{}')" = '[null,[]]' ] \
   && ok || bad "no framework must report a null stack and no packs"
 
+# The lockfile names the package manager when package.json declares none; Bun's
+# text lockfile and npm's shrinkwrap count as well as the older formats.
+pm_of() {
+  d="$(mktemp -d)"; printf '{"name":"x"}' > "$d/package.json"; printf '' > "$d/$1"
+  CLAUDE_PROJECT_DIR="$d" node -e "
+  import('$S/project-facts.mjs').then(m => {
+    const p = m.detect(process.env.CLAUDE_PROJECT_DIR).packageManager;
+    console.log(JSON.stringify([p.name, p.source]));
+  });" 2>/dev/null
+  rm -rf "$d"
+}
+[ "$(pm_of bun.lock)" = '["bun","bun.lock"]' ] \
+  && ok || bad "bun.lock must report bun"
+[ "$(pm_of npm-shrinkwrap.json)" = '["npm","npm-shrinkwrap.json"]' ] \
+  && ok || bad "npm-shrinkwrap.json must report npm"
+
 # The injection guarantee again, for the file added last. A .mcp.json is written
 # by hand far more often than package.json is, and an unparseable one must not
 # take out the skills that inject these facts.
@@ -1019,6 +1035,194 @@ ch_assert 2 "$(printf "cat > %s <<'EOF'\nfeat: x\n\nCo-Authored-By: y <y@example
 ch_assert 2 "$(printf "cat > %s <<'EOF'\nfeat: x\n\nCo-Authored-By: y <y@example.com>\nEOF\ngit commit -F %s" "$CHF/clean.txt" "$CHF/clean.txt")" \
   'a stale clean message file the same call rewrites must not hide the new text'
 rm -rf "$CHF"
+# The user pushes and merges: every form the parser follows must deny a push, a
+# merge and a pull that merges, whatever wraps or nests it.
+while IFS= read -r c; do
+  ch_assert 2 "$c" "deny: $c"
+done <<'EOF'
+git push
+git push --force-with-lease origin feat
+git push --dry-run
+git -C /r push origin HEAD
+git -c push.default=current push
+git --no-pager push
+"git" push
+git "pu""sh"
+/usr/bin/git push
+GIT_TRACE=1 git push
+env GIT_TRACE=1 git push
+command git push
+exec git push
+nohup git push
+time git push
+sudo git push
+sudo -u me git push
+timeout 30 git push
+nice git push
+xargs git push <<< origin
+bash -c 'git push'
+sh -c "git -C /r push origin HEAD"
+bash -c "sh -c 'git push'"
+sudo bash -c 'git push'
+bash <<< 'git push'
+echo 'git push' | sh
+bash < <(echo 'git push')
+echo "$(git push)"
+echo `git push`
+cat <(git push)
+git fetch && git push
+git rebase main; git push
+git status || git push
+git merge feat
+git merge --no-ff feat
+git merge --continue
+git merge --quit
+git merge -- --abort
+git -C /r merge feat
+sudo git merge feat
+bash -c 'git merge feat'
+echo 'git merge feat' | sh
+git pull
+git pull origin main
+git pull --ff-only
+git pull --no-rebase
+git pull --rebase=false
+git pull --rebase --no-rebase
+git pull --rebase --no-reb
+git pull -r --reb=false
+git -C /r pull
+timeout 30 git pull
+bash -c 'git pull origin main'
+git merge -m --abort feat
+git merge --abort feat
+git $X push
+git ${X} push
+git $GIT_OPTS push origin
+git "$@"
+git -C /r $CMD
+git $(echo push)
+git `echo push`
+env -S "git push"
+env -S'git push'
+env --split-string="GIT_TRACE=1 git push"
+env -i -S "git merge feat"
+git send-pack origin main
+git http-push https://example.com/r.git main
+git subtree push -P lib origin main
+git subtree pull --prefix=lib origin main
+git subtree merge -P lib feat
+git subtree add -P lib origin main
+git svn dcommit
+git svn set-tree HEAD
+git svn commit-diff a b https://example.com/svn
+git p4 submit
+EOF
+ch_assert 2 'git $X status' \
+  'an expanded subcommand is denied even when it would be harmless: the cost the header names'
+ch_assert 2 "$(printf "bash <<'EOF'\ngit fetch\ngit push --force-with-lease\nEOF")" \
+  'a push in a heredoc script fed to bash must be denied'
+ch_assert 2 "$(printf "bash -s <<'EOF'\ngit merge feat\nEOF")" \
+  'a merge in a heredoc read by bash -s must be denied'
+ch_assert 2 "$(printf 'git fetch\ngit push')" \
+  'a push on the line after another command must be denied'
+ch_assert 2 "$(printf 'echo "unterminated\ngit push')" \
+  'the plain-text fallback must deny a push'
+ch_assert 2 "$(printf 'echo "unterminated\ngit -C /r push;')" \
+  'the plain-text fallback must deny a push behind a global option and before a separator'
+ch_assert 2 "$(printf 'echo "unterminated\ngit merge feat')" \
+  'the plain-text fallback must deny a merge'
+ch_assert 2 "$(printf 'echo "unterminated\ngit pull origin main')" \
+  'the plain-text fallback must deny a pull that merges'
+ch_assert 2 "$(printf 'echo "unterminated\ngit $X push')" \
+  'the plain-text fallback must deny an expanded subcommand'
+ch_assert 2 "$(printf 'echo "unterminated\ngit subtree push -P lib origin main')" \
+  'the plain-text fallback must deny a subtree push'
+ch_assert 2 "$(printf 'echo "unterminated\ngit merge -m --abort feat')" \
+  'the plain-text fallback must deny --abort as an option value'
+# ...while every git command a skill runs itself, and text that merely names a
+# push or a merge, passes.
+while IFS= read -r c; do
+  ch_assert 0 "$c" "allow: $c"
+done <<'EOF'
+git fetch
+git fetch origin main
+git merge-base main HEAD
+git merge-base --is-ancestor main HEAD
+git merge --abort
+git -C /r merge --abort
+git merge-file a base b
+git merge-tree main feat
+git mergetool
+git rebase main
+git -c merge.conflictStyle=zdiff3 rebase --no-update-refs --onto main old feat
+git rebase --continue
+git rebase --abort
+git pull --rebase
+git pull -r
+git pull --rebase origin main
+git pull --rebase=merges
+git pull --no-rebase --rebase
+git cherry-pick abc123
+git cherry-pick --continue
+git stash push -m wip
+git branch backup/feat/20260929-1200
+git reset --hard backup/feat/20260929-1200
+git switch feat
+git help push
+git log --grep push
+echo git push
+grep -rn "git merge" docs/
+git commit -m "docs: never git push or git merge from a hook"
+bash -c 'git rebase main'
+echo 'git merge-base main HEAD' | sh
+echo 'git merge --abort' | sh
+echo 'git pull --rebase' | sh
+git log $REV
+git show "$SHA"
+git -C "$ROOT" status
+git diff "$BASE"...HEAD
+git log "$(git merge-base main HEAD)"..HEAD
+env -S "git fetch"
+git subtree split -P lib
+git svn rebase
+git svn fetch
+git p4 sync
+git p4 rebase
+EOF
+# Out of reach, and let through: each is named in commit-hygiene.mjs's header,
+# which the README's hooks row points at as the complete list.
+while IFS= read -r c; do
+  ch_assert 0 "$c" "out of reach: $c"
+done <<'EOF'
+python3 -c "import os; os.system('git push')"
+node -e "require('child_process').execSync('git push')"
+make push
+npm run release
+sh ./push.sh
+source push.sh
+. push.sh
+git submodule foreach git push
+git rebase --exec 'git push' main
+git bisect run git push
+git -c help.autocorrect=immediate psuh
+git submodule update --remote --merge
+git submodule update --remote --rebase
+git p4 commit
+git svn branch feat
+git svn tag v1
+gh pr merge 12
+glab mr merge 12
+eval "git push"
+g=git; $g push
+EOF
+ch_assert 0 "$(printf "cat > /tmp/notes.md <<'EOF'\nthe user runs git push and git merge\nEOF")" \
+  'a heredoc body naming a push is data, not a command'
+ch_assert 0 "$(printf 'echo "unterminated\ngit merge --abort')" \
+  'the plain-text fallback must pass a merge --abort'
+ch_assert 0 "$(printf 'echo "unterminated\ngit pull --rebase origin main')" \
+  'the plain-text fallback must pass a pull --rebase'
+ch_assert 0 "$(printf 'echo "unterminated\ngit merge-base main HEAD')" \
+  'the plain-text fallback must pass a merge-base'
 # Injection guarantee, same shape as project-facts and block-secrets: garbage
 # stdin must fail open, never take the tool call down with it.
 printf 'not json at all' | node "$CH" >/dev/null 2>&1

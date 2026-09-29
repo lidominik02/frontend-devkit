@@ -4,7 +4,13 @@
 // user and Claude (a session, a handoff file, a roadmap artifact, a phase
 // or a decision id). Both are the specific failures the user reported: a
 // commit message is read by another developer, who has no access to either.
-// It also denies `git commit-tree` outright, whatever its message.
+// It also denies `git commit-tree` outright, whatever its message, and, since
+// the user pushes and merges: every `git push`, `send-pack` and `http-push`; a
+// `git merge` other than a bare `git merge --abort`; a `git pull` without
+// `--rebase`, which merges; `git subtree push|pull|merge|add`; `git svn
+// dcommit|set-tree|commit-diff`; and `git p4 submit`. A git subcommand word
+// that is an expansion (`git $X push`, `git "$@"`) may be any of them, so it
+// is denied too, at the cost of denying a harmless one such as `git $X status`.
 //
 // Node rather than bash, for the reason block-secrets.mjs states: bash exits
 // 2 on a syntax error and 2 is also the hook protocol's block signal, so a
@@ -19,11 +25,11 @@
 // composes itself, and that is exactly what this inspects.
 //
 // The command is tokenised the way a shell reads it -- quotes, escapes,
-// separators, heredoc bodies -- so only a real `git commit` or `git
-// commit-tree` invocation is judged. Unless the command is led by one that
+// separators, heredoc bodies -- so only a real invocation of one of those git
+// subcommands is judged. Unless the command is led by one that
 // never runs its arguments (echo, grep, cat, ...), a git or shell invocation
 // among its arguments counts too, which covers sudo, xargs, timeout and the
-// like. A shell's script is followed two levels deep, whether it comes from
+// like, and `env -S` has its string split into words. A shell's script is followed two levels deep, whether it comes from
 // `-c`, a heredoc or a here-string, and so are `$(...)`, backtick and `<(...)`
 // substitutions. When a shell reads its script from a pipe or a `<` redirect,
 // the whole command gets a plain-text scan instead.
@@ -40,13 +46,22 @@
 //
 // Out of reach, and let through: git aliases, a quoted `eval` string, deeper
 // nesting, a git command name produced by an expansion (`$g`, `$(command -v
-// git)`), a script or stdin message read from a file (`bash f`, `bash < f`,
-// `-F - < f`), a message assembled in a variable or read by a substitution
-// (`-m "$(cat f)"`), a message from a template, an editor or another commit
-// (-t, -c, -C), a trailer key that `trailer.<name>.key` config renames (git
-// 2.43.0), and a stale -F file the command rewrites under another name. A
-// command that does not tokenise falls back to a plain-text scan of the whole
-// string.
+// git)`), a script or stdin message read from a file (`bash f`, `sh ./f.sh`,
+// `source f`, `. f`, `bash < f`, `-F - < f`), a command another interpreter or
+// a task runner runs (`python3 -c`, `node -e`, `make`, `npm run` and every
+// other package script), a git subcommand that runs another command (`git
+// submodule foreach`, `git rebase --exec`, `git bisect run`), a mistyped
+// subcommand that `help.autocorrect` runs as the one it resembles (`git -c
+// help.autocorrect=immediate psuh` pushed, git 2.43.0), `git submodule update
+// --merge|--rebase`, `git p4 commit` and `git svn branch|tag` (from the man
+// pages, unverified: git-p4 and git-svn were not installed), a host CLI (`gh
+// pr merge`, `glab mr merge`), a message assembled in a variable or read by a
+// substitution (`-m "$(cat f)"`), a message from a template, an editor or
+// another commit (-t, -c, -C), a trailer key that `trailer.<name>.key` config
+// renames (git 2.43.0), and a stale -F file the command rewrites under another
+// name. `pull.rebase` config is not read, so a `git pull` passes only with
+// `--rebase` or `-r` on the command line. A command that does not tokenise
+// falls back to a plain-text scan of the whole string.
 
 import { readFileSync, existsSync } from 'node:fs';
 
@@ -69,6 +84,16 @@ function deny(reason) {
 }
 
 const COMMIT_TREE_REASON = 'that commit uses `git commit-tree`. Commits go through `git commit`, so the repository\'s own hooks and this hook see the message; a plumbing commit bypasses both.';
+const HAND_BACK_REASON = 'that command pushes or merges, or may (`git push`, `git merge`, `git pull` without `--rebase`, a subtree, svn or p4 push or merge, or a git subcommand given as an expansion such as `git $X`). The user pushes and merges: hand this step back to the user with the command to run, rather than retrying it in another form. `git fetch`, `git rebase`, `git pull --rebase`, `git merge-base` and `git merge --abort` stay available.';
+// The --rebase values git 2.43.0 reads as a rebase; anything else is judged a merge.
+const PULL_REBASE_VALUES = ['true', 'yes', 'on', '1', 'merges', 'm', 'interactive', 'i'];
+const PUSH_SUBCOMMANDS = ['push', 'send-pack', 'http-push'];
+// Git subcommands whose own subcommand pushes or merges.
+const NESTED_HAND_BACK = new Map([
+  ['subtree', ['push', 'pull', 'merge', 'add']],
+  ['svn', ['dcommit', 'set-tree', 'commit-diff']],
+  ['p4', ['submit']],
+]);
 
 // Git's global options that take their value as the next word, shared by the
 // tokeniser and the plain-text matchers. Not `--exec-path`: without `=` it
@@ -83,6 +108,8 @@ const OPT_VALUE = String.raw`(?:"[^"]*"|'[^']*'|[^\s"']\S*)`;
 const GLOBAL_OPTS = String.raw`(?:${VALUE_OPTS}\s+${OPT_VALUE}\s+|(?!${VALUE_OPTS}\s)-\S+\s+)*`;
 const GIT_COMMIT = new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}commit(?:\s|$)`);
 const GIT_COMMIT_TREE = new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}commit-tree(?:\s|$)`);
+// The subcommand and the rest of its simple command, split into words below.
+const GIT_HAND_BACK = new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}([^\s;&|)]+)([^;&|\n)]*)`, 'g');
 
 // A generic-word denylist, deliberately: naming a private project would make
 // this list itself a disclosure of it, which is the rule every check in this
@@ -164,6 +191,10 @@ function readMessageFile(p) {
 /** @param {string} text */
 function plainTextScan(text) {
   if (GIT_COMMIT_TREE.test(text)) return COMMIT_TREE_REASON;
+  const unquote = (/** @type {string} */ w) => w.replace(/^["']+|["']+$/g, '');
+  for (const [, name, rest] of text.matchAll(GIT_HAND_BACK)) {
+    if (pushesOrMerges(unquote(name), rest.split(/\s+/).filter(Boolean).map(unquote))) return HAND_BACK_REASON;
+  }
   if (!GIT_COMMIT.test(text)) return null;
   const m = text.match(/(?:^|[;&|]|\s)-F\s*([^\s;&|]+)|--file[=\s]+([^\s;&|]+)/);
   const file = m?.[1] ?? m?.[2];
@@ -445,8 +476,9 @@ const NON_EXECUTING = new Set([
 ]);
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh']);
 
-/** The words from the command name on, past assignments and wrappers. @param {string[]} words */
-function commandWords(words) {
+/** The words from the command name on, past assignments and wrappers. @param {string[]} input */
+function commandWords(input) {
+  let words = input;
   let k = 0;
   while (k < words.length) {
     const w = words[k];
@@ -454,6 +486,11 @@ function commandWords(words) {
     if (w === 'env') {
       k++;
       while (k < words.length && (ASSIGNMENT.test(words[k]) || words[k].startsWith('-'))) {
+        const split = envSplitString(words, k);
+        if (split) {
+          words = [...words.slice(0, k), ...split.words, ...words.slice(k + split.width)];
+          continue;
+        }
         k += ['-u', '-C', '--unset', '--chdir'].includes(words[k]) ? 2 : 1;
       }
       continue;
@@ -467,6 +504,27 @@ function commandWords(words) {
     break;
   }
   return words.slice(k);
+}
+
+/**
+ * The words of an `env -S` / `--split-string` string at `words[k]`, and how
+ * many words the option spans, or null when `words[k]` is another option.
+ * @param {string[]} words @param {number} k
+ * @returns {{ words: string[], width: number } | null}
+ */
+function envSplitString(words, k) {
+  const w = words[k];
+  let text;
+  let width = 1;
+  if (w === '-S' || w === '--split-string') { text = words[k + 1] ?? ''; width = 2; }
+  else if (/^-S./.test(w)) text = w.slice(2);
+  else if (w.startsWith('--split-string=')) text = w.slice('--split-string='.length);
+  else return null;
+  try {
+    return { words: parseShell(text)[0]?.words ?? [], width };
+  } catch {
+    return { words: text.split(/\s+/).filter(Boolean), width };
+  }
 }
 
 /**
@@ -504,6 +562,32 @@ function gitSubcommand(words) {
     return { name: w, args: words.slice(k + 1) };
   }
   return null;
+}
+
+/**
+ * Whether a git subcommand pushes or merges. `git merge --abort` passes only
+ * bare, since `--abort` elsewhere may be an option's value (`-m --abort`), and
+ * a pull passes only when its last rebase option on the command line is a rebase.
+ * An abbreviated `--no-reb` or `--reb=<v>` counts as git 2.43.0 reads it.
+ * @param {string} name @param {string[]} args
+ */
+function pushesOrMerges(name, args) {
+  if (/[$`]/.test(name)) return true;
+  const end = args.indexOf('--');
+  const opts = end < 0 ? args : args.slice(0, end);
+  if (PUSH_SUBCOMMANDS.includes(name)) return true;
+  const nested = NESTED_HAND_BACK.get(name);
+  if (nested) return opts.some((a) => nested.includes(a));
+  if (name === 'merge') return !(args.length === 1 && args[0] === '--abort');
+  if (name !== 'pull') return false;
+  let rebase = false;
+  for (const a of opts) {
+    if (a === '--rebase' || a === '-r') rebase = true;
+    // `--no-re` is ambiguous with --no-recurse-submodules, so `--no-reb` is the shortest.
+    else if (a.length >= 8 && '--no-rebase'.startsWith(a)) rebase = false;
+    else if (/^--reb(?:a(?:se?)?)?=/.test(a)) rebase = PULL_REBASE_VALUES.includes(a.slice(a.indexOf('=') + 1).toLowerCase());
+  }
+  return !rebase;
 }
 
 // git commit's short options that take a value (the rest of the word, else
@@ -612,6 +696,7 @@ function invocation(words, cmd, src, depth) {
   const sub = gitSubcommand(words);
   if (!sub) return null;
   if (sub.name === 'commit-tree') return COMMIT_TREE_REASON;
+  if (pushesOrMerges(sub.name, sub.args)) return HAND_BACK_REASON;
   if (sub.name !== 'commit') return null;
   const { texts, files } = messageSources(sub.args);
   let message = texts.join('\n');
