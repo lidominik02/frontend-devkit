@@ -12,8 +12,8 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | passes | passes | **remove** — the model already knew |
 | fails | fails | rewrite, or accept it is out of reach |
 
-**`core`'s bar is higher than a framework pack's.** `core` carries ten listed
-descriptions — eight skills and two agents — against a framework pack's one, about 3.7k
+**`core`'s bar is higher than a framework pack's.** `core` carries thirteen listed
+descriptions — eleven skills and two agents — against a framework pack's one, about 5.0k
 characters to 0.6k, and it is enabled in every repository, so that cost is paid in every
 session of every project. A pack at least only loads where its framework is. A `core` skill that passes baseline is
 several times the waste, and `/skill-doctor` will tell you what it actually costs.
@@ -32,6 +32,8 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | Case | The claim under test |
 | --- | --- |
 | `investigating-bugs` | Diagnosing to a root cause without editing, and checking the layer that owns the data before the component that renders it |
+| `fixing-bugs` | Whether a fix from a diagnosis is proven — the test red before it, green after, red with the fix taken out and green once it is back, only that test file run, the fix left in place — and whether a root cause in the API leaves the API's code and the frontend untouched and hands the owner a report |
+| `syncing-branches` | Whether bringing a branch up to date loses nothing from either side — both changes to a function kept, the lockfile regenerated rather than merged, a duplicate helper raised with the user before it is touched, the branch rewritten only with a way back, nothing pushed |
 | `describing-changes` | Reading the commit convention from the file that enforces it, and reporting unrun gates as NOT RUN rather than implying they passed |
 | `shaping-commits` | Offering genuine alternatives on request, and basing the one-commit-or-several call on whether an intermediate commit would still build rather than splitting mechanically by file |
 | `commit-message-audience` | Whether the message describes the change for a colleague, or leaks the planning-artifact context (a session, a handoff, a phase, a roadmap) it was drafted alongside — even when paraphrased around the literal banned words |
@@ -54,6 +56,7 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `qa-list-without-a-spec` | Whether, with no spec and no written requirement, `plan` derives criteria from the plan's task and the diff and discloses the weaker source, rather than inventing a story to look ordinary |
 | `design-intent-skip` | Whether `run` reports the design-intent cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
 | `storybook-skip` | The same skip discipline for the Storybook cases, when no Storybook script exists |
+| `finishing-features` | Whether closing out a feature surfaces what is left and asks whether the user is done before acting, commits only an accepted message, warns that the branch is behind before the MR text, reminds every open item including a backup branch, moves the feature's files aside rather than deleting them, and pushes nothing |
 
 Two of these decide a component rather than only scoring an answer.
 
@@ -80,7 +83,7 @@ says which combinations answer which question; run the environments against both
 than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
-that is the whole point of the field, and it applies to three of the twenty-three cases
+that is the whole point of the field, and it applies to three of the twenty-six cases
 here. Enabling the plugin is not enough: type `/core:preparing-a-repo` or
 `/core:optimizing-prompts` — the second covers two cases — to start that arm, and keep the
 baseline arm's prompt identical apart from the invocation.

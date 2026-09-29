@@ -124,4 +124,5 @@ for a reader who has not seen the conversation:
 ```
 
 The user decides whether and how it reaches the owner. An answer that comes back becomes a
-DECISIONS.md entry, and its OPEN-QUESTIONS.md entry gains `Answered: D<n>`.
+DECISIONS.md entry, its OPEN-QUESTIONS.md entry gains `Answered: D<n>`, and the same write
+moves that entry to planning/archive/OPEN-QUESTIONS.md.

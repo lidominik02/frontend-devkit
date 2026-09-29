@@ -8,7 +8,7 @@ description: >-
   for a QA list, testing-changes; for a commit message, describing-changes; for a root
   cause, investigating-bugs.
 argument-hint: "[review|re-review] [feature] [base]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git check-ignore *) Read Grep Glob Agent AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git check-ignore *) Read Grep Glob Agent Skill AskUserQuestion
 ---
 
 You review the current changes from the main thread. `core:reviewer` workers do the reading;
@@ -39,7 +39,9 @@ again in `re-review` mode.
    branch was detected, so 2 and 3 do not apply. On the base branch itself the scope is the
    commits not yet pushed plus the uncommitted work — only the uncommitted work when there is
    no `origin/<base branch>`.
-3. **Review folder.** `temp/<feature>/review/` with a feature, else `temp/reviews/`, at the
+3. **Review folder.** `temp/<feature>/review/` with a feature — its one review chain, by
+   "The review chain" in `../planning-features/references/artifacts.md` — else
+   `temp/reviews/`. Each is at the
    repository's top level (`git rev-parse --show-toplevel`), where `snapshot.mjs` resolves a
    relative `--out` too. Number the files: `<NN>` is one more than the highest number
    already in the folder, and a review's diff and report share it (`03-review.diff`,
@@ -54,7 +56,9 @@ again in `re-review` mode.
    credential paths. It prints the diff file's absolute path: that path is the one every
    dispatch carries, so no reader depends on a working directory. The file's first line
    ends in `snapshot tree <id>`: record that tree in the report, because `re-review` diffs
-   from it.
+   from it. The reviewers read the diff; this thread takes only its header and stat lines,
+   by grep, as "Reading the artifacts" in `../planning-features/references/artifacts.md`
+   has it.
 5. **Empty diff** — the header line and no stat: say there is nothing to review and stop.
 6. **Untracked `temp/`.** When `git check-ignore -q <top>/temp/` exits 1, with `<top>` the
    top level from step 3, the top-level `temp/` is not gitignored: say once that the diff
@@ -155,10 +159,15 @@ stage `review (automatic) — owner: reviewing-changes`. When the report is writ
   "the user reads the code and the review report" with the report's path, and the kickoff
   prompt rewritten to match.
 - `PROGRESS.md`: one ledger entry, `- <date> · review · <overall line>` with the sub-item
-  `- Report: <report path>`.
+  `- Report: <report path>`. When it takes the ledger past 60 entries, the same write moves
+  closed tasks' entries to planning/archive/PROGRESS.md, by "The archive" in
+  `../planning-features/references/artifacts.md`.
 
-Then stop: no fixing, no form, no next skill. Without a feature, nothing is written beyond
-the diff and the report. Both modes end this way.
+With a feature, when the report leaves no finding open, by "An open finding" in that file,
+and PROGRESS.md's task table shows every task Done or Blocked, call the Skill tool with
+"core:finishing-features", naming the feature, once these writes are done; it opens with its
+own completeness check. Otherwise stop: no fixing, no form, no next skill. Without a
+feature, nothing is written beyond the diff and the report. Both modes end this way.
 
 ## 8. Mode: `re-review`
 
@@ -175,26 +184,30 @@ After fixes:
 
 3. Run the gates once, as **Gates, once** describes.
 4. Take the prior CONFIRMED and PLAUSIBLE findings — from a re-review report, its NOT
-   ADDRESSED and new findings — and set aside each one the user closed: one that a
-   `PROGRESS.md` ledger entry names by id and by a report that lists it under that id, as a
-   `deferred` or as a `ruling` that leaves the code as it is — a "conflicts with D<n>"
-   finding the user decided that way included. Match on the whole entry, its first line and
-   its sub-items together, or on the one line of an entry written before the list shape.
+   ADDRESSED and new findings — and set aside each one the user closed: one that a ledger
+   entry names by id and by a report that lists it under that id, as a `deferred` or a
+   `ruling` — kept as designed, kept per D<n> for a "conflicts with D<n>" finding, or not
+   ours — by "An open finding" in `../planning-features/references/artifacts.md`. Search
+   for that entry by the finding's id in the `PROGRESS.md` ledger and in
+   planning/archive/PROGRESS.md, where older entries move. Match on the whole entry, its
+   first line and its sub-items together, or on the one line of an entry written before the
+   list shape.
    That report is the one being re-reviewed or an earlier one its `Re-reviews:` lines lead
-   back to. An id is unique only within one review, and task-review ids restart with every
-   task, so an entry that names no report — a task review's, with no `Report:` sub-item —
-   never sets a finding aside. Without a feature there is no `PROGRESS.md`, and nothing is
-   set aside.
+   back to, as far as the latest `<NN>-review.md`, which restarts the chain. An id is unique
+   only within one review, and task-review ids restart with every task, so an entry that
+   names no report — a task review's, with no `Report:` sub-item — never sets a finding
+   aside. Without a feature there is no `PROGRESS.md`, and nothing is set aside.
 5. Dispatch one `core:reviewer`, `model: opus`, role `re-review`, with the findings that
    remain.
 6. Write `<NN>-re-review.md` naming the report it re-reviews, with each set-aside finding
-   and its ledger entry in their own section. The chat brief lists the NOT ADDRESSED and the
-   new findings.
+   and its ledger entry in their own section. The chat brief lists the NOT ADDRESSED and
+   the new findings. Section 7's writes and its call follow.
 
 ## What this must NOT do
 
-- Change code, stage, commit, or touch the index. The diff, the report, `HANDOFF.md` and
-  `PROGRESS.md` are all it writes.
+- Change code, stage, commit, or touch the index. The diff, the report, `HANDOFF.md`,
+  `PROGRESS.md` and the ledger entries it moves to planning/archive/PROGRESS.md are all it
+  writes.
 - Add a finding of its own, drop a verified finding, or move a severity. The one exception
   is a finding a `PROGRESS.md` ledger entry sets aside by its id and its report, per
   `re-review` step 4: it leaves the dispatch and stays in the report.

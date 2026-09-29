@@ -99,7 +99,9 @@ checklist often names the exact commands the project wants run. Otherwise:
 ```
 
 **The verification section is where honesty is load-bearing.** Write only what you
-actually ran. Get the truth from:
+actually ran. When the skill that called this one supplies gate results, they are the
+truth: use them as given, run no gate, and report a gate they leave out as NOT RUN.
+Otherwise get the truth from:
 
 ```
 node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage full --json
@@ -121,6 +123,9 @@ false claim there propagates further than anywhere else.
 Produce the message, then stop. **Commit only once this exact message has been
 accepted** — not a paraphrase of it, not "looks fine" applied to an earlier draft.
 If the user asks for a change, apply it and show the result again before committing.
+
+When the skill that called this one asks for the text only, print the message and body
+in copyable blocks and stop: the offer below and every command in it are skipped.
 
 - `git.cliAvailable: true` → offer to create the MR with `glab mr create` (or
   `gh pr create`), and **wait for explicit approval before running it**. When

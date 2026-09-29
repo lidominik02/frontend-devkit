@@ -20,4 +20,4 @@ const { data: summary } = await useApi<Summary>('/dashboard/summary')
 </template>
 ```
 
-Fix it.
+Why does it show 0 for them, and what should I change?

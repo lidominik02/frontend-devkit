@@ -9,7 +9,7 @@ description: >-
   feature, clarifying-features.
 argument-hint: "[plan|run] [feature]"
 disallowed-tools: mcp__*__use_figma, mcp__*__create_new_file, mcp__*__generate_figma_design, mcp__*__generate_diagram, mcp__*__generate_deck, mcp__*__upload_assets, mcp__*__add_code_connect_map, mcp__*__send_code_connect_mappings, mcp__*__create_shader, mcp__*__update_shader, mcp__*__create_generative_plugin, mcp__*__update_generative_plugin
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Read Write Grep Glob Skill
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Read Write Grep Glob Skill AskUserQuestion
 ---
 
 **The hold comes first, same as `verifying-ui`.** `run` does not start until the turn
@@ -115,9 +115,19 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
 <cases with no findings>
 ```
 
-8. **Stop.** Fix nothing until the user approves the findings. `reviewing-changes` reports
-   and stops for the same reason: a component that fixes what it finds stops checking and
-   starts implementing.
+8. **Offer the investigation** when Findings holds at least one entry, once `REPORT.md`
+   and the Lifecycle writes below are done: one AskUserQuestion form, "Investigate their
+   causes in parallel (recommended)" or "Not now". The first calls the Skill tool with
+   "core:investigating-bugs" in its batch mode, naming the feature and `REPORT.md`'s path.
+   It comes after every write because that skill blocks the file tools. It reports a
+   cause and a next step per finding, and stops. With no findings there is no form.
+9. **Stop.** Fix nothing until the user approves the findings; whether and how to fix
+   them is the user's decision, made after the investigation when one ran.
+   `reviewing-changes` reports and stops for the same reason: a component that fixes what
+   it finds stops checking and starts implementing. A feature's run with no findings,
+   where PROGRESS.md's task table shows every task Done or Blocked, calls the Skill tool
+   with "core:finishing-features" instead, naming the feature, once the Lifecycle writes
+   are done.
 
 ## Lifecycle
 
@@ -133,6 +143,10 @@ for each:
 - After the report: `user's check — owner: the user`; ledger
   `- <date> · QA report · <n> findings, <n> skipped` with the sub-item
   `- Report: <report path>`.
+
+An entry that takes the ledger past 60 entries moves closed tasks' entries to
+planning/archive/PROGRESS.md in the same write, by "The archive" in
+`../planning-features/references/artifacts.md`.
 
 Without a HANDOFF.md, nothing is written beyond the list and the report.
 

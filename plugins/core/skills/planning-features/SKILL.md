@@ -18,13 +18,17 @@ The feature lifecycle is a chain of skills, and this one is second:
 
 `clarifying-features` (interview, research, SPEC.md) → `planning-features` (PLAN.md, the
 shared artifacts, the lifecycle stage, resume) → `executing-plans` (implementation) →
-`reviewing-changes` (automatic review) → `testing-changes` (on request) → finish.
+`reviewing-changes` (automatic review) → `testing-changes` (on request) →
+`finishing-features` (finish, with `describing-changes` writing the commit message and the
+MR text).
 
 ## The artifacts
 
 A feature lives in `temp/<feature>/` in the repo that owns most of it; the planning files
 sit in `temp/<feature>/planning/`. `references/artifacts.md` is the contract for every
-file and its fixed shape — read it before writing an artifact.
+file and its fixed shape — read it before writing an artifact. Its "Reading the artifacts"
+section says what to read of each file, and "The archive" which write moves an entry out of a
+live file.
 
 1. Update the artifacts in the same turn as the work they record: a decision that exists
    only in the conversation is lost with the context window. `save` is an explicit
@@ -64,8 +68,8 @@ says.
 The input is `SPEC.md` and the files it points at. The plan decides how to build what the
 SPEC settled; what to build is already settled there.
 
-1. **Read** `SPEC.md` and `OPEN-QUESTIONS.md`. Open each file the SPEC's Architecture fit
-   names before building on it.
+1. **Read** `SPEC.md` and the open entries of `OPEN-QUESTIONS.md`. Open each file the
+   SPEC's Architecture fit names before building on it.
 2. **Check that the SPEC can carry a plan.** When `SPEC.md` is missing, or a task needs an
    answer the SPEC does not give and no one has been asked — a business rule, a state, a
    contract field — write no plan. Tell the user which gap stops it, hand back — call the
@@ -148,10 +152,12 @@ than resuming, which step 8 routes.
 2. Read `HANDOFF.md` and check its first line: the feature slug matches the folder, and the
    PLAN.md path resolves, unless the stage is `clarify`, when no plan exists yet. When
    either does not, say so and treat the file as unverified.
-3. Read `PROGRESS.md`, then the active task in `PLAN.md` and its brief or report under
-   `tasks/`, if there is one. At the `clarify` stage read the `SPEC.md` draft,
-   `DECISIONS.md` and `OPEN-QUESTIONS.md` instead; the next action is clarifying-features
-   `continue`.
+3. Read what "Reading the artifacts" in `references/artifacts.md` gives the main thread:
+   `PROGRESS.md`'s task table and latest ledger entries, then the active task in `PLAN.md`
+   and its brief under `tasks/`, if there is one — its report is a worker report, left to
+   grep. At the `clarify` stage read the `SPEC.md` draft, the `DECISIONS.md` entries it
+   cites and the open entries of `OPEN-QUESTIONS.md` instead; the next action is
+   clarifying-features `continue`.
 4. Compare the repository with what the artifacts claim: `git status --short --branch` for
    the branch and the changed files, `git log --oneline -20` for the commits. An artifact
    that has drifted from the repository reads as current, which makes it worse than a
@@ -159,7 +165,9 @@ than resuming, which step 8 routes.
    section of `references/artifacts.md` defines it, is flagged as stale.
 5. Work the artifacts do not record is normal — the user works outside sessions too. List
    it in the report with a question about what changed, and record the user's answer in
-   the `PROGRESS.md` ledger — at the `clarify` stage, in `HANDOFF.md`'s Status.
+   the `PROGRESS.md` ledger — at the `clarify` stage, in `HANDOFF.md`'s Status. An entry
+   that takes the ledger past 60 entries moves closed tasks' entries in the same write, by
+   "The archive" in `references/artifacts.md`.
 6. An old-format feature — `MASTER-PLAN.md` with a phase roadmap, `phase-N-*.md` files,
    `research.md`, `ASSUMPTIONS.md`, or an old stage name — resumes too: read its files
    where they are, map its stage with the table in `references/handoff-format.md`, and say
@@ -180,7 +188,9 @@ than resuming, which step 8 routes.
 Bring every artifact in line with the repository now: the `PROGRESS.md` table and ledger,
 new `DECISIONS.md` entries, and a rewritten `HANDOFF.md` status, next action and kickoff
 prompt. A task is Done when every step ran and every gate in its Done when passed; a task
-with a skipped step or an unrun gate stays open, and the ledger names what was skipped.
+with a skipped step or an unrun gate stays open, and the ledger names what was skipped. Each
+write makes the move "The archive" in `references/artifacts.md` requires: a superseded
+decision, an answered question, a ledger past 60 entries.
 
 ## Mode: `checkpoint`
 

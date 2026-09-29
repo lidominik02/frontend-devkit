@@ -106,7 +106,8 @@ For the task review's open critical and important findings, in this order:
    recorded decision or an EXTRA-tagged criterion goes to no implementer: ask with an
    AskUserQuestion form naming D<n> — Keep D<n> (recommended: the user decided it), or
    Change it. Keep writes a `ruling` ledger entry; Change writes a DECISIONS.md entry that
-   supersedes D<n>, and the finding joins the round.
+   supersedes D<n>, and the same write moves D<n> to planning/archive/DECISIONS.md; the
+   finding joins the round.
 2. **Rounds 1 and 2:** the fix-round message below to the same implementer, with SendMessage
    to the agent id the dispatch returned when that tool is available. When it cannot be
    continued, a fresh `core:implementer`, foreground, on the model the task's dispatch
@@ -155,14 +156,19 @@ Released: test released | held · build released | held
 Forbidden index writes: git add, git commit, git write-tree, git update-index, git read-tree, git commit-tree.
 
 ## Fix
-<each finding to fix: its block verbatim from the report, then `verified: <the file:line opened and what holds>`>
+<each finding to fix: its block verbatim from the report, then `verified: <the file:line opened and what holds>`, and for one the triage fixes at once `regression test: <the seam it drives>, its one file run red before the fix and green after with <the single-file command> | none — no correct seam: <why>`>
 
 ## Leave alone
-<each finding deferred, ruled or not verified, by id — context only> | none
+<each finding deferred, ruled, not verified or sent to fixing-bugs, by id — context only> | none
 
 ## Global Constraints
 <the PLAN.md section, verbatim>
 ```
+
+A regression test is written at the seam its line names, and its line releases that one
+file: red before the fix and green after, by the command "Running one test file" in
+`../../fixing-bugs/references/loop.md` gives. The suite and the test gate stay as the
+Released line has them.
 
 ## The format pass after a Bash edit
 
@@ -209,6 +215,12 @@ no reviewed code; otherwise Wait. Give the reason.
 Fix, Defer and Keep as designed, the recommended one first: Fix for a CONFIRMED finding,
 Defer for a PLAUSIBLE one, Keep as designed for one that conflicts with a decision.
 
+**Remit.** After the investigation, AskUserQuestion forms of at most four findings each,
+each question giving the finding's owning layer, root cause, confidence and Next step from
+its short report. Every finding offers Take it — ours to fix, and Not ours — the owner from
+its short report or the free-text answer; Take it is recommended when the owning layer is
+the frontend, Not ours otherwise.
+
 ## Troubleshooting
 
 | Error | Cause | Fix |
@@ -216,7 +228,7 @@ Defer for a PLAUSIBLE one, Keep as designed for one that conflicts with a decisi
 | The implementer cannot be continued | No SendMessage tool, or the agent is gone | A fresh `core:implementer` with the brief, the report and the findings — or the answer to its question |
 | `snapshot.mjs` exits 1 | Not a git work tree, a required clean filter failed (Git LFS sets `required`), or a base that names no tree | Stop and report its stderr. Never review without a diff |
 | A diff holds a file's content unfiltered | A clean filter that is not `required` failed: git stores the content unfiltered, and `snapshot.mjs` exits 0 with nothing on stderr (git 2.43.0) | No stop: the diff is still the working state. Name the file and its filter to the reviewer |
-| The recorded pre-execution tree is gone: `git cat-file -e <tree>^{tree}` exits non-zero | No ref holds the tree, and a `git gc` past its prune expiry deleted it (git 2.43.0) | Say so and ask with one form — Review from the merge-base (recommended; it also covers work that predates the run), or Stop — and record the answer in a `pruned` ledger entry. A recorded merge-base answer settles every later run; a recorded `stopped` is asked again |
+| The recorded pre-execution tree is gone: `git cat-file -e <tree>^{tree}` exits non-zero | No ref holds the tree, and a `git gc` past its prune expiry deleted it (git 2.43.0) | Say so and ask with one form — Review from the merge-base (recommended; it also covers work that predates the run), or Stop — and record the answer in a `pruned` ledger entry. A recorded merge-base answer settles every later run, and so does a `sync` entry that "The final review's base" in `../../planning-features/references/artifacts.md` takes the base from; a recorded `stopped` is asked again |
 | A gate hangs, or is refused as a watcher | The gate's script never exits | `run-gates.mjs` reports it not-run with `blocking: true`: a setup defect, not a task failure, so no fix round. Report it NOT RUN; the task stays open with the gate named |
 | `run-gates.mjs` exits 1 with `passed: false` and `project.root: false`, every gate not-run with the reason "not a project root … cd to the project root and run this again" | The working directory is wrong: it has no `package.json` or `.claude/project.json` and is not the git top level | cd to the project root and re-run. Not a task failure: no fix round, and nothing from that run is recorded as a gate result |
 | The user committed or staged between tasks | Normal | Nothing to do: the snapshot diff from the task's base tree still isolates the task |

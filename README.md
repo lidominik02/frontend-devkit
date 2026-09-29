@@ -13,12 +13,17 @@ goes stale.
 - `preparing-a-repo` exists to add those files: it reports the gaps before it writes, and
   writes only the fixes the user approved.
 - The lifecycle skills write their artifacts under `temp/` — a feature's in
-  `temp/<feature>/`, in the repo that owns it. They never `git add` them, and say so once
-  when `temp/` is not ignored.
-- In the feature lifecycle, only `executing-plans` — through `core:implementer` workers or
-  inline — and `clarifying-features` on its bounded route write code, and only after the
-  user approved a plan or an in-chat design. Outside it, `verifying-ui` fixes what it
-  observed, once the user released the check.
+  `temp/<feature>/`, in the repo that owns it, and a bug fix's or a sync's outside a
+  feature in `temp/bugs/<slug>/` or `temp/syncs/<slug>/`. They never `git add` them, and
+  say so once when `temp/` is not ignored.
+- Code is written only after the user's say-so. `executing-plans` — through
+  `core:implementer` workers or inline — and `clarifying-features` on its bounded route
+  write it after the user approved a plan or an in-chat design. `fixing-bugs` writes a
+  frontend fix and its regression test for a bug the user asked it to fix.
+  `syncing-branches` rebases a branch and resolves its conflicts after the user approved
+  its operation plan, and marks a file resolved only after the user approved the
+  resolution log. `finishing-features` commits only a message the user accepted. Outside
+  these, `verifying-ui` fixes what it observed, once the user released the check.
 
 One capability is not self-contained: `verifying-ui` drives a browser, and the browser is
 an MCP server the consuming repo installs. The devkit still adds nothing — it detects what
@@ -64,13 +69,13 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` and `implementer` agents · `investigating-bugs` · `clarifying-features` (+ 2 reference files) · `planning-features` (+ 4 reference files) · `executing-plans` (+ 1 reference file) · `reviewing-changes` (+ 2 reference files) · `describing-changes` (+ `references/shaping-commits.md`) · `testing-changes` (+ 3 reference files) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 3 shared scripts |
+| `core` | `reviewer` and `implementer` agents · `investigating-bugs` (+ `references/batch.md`) · `fixing-bugs` (+ `references/loop.md`) · `syncing-branches` (+ 2 reference files) · `finishing-features` (+ `references/menu.md`) · `clarifying-features` (+ 2 reference files) · `planning-features` (+ 4 reference files) · `executing-plans` (+ 1 reference file) · `reviewing-changes` (+ 2 reference files) · `describing-changes` (+ `references/shaping-commits.md`) · `testing-changes` (+ 3 reference files) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 3 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
-Only descriptions are always-on: **4.9k characters** of them with all three packs
-enabled — `core` contributes ten listed entries (~3.7k), `vue` and `nuxt` one each
-(~0.6k). The ceiling is 6,100 characters; `scripts/validate.mjs` reads both numbers from
+Only descriptions are always-on: **6.3k characters** of them with all three packs
+enabled — `core` contributes thirteen listed entries (~5.0k), `vue` and `nuxt` one each
+(~0.6k). The ceiling is 6,500 characters; `scripts/validate.mjs` reads both numbers from
 this paragraph and fails past the ceiling.
 Apart from the `reviewer` and `implementer` agents, each listed description is one
 capability clause, the phrasings a user actually types, and negative triggers naming the
@@ -89,7 +94,8 @@ Every skill here answers to `/<plugin>:<skill-name>` — `/core:describing-chang
 `/core:planning-features`, `/nuxt:nuxt-engineering`. New work starts at
 `/core:clarifying-features`. The lifecycle skills are model-invoked, so the phrasings in
 their descriptions fire them untyped, and they chain themselves: each calls the next through
-the Skill tool, up to the review. Components belong in `skills/`
+the Skill tool, up to the review, and from a review, a re-review or a QA run that leaves
+nothing open on to `finishing-features`. Components belong in `skills/`
 rather than `commands/`: a skill already carries the slash invocation, and the checks
 that read component frontmatter select on `SKILL.md` or `agents/`, so a file under
 `commands/` is validated by nothing.
@@ -123,22 +129,35 @@ Which skills earn auto-triggering is settled by `/skill-doctor` and the ablation
 
 ```
 clarifying-features → planning-features → executing-plans → reviewing-changes
-  → testing-changes (on request) → finish
+  → testing-changes (on request) → finishing-features
 ```
 
 `clarifying-features` settles what to build and writes SPEC.md; `planning-features` turns
 it into a task-level PLAN.md and takes the user's approval; `executing-plans` builds it;
-`reviewing-changes` reviews the result and stops. Each of the first three calls the next
-through the Skill tool, unless approval hands execution to a new session. `testing-changes`
-runs only when the user asks, and at finish `describing-changes` drafts the commit message:
-the commit follows the user's acceptance, and the user pushes. `HANDOFF.md` names exactly
-one stage and its owner, a skill or the user; the stages are listed in
-`plugins/core/skills/planning-features/references/handoff-format.md`.
+`reviewing-changes` reviews the result and, when it leaves something open, stops for the
+user to read the code. Each of the first three calls the next through the Skill tool, unless
+approval hands execution to a new session. `testing-changes` runs only when the user asks. `finishing-features` owns the
+`finish` stage: a review or re-review that leaves nothing open, or a QA run with no
+findings, calls it once every task is Done or Blocked, and the user's "close it out"
+starts it too. `HANDOFF.md` names exactly one stage and its owner, a skill or the user; the
+stages are listed in `plugins/core/skills/planning-features/references/handoff-format.md`.
 
 **The artifacts** live in `temp/<feature>/`, in the layout
 `plugins/core/skills/planning-features/references/artifacts.md` fixes. They are files, not
 the transcript, because a session that remembers nothing of the last one has to continue
 the work from them.
+
+**Reading them costs context, so the main thread reads only what its next step needs.**
+`artifacts.md` gives a read rule per file: HANDOFF.md always, and its read-first list is
+the entry point; PROGRESS.md's task table and latest ledger entries; DECISIONS.md by id;
+OPEN-QUESTIONS.md's open entries; a research note's short answer first; and diffs, raw
+review output and worker reports never — workers read those, and a step that needs one line
+greps for it. What the live files no longer need moves to `planning/archive/`, in the same
+write that retires it: a superseded decision, an answered question, and, once the ledger
+passes 60 entries, the entries of tasks marked Done, while open work, rulings and recent
+events stay. Nothing is deleted, an id stays unique across a live file and its archive, and
+a step that follows an id the live file no longer holds looks it up there. Intermediate
+files stay until the feature folder is archived.
 
 **Clarification is front-loaded.** It starts from whatever exists — a written spec, a
 ticket, notes in any language, a design, or nothing — and looks facts up in the repository,
@@ -178,6 +197,72 @@ ledger entry quoting the rule, sets the same stage with "no review ran" in `HAND
 Status, names the base the review would diff from in Next action, and stops.
 `executing-plans` fixes the findings the user chooses; `reviewing-changes` then re-reviews.
 Browser, design-tool and Storybook checks run only on request.
+
+**A bug is diagnosed, ruled on, then fixed.** `investigating-bugs` finds the owning layer,
+the root cause at `path:line`, a confidence and a next step, changes nothing, and stops:
+whether the bug is the user's to fix is the user's ruling, often made after asking a PM, a
+tester or the backend. `fixing-bugs` starts from that diagnosis with a repro test that is
+red for the diagnosed reason, then the fix and the revert proof — red with the fix taken
+out, green once it is back. An evident one-function cause — a bug the user reports inside a
+feature, or a "fix inline" diagnosis — is fixed at once, its one test file red then green;
+and `fixing-bugs` takes a list of findings from `fix-findings` before one review. Without a
+diagnosis, or when the test contradicts it, it runs the loop: a repro that runs alone,
+minimised; three to five ranked hypotheses and its one stop, a form on their order; tagged
+instrumentation; the fix and the revert proof; the tags removed; and escalation after
+three failed fixes. It runs only its own test file. A cause
+outside the frontend stops it with a report for that owner, and a frontend guard needs the
+user's approval. With no test runner or no correct seam it fixes without a regression test
+and says so. The automatic review follows the fix; inside a feature it runs only once the
+feature's final review has, as a re-review in the feature's one review chain, and before
+that the final review covers the fix. Inside a feature, a QA run with findings offers a
+parallel light investigation — `investigating-bugs`' batch mode, one read-only agent per
+independent area and a short report per finding. `executing-plans`' `fix-findings` triages
+each bug the user chose to fix in one run: an evident fix within one function at once, an
+evident wider one to `fixing-bugs`, and an unclear one or one beyond the frontend through
+the same read-only agents, which it dispatches itself, then the user's ruling on remit — a
+finding not taken gets a `not ours` ruling, one taken goes to `fixing-bugs`. `fixing-bugs`,
+called last, ends with the re-review; without it, `fix-findings` calls the re-review
+itself when it fixed something, and `finishing-features` when it fixed nothing and nothing
+is left open. A finding stays open until a re-review judges it addressed or a ledger entry
+defers it or rules on it, and a new review of the feature restarts the chain.
+
+**A branch is synced by rebasing it.** `syncing-branches` rebases the user's own branch,
+never merges it: onto main after main moved, mid-work, or across stacked branches, where it
+carries a fix between a child and its unmerged parent and moves the child onto main once
+the parent merged. One form approves the operation plan, its commands verbatim, and a
+backup ref, `backup/<branch>/<YYYYMMDD-HHMM>`, marks each rewritten branch's tip before
+anything moves. Each conflict is classified — regenerated, trivial, semantic with both
+sides' intent kept, or a rename — and logged, every question naming the sides "`<target>`
+(ours in this rebase)" — main, or the parent — and "your branch (theirs in this rebase)",
+and no file is marked resolved
+until the user approves the resolution log. After a sync onto main it looks for what main
+brought that the branch also built with no conflict to show it, and asks about each:
+main's, the branch's, or one definition forged from both. The fast gates and the automatic
+review from the pre-sync tree follow, and the user force-pushes. Inside a feature that
+review is the feature chain's re-review, once the final review has run; before it, the
+final review covers the sync. Its `sync` ledger entry records the commit the rebase went
+onto, and the feature's final review diffs from that commit, since the rebase put commits
+that are not the feature's under the pre-execution tree. Restoring a backup ref is a
+destructive reset and runs only on the user's confirmation; the refs stay until the user
+deletes them.
+
+**A feature is finished through one menu.** `finishing-features` first checks what the
+artifacts leave open — a task neither Done nor Blocked, an open finding in the review
+chain's latest report, a QA report with findings, a blocking open question; contract gaps
+are only reminded — and asks "Are we done?", with a second question, run the QA list or
+skip it, when there is no current QA report. Done opens the menu; "found something" routes
+it to a fix, and "want something more" to a `clarifying-features` gap round, a plan revision
+and execution. Each menu item runs only when the user picks it, and each result is
+confirmed on its own: full verification, a project-docs update, the commit, the MR
+description, a team summary, an open-items reminder that lists the backup refs, and tidying
+`temp/`. Verification's whole-branch review and QA run end the finishing run, the QA list
+approved on `testing-changes`' own path; a report that leaves nothing open brings the chain
+back, and the user picks the remaining items again. `describing-changes` writes the commit
+message and the MR text; the commit follows
+only a message the user accepted, and a branch behind `origin/<base>` is offered
+`syncing-branches` before the MR text. The feature folder then moves to
+`temp/archive/<feature>/`, with nothing deleted, and the user pushes, merges and opens the
+merge request: `commit-hygiene.mjs` denies Claude a push or a merge.
 
 **Four decisions reverse the devkit's earlier design.** An old-format feature still
 resumes; `handoff-format.md` maps its stages.
@@ -323,7 +408,7 @@ Submodule working-tree changes are not captured.
 | Hook | Event | Guarantee |
 | --- | --- | --- |
 | `block-secrets.mjs` | PreToolUse | Exit 2 on credential material, regardless of permission mode. Covers **file tools and `Bash`** — a `deny` rule does nothing about reading a dotenv file in a shell. Blocks exfiltration (upload flags, piping into a network client), interpreter one-liners, `source`, environment dumps and a download piped into a shell. Refuses hand-edits to lockfiles and `.git/`. Exempts `.example` / `.sample` / `.template`. A dotenv match requires a path context before it (start, whitespace, a quote, `=`, `/`, `~`), so it does not match inside `process.env` or `import.meta.env`. A heredoc body is stripped from the scan by locating its real closing line, not by truncating everything after the opening marker — truncating there would let anything typed after the heredoc closes through unscanned |
-| `commit-hygiene.mjs` | PreToolUse | Exit 2 on a `git commit` whose message carries an attribution trailer (`Co-Authored-By:`, `Generated with`) or names something only Claude and the user can see: a Claude/chat session, a handoff, a planning-artifact filename this pack's own skills write (`HANDOFF.md`, `PROGRESS.md`, …), or a roadmap phase/artifact. A bare "session", "roadmap", "phase N" or a decision/ADR id is deliberately not banned — each collides with ordinary engineering vocabulary (a login session, a product's own roadmap page, a numbered ADR a repository cites correctly) — see the file's own comments for exactly which forms are matched and why. The message is every `-m`/`--message` and `--trailer` value (`key=value` read as the `key: value` git writes, observed on git 2.43.0) and every `-F`/`--file` text, bundled (`-am`, `-aF`) and abbreviated (`--mess`) spellings included; the commit's options and paths and the other commands on the line (`git add HANDOFF.md && git commit …`) are not its message. When the message comes from stdin, a process substitution, a `/dev/` or `/proc/` path, a file this hook cannot read, or a file the same command also names, the whole command is scanned instead, since the message may be written anywhere in it. `git commit-tree` is denied outright, since a plumbing commit bypasses both the repository's own hooks and these checks. The command is read the way a shell reads it, so quoting, a leading assignment, a wrapper (`sudo`, `xargs`, `timeout`, …), a global option that takes a value (`-C <path>`, `-c <k=v>`, `--git-dir`, `--config-env`, …), a `bash -c` string, a heredoc, here-string or pipe into a shell, and a `$(…)`, backtick or `<(…)` substitution, two levels deep, do not hide the subcommand; a message that merely names one, or a command that never runs its arguments (`echo`, `grep`, …), is not a call to it. Some forms stay out of reach — a git alias, a quoted `eval` string, deeper nesting, a git command name produced by an expansion (`$g`, `$(command -v git)`) — and the file's header lists every one |
+| `commit-hygiene.mjs` | PreToolUse | Exit 2 on a `git commit` whose message carries an attribution trailer (`Co-Authored-By:`, `Generated with`) or names something only Claude and the user can see: a Claude/chat session, a handoff, a planning-artifact filename this pack's own skills write (`HANDOFF.md`, `PROGRESS.md`, …), or a roadmap phase/artifact. A bare "session", "roadmap", "phase N" or a decision/ADR id is deliberately not banned — each collides with ordinary engineering vocabulary (a login session, a product's own roadmap page, a numbered ADR a repository cites correctly) — see the file's own comments for exactly which forms are matched and why. The message is every `-m`/`--message` and `--trailer` value (`key=value` read as the `key: value` git writes, observed on git 2.43.0) and every `-F`/`--file` text, bundled (`-am`, `-aF`) and abbreviated (`--mess`) spellings included; the commit's options and paths and the other commands on the line (`git add HANDOFF.md && git commit …`) are not its message. When the message comes from stdin, a process substitution, a `/dev/` or `/proc/` path, a file this hook cannot read, or a file the same command also names, the whole command is scanned instead, since the message may be written anywhere in it. `git commit-tree` is denied outright, since a plumbing commit bypasses both the repository's own hooks and these checks. The user pushes and merges, so these are denied too, with a message telling Claude to hand the step back: every `git push`, `send-pack` and `http-push`; a `git merge` other than a bare `git merge --abort`; a `git pull` without `--rebase` or `-r`, which merges (`pull.rebase` config is not read); `git subtree push|pull|merge|add`, `git svn dcommit|set-tree|commit-diff` and `git p4 submit`; and a git subcommand given as an expansion (`git $X push`, `git "$@"`), which may be any of them — at the cost of denying a harmless one such as `git $X status`. `git fetch`, `git rebase`, `git pull --rebase`, `git merge-base` and the other `merge-*` subcommands pass. The command is read the way a shell reads it, so quoting, a leading assignment, a wrapper (`sudo`, `xargs`, `timeout`, …), an `env -S` string, a global option that takes a value (`-C <path>`, `-c <k=v>`, `--git-dir`, `--config-env`, …), a `bash -c` string, a heredoc, here-string or pipe into a shell, and a `$(…)`, backtick or `<(…)` substitution, two levels deep, do not hide the subcommand; a message that merely names one, or a command that never runs its arguments (`echo`, `grep`, …), is not a call to it. Some forms stay out of reach — a git alias, a quoted `eval` string, deeper nesting, a git command name produced by an expansion (`$g`, `$(command -v git)`), a command another interpreter or task runner runs (`python3 -c`, `node -e`, `make`, `npm run`), a git subcommand that runs another command (`git submodule foreach`, `git rebase --exec`), a host CLI (`gh pr merge`) — and the file's header lists every one |
 | `format-on-write.mjs` | PostToolUse | Formats what was just written with the project's own formatter, located by walking up from the file so workspace installs are found. A file whose resolved path lies outside the project directory (`CLAUDE_PROJECT_DIR`, else the working directory) is left as written — a file in the user's auto-memory or in an `--add-dir` directory elsewhere, or the target of a symlink that points out of the project — since the walk would otherwise fall back to the project's formatter. Never blocks — the edit has already happened, and PostToolUse cannot block |
 | `verify-before-done.mjs` | Stop | Runs the `fast` gates before the turn can end and returns the real failure output. Silent when the repo has no gates, when nothing has changed, when `verifyOnStop: false`, or when the directory it checks (`CLAUDE_PROJECT_DIR`, else the event's `cwd`) is not a project root — it has no `package.json` or `.claude/project.json` and is not the git top level — even if the gates at the top level fail. Honours `stop_hook_active` so it cannot loop. Skips the gates when the repository's tracked and untracked non-ignored files are unchanged since the last passing run in the same session — a change only to ignored files, such as generated types, is not detected, and a failing run is never remembered, so an unchanged red tree still blocks. Exits silently while a background subagent is running; a background shell such as a dev server never skips the gates. Its git calls and the gates share a 190-second budget inside the hook's 200-second timeout |
 
@@ -343,7 +428,7 @@ The third one matters as soon as a browser MCP is attached. A file input reached
 there to the network, with no hook firing anywhere on the path. `verifying-ui` therefore
 grants the tools that look at a page and deliberately withholds the upload and
 `evaluate_script` tools, so both still prompt — the same shape as `describing-changes`
-withholding `git push`.
+withholding `git commit`.
 
 There is no SessionStart hook. Writing a capabilities file into a host repo dirties
 `git status` wherever `.claude/` is committed, and detection at the moment of use is
@@ -516,7 +601,8 @@ its facts step explicitly.
 **Grant `allowed-tools` read-only, and only what the body actually runs.** It
 pre-approves commands for the invoking turn only — the grant clears on the next message —
 so it is for removing prompts, never for widening reach. Read each body and grant its
-real command set: `investigating-bugs` shells out to nothing and is granted nothing.
+real command set: `investigating-bugs` shells out to nothing, so it is granted no `Bash`
+command — only `Read Grep Glob` and the `Agent` its batch mode dispatches.
 Never grant a command a component deliberately holds behind approval;
 `describing-changes` withholds `git commit`, `git push`, `glab mr create` and
 `gh pr create` on purpose, and pre-approving those would delete the guarantee it is
@@ -525,7 +611,9 @@ undocumented, so do not build on the answer either way. Absence from `allowed-to
 is a prompt-level guarantee, though — it stops nothing once the user approves a
 `git commit` by hand. `commit-hygiene.mjs` is the deterministic layer underneath it:
 whoever runs the command, an attribution trailer or a planning-artifact reference in
-the message is denied regardless of which turn approved the call.
+the message is denied regardless of which turn approved the call, and a `git push`, a
+`git merge` other than `git merge --abort`, and a `git pull` that merges are denied
+outright: the user pushes and merges.
 
 **Use `disallowed-tools` where a "must NOT" is absolute.** `allowed-tools` cannot enforce
 anything — it pre-approves, and every unlisted tool stays callable behind a prompt. A
@@ -636,7 +724,7 @@ later needs no edit to `/pack-parity` — the relationship is read, not written 
 
 ```bash
 node scripts/validate.mjs                       # the five static checks CI runs
-bash scripts/test-hooks.sh                      # 316 assertions on the guarantees
+bash scripts/test-hooks.sh                      # 464 assertions on the guarantees
 node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json

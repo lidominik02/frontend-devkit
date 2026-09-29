@@ -184,8 +184,8 @@ After the commit, outside git, under `temp/multi-currency/planning/`:
   Read first, in order:
   1. temp/multi-currency/planning/HANDOFF.md
   2. temp/multi-currency/planning/SPEC.md
-  3. temp/multi-currency/planning/DECISIONS.md
-  4. temp/multi-currency/planning/OPEN-QUESTIONS.md
+  3. temp/multi-currency/planning/DECISIONS.md, the entries SPEC.md cites: D2, D3
+  4. temp/multi-currency/planning/OPEN-QUESTIONS.md, the open entries
   Stage: clarify — owner: clarifying-features.
   Next action: write the plan.
   Rules: the default rules block of planning-features.

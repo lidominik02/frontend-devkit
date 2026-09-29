@@ -16,6 +16,7 @@ temp/<feature>/
 │   ├── PROGRESS.md
 │   ├── HANDOFF.md
 │   ├── research/        cited notes
+│   ├── archive/         entries moved out of the live files
 │   └── CONTRACT-GAPS.md when the feature needs something from the API
 ├── tasks/               execution: one brief and one report per task
 ├── review/              review reports
@@ -24,6 +25,27 @@ temp/<feature>/
 
 When `temp/` is not gitignored in that repo, say so once, when the folder is created. The
 artifacts are never `git add`ed.
+
+## Reading the artifacts
+
+The main thread — the session the user works in — reads only what its next step needs, so a
+long feature's history stays on disk instead of in its context. HANDOFF.md's read-first list
+is the entry point; no file map is kept.
+
+| Artifact | The main thread reads | Only workers or grep read |
+| --- | --- | --- |
+| HANDOFF.md | Always | — |
+| PROGRESS.md | The task table and the latest ledger entries | The older ledger entries and planning/archive/PROGRESS.md: a step that matches an older entry, such as `re-review`'s set-aside, greps for it |
+| DECISIONS.md | By id: the entries a step names | The whole file — whether something is already decided is a grep — and planning/archive/DECISIONS.md |
+| OPEN-QUESTIONS.md | The open entries | planning/archive/OPEN-QUESTIONS.md |
+| research/ | A note's short answer first, its `Answer:`; a section of its evidence only for a claim the step needs | The whole note |
+| Diffs, raw review output and worker reports | Never | Workers read them whole; a step that needs a diff's header or stat lines, or one line of a report, greps for those lines |
+
+An id a step follows — a decision a task cites, a question a task is blocked by, a ledger
+entry that set a finding aside — that the live file no longer holds is looked up by that id
+in planning/archive/, as "The archive" says. SPEC.md, PLAN.md, CONTRACT-GAPS.md, the review
+reports and the `qa/` files are read as each skill's steps say; a review report is the
+merged report, not raw review output.
 
 ## SPEC.md
 
@@ -61,6 +83,45 @@ Every rule that reads these files reads both shapes, and every write uses the li
 write that must name an older question with no id, or mark one answered, first gives it the
 next free `OQ<n>` in OPEN-QUESTIONS.md.
 
+## The archive
+
+planning/archive/ holds the entries the live files no longer need, so DECISIONS.md keeps
+only the decisions in force, OPEN-QUESTIONS.md only the open questions, and the ledger its
+working set. Nothing is deleted: a moved entry keeps its id and its text and is appended, in
+its original order, to the file of the same name under archive/, which the first move
+creates with a heading such as `# Decisions — <feature> — superseded`. The skill whose write
+triggers a move makes it in that same write. A new id is the next one free across the live
+file and its archive, so an id never names two entries.
+
+1. **A superseded decision** moves to planning/archive/DECISIONS.md when D<m> supersedes
+   it, with `superseded by D<m>` after the date on its first line:
+   `- **D3** · 2026-09-28 · superseded by D9 · <the decision>`. The new entry names what it
+   supersedes on its own first line:
+   `- **D9** · 2026-09-30 · supersedes D3 · <the decision>`.
+2. **An answered question** moves to planning/archive/OPEN-QUESTIONS.md when it gains its
+   `Answered: D<n>` sub-item.
+3. **The ledger past 60 entries.** An append that leaves the PROGRESS.md ledger with more
+   than 60 entries moves the entries of closed tasks to planning/archive/PROGRESS.md,
+   wherever in the ledger they sit. A closed task is one the task table marks Done; its
+   entries are the `done | open`, `blocked`, `backup ref` and task-review `deferred`
+   entries that name it. These stay:
+   - open work — every entry about a task that is not Done;
+   - rulings — every `ruling` entry;
+   - recent events — the latest 20 entries;
+   - the final review's base — every `execution start`, `baseline retaken`, `sync` and
+     `pruned` entry.
+
+   An entry that names no task never moves either. When nothing is left to move the ledger
+   stays past 60, and each later append checks again.
+
+A rule that needs history looks it up by id in archive/: `re-review`'s set-aside searches
+planning/archive/PROGRESS.md as well as the ledger, and a superseded decision's reason — its
+Rejected and Source — is under its id in planning/archive/DECISIONS.md. The `qa/` staleness
+check searches planning/archive/PROGRESS.md too, by date, as the `qa/` section says. A
+feature written before the archive keeps superseded decisions and answered questions in its
+live files, marked in place; they stay there, and every reader reads both places, as it
+reads both entry shapes.
+
 ## DECISIONS.md
 
 An index, one entry per decision:
@@ -73,10 +134,9 @@ An index, one entry per decision:
 
 1. Source names where the reasoning lives: a SPEC section, a research note, or the user's
    words quoted.
-2. A superseded entry stays as written and gains `superseded by D<m>` after the date on its
-   first line, in the same write that adds D<m>, so the old entry never reads as current:
-   `- **D3** · 2026-09-28 · superseded by D9 · <the decision>`. The new decision gets its
-   own entry.
+2. A decision that supersedes an earlier one gets its own entry naming it, and the same
+   write moves the earlier entry to planning/archive/DECISIONS.md with `superseded by D<m>`,
+   as "The archive" shows, so the old entry never reads as current.
 3. A user override of a default rule names the default it replaced under Rejected (see
    `rules-block.md`). A one-off override for a single turn gets no entry.
 4. When sources disagree, the conflict becomes a question for the user. The recommended
@@ -97,8 +157,9 @@ finding:
 ```
 
 An answered question is marked with an `Answered:` sub-item naming the DECISIONS.md entry
-that settled it. PLAN.md's `Blocked by:` names an open question by its id
-(`Blocked by: OQ2`), not by its wording.
+that settled it, and the same write moves it to planning/archive/OPEN-QUESTIONS.md ("The
+archive"). PLAN.md's `Blocked by:` names an open question by its id (`Blocked by: OQ2`), not
+by its wording, so the reference still resolves after the move.
 
 ## PLAN.md
 
@@ -152,6 +213,9 @@ interface a task consumes with the task that produces it.
 - <date> · ruling · <id> kept as designed
   - Report: <review report path>
   - Reason: <the user's reason>
+- <date> · ruling · <id> · not ours
+  - Report: <review report path>
+  - Owner: <owner>
 - <date> · plan revised · D<n>, …
   - Changed: <task names> | none
   - Added: <task names> | none
@@ -163,22 +227,59 @@ interface a task consumes with the task that produces it.
   - List: <list path>
 - <date> · QA report · <n> findings, <n> skipped
   - Report: <report path>
+- <date> · sync · <slug> · <status>
+  - Ref: <backup ref> at <commit>          (one per backup ref)
+  - LOG: <LOG.md path>
+  - Final review: from <commit>            (when the sync rebased the branch: its onto commit)
+- <date> · fix · <slug> · <status>
+  - FIX: <FIX.md path>
+- <date> · finish · <n> commits
+  - Items: <each menu item run>
+  - Commits: <hash subject>, …
+  - QA: skipped by the user                (when it was)
+  - Archived: <the archive path the move used>
 - <date> · <event kind> · <subject>
   - <Field>: <value>
 ```
 
 A task is Done only when every step ran and every gate in its Done when passed. The ledger
-is append-only: one entry per event, in one of the shapes above. They are grouped by the
-skill that writes them: executing-plans down to the final review's `ruling`, then
-planning-features, reviewing-changes and testing-changes. The last shape is for an event
-no other shape covers, such as work the user did outside a session. When an Inline task's
-scripted Bash edit left a file with no formatter, the task's entry gains the sub-item
+is append-only, apart from the move past 60 entries in "The archive": one entry per event,
+in one of the shapes above. They are grouped by the skill that writes them: executing-plans
+down to `ruling · <id> · not ours`, then planning-features, reviewing-changes,
+testing-changes, syncing-branches, fixing-bugs and finishing-features. The last shape is for
+an event no other shape covers, such as work the user did outside a session. When an Inline
+task's scripted Bash edit left a file with no formatter, the task's entry gains the sub-item
 `No format pass: <each such file>`.
 
-The final review diffs from the pre-execution tree in the latest `execution start` or
-`baseline retaken` entry, or from the merge-base when a `pruned` entry records that answer
-for that tree. A review from the tree is told, and HANDOFF.md's Status names, what each
-`baseline retaken` entry leaves out of it.
+**The final review's base.** The final review diffs from the commit named by
+`Final review:` in the latest `sync` entry with a `Final review:` sub-item after the latest
+`execution start` or `baseline retaken` entry: the sync's rebase put commits that are not
+the feature's under the pre-execution tree. Otherwise it diffs from the pre-execution tree
+in the latest `execution start` or `baseline retaken` entry, or from the merge-base when a
+`pruned` entry records that answer for that tree. A review from the tree is told, and
+HANDOFF.md's Status names, what each `baseline retaken` entry leaves out of it.
+
+**The review chain.** A feature holds one review chain, `temp/<feature>/review/`: the final
+review, then re-reviews, each diffing from the latest report's snapshot tree. A fix or a
+sync inside the feature has no review folder of its own: until the final review has run,
+that review covers the change; after it, the change is re-reviewed in this chain. The final
+review has run when `temp/<feature>/review/` holds a `<NN>-review.md`; a
+`review held by rule` entry with no report does not count. Task reviews are not part of the
+chain.
+
+**An open finding.** A finding is a report and an id. It is open from the report that lists
+it — a review's CONFIRMED, PLAUSIBLE and "conflicts with D<n>" findings, a re-review's NOT
+ADDRESSED and new ones — until a later re-review in the chain judges it ADDRESSED, a
+`deferred` or `ruling` entry names it — kept as designed, kept per D<n>, or not ours — or a
+new review restarts the chain. Nothing else closes it, and there is no other state: a
+finding under investigation or being fixed is open.
+
+A new `<NN>-review.md` restarts the chain, the finishing menu's whole-branch review
+included: every reader takes the latest `<NN>-review.md` and the re-reviews numbered after
+it. An earlier finding the new review does not list again is closed by it. One it lists
+again is the new review's finding, under its id there, and is decided afresh, even when an
+earlier entry deferred it or ruled on it. Within that stretch the open findings are the
+latest report's, since a re-review carries each earlier finding it did not set aside.
 
 Task-review ids restart with every task and are not the final review's, so a task review's
 entry names the task and carries no `Report:` sub-item. An entry about the final review
@@ -193,8 +294,9 @@ The format is in `handoff-format.md`.
 
 ## research/
 
-Notes from clarification, one file per question. Each claim names its source: a
-`path:line`, a URL, or the person who said it.
+Notes from clarification, one file per question, in the note shape of
+`../../clarifying-features/references/sources.md`: the short answer, `Answer:`, comes first,
+and each claim names its source: a `path:line`, a URL, or the person who said it.
 
 ## qa/
 
@@ -202,9 +304,15 @@ The QA test list and the QA report, written by testing-changes. Both describe th
 it stood when they were written. A later execute stage makes them stale: in the
 PROGRESS.md ledger, an `execution start` entry or a task's `done | open` entry after their
 `QA list` or `QA report` entry. A `qa/` file that no ledger entry names counts as older than
-every `execution start` entry. `resume` flags a stale list or report, and whoever next
-rewrites HANDOFF.md's Status names it as predating that work. Until testing-changes runs
-again, it is evidence about the code as it stood, not as it is.
+every `execution start` entry. The `QA list`, `QA report` and `execution start` entries
+never move, but a closed task's `done | open` entry can ("The archive"). When the live
+ledger holds neither kind of entry after the QA entry, the check also searches
+planning/archive/PROGRESS.md for a `done | open` entry. A moved entry keeps only its date to
+order it by, so there it counts as after the QA entry when its date is the same or later: a
+current file flagged stale costs a rerun, while a stale one read as current hides the
+change. `resume` flags a stale list or report, and whoever next rewrites HANDOFF.md's Status
+names it as predating that work. Until testing-changes runs again, it is evidence about the
+code as it stood, not as it is.
 
 ## CONTRACT-GAPS.md
 

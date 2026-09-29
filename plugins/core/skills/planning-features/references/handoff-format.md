@@ -41,7 +41,7 @@ NOT RUN; what is in progress; what is blocked, and on what>
 | `QA list (awaiting approval)` | the user approves the list testing-changes drafted |
 | `testing` | testing-changes |
 | `user's check` | the user |
-| `finish` | describing-changes drafts the commit message; the commit follows the user's acceptance |
+| `finish` | finishing-features, which calls describing-changes for the commit message and the MR text; a commit follows the user's acceptance |
 | `pushed` | the user |
 
 In `execute (task N/M, mode)`, N counts tasks and mode is the chosen execution mode, for
@@ -98,7 +98,7 @@ ledger, one entry per event, so HANDOFF.md describes only the present (rule 4 ab
 Resume the feature <feature-slug> with the planning-features skill, in resume mode.
 Read first, in order:
 1. temp/<feature-slug>/planning/HANDOFF.md
-2. temp/<feature-slug>/planning/PROGRESS.md
+2. temp/<feature-slug>/planning/PROGRESS.md, the task table and the latest ledger entries
 3. temp/<feature-slug>/planning/PLAN.md, the task "<task name>"
 4. <any file the next action needs: a task brief, a review report>
 Stage: <stage> — owner: <owner>.
@@ -107,7 +107,10 @@ Rules: <the default rules block of planning-features | the user's own rules, ver
 ```
 
 At the `clarify` stage no plan exists yet: the read-first list is HANDOFF.md, the SPEC.md
-draft, DECISIONS.md and OPEN-QUESTIONS.md, with no PLAN.md task.
+draft, the DECISIONS.md entries it cites and the open entries of OPEN-QUESTIONS.md, with no
+PLAN.md task. Both lists name only the part of PROGRESS.md, DECISIONS.md and
+OPEN-QUESTIONS.md that "Reading the artifacts" in `artifacts.md` gives the main thread, so a
+new session never reads a whole ledger or decision index.
 
 ## Checkpoint shape
 

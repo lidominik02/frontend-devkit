@@ -153,7 +153,7 @@ One file per question — `temp/<feature>/planning/research/<question-slug>.md`,
 # <the question>
 
 Date: <date> — for: <feature-slug | research>
-Answer: <one or two sentences>
+Answer: <the short answer, at most five lines>
 
 ## Evidence
 - <claim> — <path:line | URL | the person who said it>
@@ -161,3 +161,7 @@ Answer: <one or two sentences>
 ## Unsettled
 - <what could not be settled> — would settle it: <what> | none
 ```
+
+`Answer:` is mandatory and at most five lines. A reader reads it before the evidence and
+opens Evidence only for a claim it needs, as "Reading the artifacts" in
+`../../planning-features/references/artifacts.md` says.

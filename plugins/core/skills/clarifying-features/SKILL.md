@@ -20,22 +20,28 @@ The feature lifecycle is a chain of skills, and this one is first:
 
 `clarifying-features` (sources, research, questions, SPEC.md) → `planning-features`
 (PLAN.md) → `executing-plans` (implementation) → `reviewing-changes` (automatic review) →
-`testing-changes` (on request) → finish.
+`testing-changes` (on request) → `finishing-features` (finish, with `describing-changes`
+writing the commit message and the MR text).
 
 The layout of `temp/<feature>/` and the shape of every file this skill writes — SPEC.md's
 sections and tags, DECISIONS.md, OPEN-QUESTIONS.md, CONTRACT-GAPS.md, `research/` — are in
-`../planning-features/references/artifacts.md`; read it before writing an artifact.
-HANDOFF.md's shape is in `../planning-features/references/handoff-format.md`, the default
-rules in `../planning-features/references/rules-block.md`.
+`../planning-features/references/artifacts.md`; read it before writing an artifact. Its
+"Reading the artifacts" section says what to read of each file, and "The archive" which
+write moves an entry out of a live file. HANDOFF.md's shape is in
+`../planning-features/references/handoff-format.md`, the default rules in
+`../planning-features/references/rules-block.md`.
 
 ## Entries
 
 - **A new feature or change** — the default, or `new`. Start at round 1.
 - **A gap handed back** — `gap`, or planning-features naming the gap that stopped its plan.
   Run one focused round on that gap only and update SPEC.md, DECISIONS.md and
-  OPEN-QUESTIONS.md. An answer to an open question, once it arrives, is a `gap` too: record
-  it as a DECISIONS.md entry, add `Answered: D<n>` to its OPEN-QUESTIONS.md entry and update
-  SPEC.md. Either way, then call the Skill tool with "core:planning-features" in `plan` mode
+  OPEN-QUESTIONS.md; a decision that supersedes an earlier one names it, and the same write
+  moves the earlier entry to planning/archive/DECISIONS.md. An answer to an open question,
+  once it arrives, is a `gap` too: record it as a DECISIONS.md entry, add `Answered: D<n>` to
+  its OPEN-QUESTIONS.md entry, move that entry to planning/archive/OPEN-QUESTIONS.md in the
+  same write, and update SPEC.md. Both moves follow "The archive" in the artifact contract.
+  Either way, then call the Skill tool with "core:planning-features" in `plan` mode
   for the feature. On a feature that already has a PLAN.md, `plan` rewrites only the tasks
   the new decision touches and keeps every Done task.
 
@@ -47,8 +53,10 @@ rules in `../planning-features/references/rules-block.md`.
   a section the old files leave empty puts its question on the frontier. The old files
   stay unedited, as the archive.
 - **Continuing** — `continue`, or a feature whose HANDOFF.md stage is `clarify`, in a new
-  session. Read HANDOFF.md, the SPEC.md draft, DECISIONS.md, OPEN-QUESTIONS.md and
-  `research/`, then continue at the frontier. Never re-ask a question DECISIONS.md answers.
+  session. Read HANDOFF.md and the SPEC.md draft, then DECISIONS.md, OPEN-QUESTIONS.md and
+  `research/` as "Reading the artifacts" in the artifact contract says — decisions by id, the
+  open questions, each note's `Answer:` first — and continue at the frontier. Never re-ask a
+  question DECISIONS.md answers: grep it before asking.
 - **`research <question>`** — a question that is not a feature. Dispatch one research agent
   as round 1 does, in the foreground, primary sources first; write its findings as one cited
   note at `temp/research/<slug>.md`; answer in chat in a few lines with the note's path.
@@ -133,8 +141,10 @@ No SPEC and no PLAN.
      a tree, and a question waits for the answer it depends on. Ask the whole frontier each
      round, as consecutive forms of at most four questions. Chat stays short; long material
      goes to files.
-   - Every answer becomes a DECISIONS.md entry the same turn. Every assumption goes into the
-     SPEC draft tagged ASSUMED. The SPEC draft is updated as each section settles.
+   - Every answer becomes a DECISIONS.md entry the same turn; one that supersedes an earlier
+     entry moves it to planning/archive/DECISIONS.md, as "The archive" in the artifact
+     contract says. Every assumption goes into the SPEC draft tagged ASSUMED. The SPEC
+     draft is updated as each section settles.
    - Probe every business rule for its rationale; a rule with no rationale stays ASSUMED.
    - Cross-check what the user states against the code and the research ("the list already
      paginates" → open it). A contradiction becomes a question carrying the evidence.

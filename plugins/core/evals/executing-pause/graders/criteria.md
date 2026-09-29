@@ -242,7 +242,7 @@ Start the task "Parse contact CSV" — executing-plans.
 Resume the feature contact-import with the planning-features skill, in resume mode.
 Read first, in order:
 1. temp/contact-import/planning/HANDOFF.md
-2. temp/contact-import/planning/PROGRESS.md
+2. temp/contact-import/planning/PROGRESS.md, the task table and the latest ledger entries
 3. temp/contact-import/planning/PLAN.md, the task "Parse contact CSV"
 Stage: execute (task 1/2, Subagent per task) — owner: executing-plans.
 Next action: start the task "Parse contact CSV".
