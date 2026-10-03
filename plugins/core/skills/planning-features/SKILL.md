@@ -58,8 +58,11 @@ file's note shape. A plan cites notes on disk, never a report that exists only i
 conversation.
 
 Before a form that decides an architecture or a product question, read
-`../clarifying-features/references/question-rounds.md` and hold the form to it. An
-architecture choice the SPEC leaves to the plan is asked here, and its answer gets a
+`../clarifying-features/references/question-rounds.md` and hold the form to it. Before an
+architecture form, also read `## The better option` and `## Guards` in
+`../designing-architecture/references/codebase-design.md`, and judge each option by the
+better option's criteria; the form offers the options, and nothing is restructured beyond
+what the user picks. An architecture choice the SPEC leaves to the plan is asked here, and its answer gets a
 `DECISIONS.md` entry; a product question goes back to clarifying-features, as `plan` step 2
 says.
 

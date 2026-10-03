@@ -92,15 +92,20 @@ Read the diff's stat summary line. The review is **large** when more than 400 li
 or deep review; otherwise **small**. The two thresholds are a starting value, not a
 measured boundary.
 
-- **small** — one reviewer with role `two-axis`, then one with role `verify` over its
-  candidates.
+Agents cite no reference file, so every text an agent needs arrives in its dispatch. Read the
+`## Guards` section of `../designing-architecture/references/codebase-design.md` once; the
+three dispatches below that name it carry it verbatim, heading included, after their role
+material.
+
+- **small** — one reviewer with role `two-axis`, carrying `## Guards`, then one with role
+  `verify` over its candidates.
 - **large**:
   1. One reviewer per section of `references/lenses.md`, role `lens <section heading>`,
-     all in one message so they run in parallel. Paste each its section verbatim: agents
-     cite no reference file, so every text an agent needs arrives in its dispatch. Leave out
-     the `spec` lens when there is no intent source.
+     all in one message so they run in parallel. Paste each its section verbatim, and the
+     `lens architecture` dispatch `## Guards` after it. Leave out the `spec` lens when there
+     is no intent source.
   2. Gap sweep, optional: a changed file that no lens accounted for — neither a finding nor
-     Clean — gets one `two-axis` reviewer restricted to those files.
+     Clean — gets one `two-axis` reviewer restricted to those files, carrying `## Guards`.
   3. Dedupe here. Qualify each id with its lens (`correctness/Q2`) so no two lenses share
      one. Candidates in the same file, with the same verbatim snippet, in the same enclosing
      function become one candidate that lists every id it absorbs and keeps the highest

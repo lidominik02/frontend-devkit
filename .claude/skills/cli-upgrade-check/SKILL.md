@@ -30,11 +30,9 @@ independently of any build, so check them even when CI is green.
 
 Three things in this repo depend on CLI behaviour that is not contractual:
 
-1. **The expected-findings allowance.** CI runs `claude plugin validate --strict`
-   and allows exactly one finding — the missing `version`, omitted deliberately so
-   installs track the commit SHA — matched on its exact text. If a release rewords that
-   message, the match fails and every target reports a spurious failure. If it adds a
-   new finding, the build goes red on a commit that changed nothing.
+1. **The clean strict exit.** CI runs `claude plugin validate --strict` and expects a
+   clean exit: every manifest carries `version`, so no finding is allowed. A release
+   that adds a new finding turns CI red on a commit that changed nothing.
 
 2. **The claim that `--strict` does not read component frontmatter.** This is why
    `scripts/validate.mjs` owns the frontmatter allowlist at all. If a release starts
@@ -55,11 +53,10 @@ Three things in this repo depend on CLI behaviour that is not contractual:
 
 2. **Diff the strict findings against what CI allows.** Run
    `claude plugin validate . --strict` and the same on every plugin directory
-   `marketplace.json` lists, and compare the output text, not the exit code, with the
-   pattern the workflow's validate step allows. What matters is whether the version
-   finding still matches that pattern and whether any new finding appeared. Record the
-   actual strings. If CI failed, the step printed the unexpected lines; reproduce them
-   locally before explaining them.
+   `marketplace.json` lists, and read the output text as well as the exit code: the
+   workflow's validate step allows no finding, so any `❯` line is new. Record the
+   actual strings. If CI failed, the step printed the output; reproduce it locally
+   before explaining it.
 
 3. **Probe the frontmatter claim directly.** Add a misspelled field to a scratch
    copy of a `SKILL.md` — never to a real one — run `claude plugin validate --strict`

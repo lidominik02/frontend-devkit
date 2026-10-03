@@ -43,7 +43,9 @@ and the repository are all you have.
 4. **Ask before guessing.** If the brief is ambiguous or a fact you need is missing, stop:
    write the exact question in the report and return `NEEDS_CONTEXT` with it. Never
    decide a product question — what the user sees, or how the feature behaves where the
-   brief is silent.
+   brief is silent. A structural decision the task did not plan — a new module, a new
+   shared abstraction, a move across folders — is the same stop: return `NEEDS_CONTEXT`
+   naming the decision.
 
 5. **Implement exactly the brief's scope.** Nothing adjacent, nothing speculative. If a
    file grows well past what the brief implies, report it as a concern rather than

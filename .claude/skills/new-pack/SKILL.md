@@ -43,7 +43,7 @@ Miss one of these and the pack loads wrong, or silently not at all.
 
 | Place | What |
 | --- | --- |
-| `plugins/<name>/.claude-plugin/plugin.json` | `name`, `description`, `author`, `repository`, `keywords`, and `dependencies` naming **every** pack it needs, not just the nearest |
+| `plugins/<name>/.claude-plugin/plugin.json` | `name`, `version` (the one the other packs share), `description`, `author`, `repository`, `keywords`, and `dependencies` naming **every** pack it needs, not just the nearest |
 | `.claude-plugin/marketplace.json` | A `plugins[]` entry with `source: ./plugins/<name>` |
 | `plugins/<name>/skills/<name>-engineering/SKILL.md` | The pack's one skill, plus `references/` |
 | `plugins/<name>/evals/` | A README pointing back at `plugins/core/evals/README.md`, and at least one case |
@@ -72,7 +72,8 @@ Write the version table before the guidance, not after.
 - `node scripts/pack-graph.mjs` — confirm the new pack appears with the base you intended.
   A pack that reports no base when it should have one has its dependency wrong, and
   `/pack-parity` will silently never check it.
-- `claude plugin validate ./plugins/<name> --strict` — expect exactly one finding,
-  the missing `version`, which is omitted deliberately so installs track the SHA.
+- `claude plugin validate ./plugins/<name> --strict` — expect a clean exit. Give the
+  new pack's `plugin.json` the same `version` the other packs carry; the `versions`
+  check fails otherwise.
 - Report the new always-on cost as a number and say what it was before. A pack adds
   a listed description to every session of every repository that enables it.

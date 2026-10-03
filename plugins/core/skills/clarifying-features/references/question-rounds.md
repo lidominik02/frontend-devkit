@@ -98,7 +98,10 @@ build every task that touches it without asking anything? A section passes when:
 - **Global Constraints** — every value is exact: no "reasonable", no "TBD".
 - **Review Focus** — names the failure modes the rules and the states imply.
 - **Architecture fit** — every asset has a path, and each was opened, not inferred from its
-  name.
+  name. An asset the feature would add beside an existing mechanism that does the same job
+  is flagged, with its evidence — the existing one's path and call-site count — and its
+  cost, and offered to the user as a question, never settled silently: the guards in
+  `../../designing-architecture/references/codebase-design.md`.
 - **Contract** — every endpoint and field either exists or has a CONTRACT-GAPS.md entry.
 - **Out of scope** and **Deferred** — each deferred item has the trigger that brings it back.
 - **Verification seams** — every success criterion has its observation.

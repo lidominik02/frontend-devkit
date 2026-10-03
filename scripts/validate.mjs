@@ -349,6 +349,50 @@ export function checkScripts() {
   return { name: 'scripts', findings: bad, ok: bad.length === 0 };
 }
 
+// --- one shared release version ----------------------------------------------
+
+// An existing install updates only when `version` changes, and a pack without one updates
+// on every commit to the installed branch. One number, plugin.json only: it overrides a
+// marketplace entry's, and setting both draws a validator mismatch warning (plugins
+// reference, read for CLI 2.1.283). Unreleased commits are not a finding; CI warns on them.
+const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+export function checkVersions() {
+  const bad = [];
+  let entries = [];
+  try {
+    entries = JSON.parse(fs.readFileSync(r('.claude-plugin/marketplace.json'), 'utf8')).plugins ?? [];
+    if (entries.length === 0) bad.push('.claude-plugin/marketplace.json lists no plugins, so no version was checked');
+  } catch {
+    bad.push('.claude-plugin/marketplace.json is missing or not valid JSON');
+  }
+  const seen = new Map();
+  for (const entry of entries) {
+    if ('version' in entry) {
+      bad.push(`.claude-plugin/marketplace.json -> entry "${entry.name}" declares version; it belongs in plugin.json only`);
+    }
+    if (typeof entry.source !== 'string') {
+      bad.push(`.claude-plugin/marketplace.json -> entry "${entry.name}" has a non-path source; its version is not checked`);
+      continue;
+    }
+    const manifest = r(entry.source, '.claude-plugin', 'plugin.json');
+    let version;
+    try {
+      ({ version } = JSON.parse(fs.readFileSync(manifest, 'utf8')));
+    } catch {
+      bad.push(`${rel(manifest)} is missing or not valid JSON`);
+      continue;
+    }
+    if (version === undefined) bad.push(`${rel(manifest)} -> no version`);
+    else if (!SEMVER.test(String(version))) bad.push(`${rel(manifest)} -> version "${version}" is not X.Y.Z`);
+    else seen.set(rel(manifest), version);
+  }
+  if (new Set(seen.values()).size > 1) {
+    bad.push(`plugin versions differ: ${[...seen].map(([p, v]) => `${p} ${v}`).join(', ')}`);
+  }
+  return { name: 'versions', findings: bad, ok: bad.length === 0 };
+}
+
 // --- runner -----------------------------------------------------------------
 
 export const CHECKS = {
@@ -357,6 +401,7 @@ export const CHECKS = {
   references: checkReferences,
   'mcp-names': checkMcpNames,
   scripts: checkScripts,
+  versions: checkVersions,
 };
 
 export function runChecks(names = Object.keys(CHECKS)) {

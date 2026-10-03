@@ -1,5 +1,6 @@
 {
   "name": "vue",
+  "version": "0.1.0",
   "description": "Vue 3 engineering and review knowledge for Vite single-page apps: reactivity, composables, Vue Router, client/server state, build-time config, testing, and the failure modes that produce silent bugs. Framework-level only, and version-gated -- it reads the installed versions rather than assuming them. Contains no facts about any individual repository.",
   "author": { "name": "lidominik02" },
   "repository": "https://github.com/lidominik02/frontend-devkit",

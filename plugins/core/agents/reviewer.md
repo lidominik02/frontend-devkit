@@ -98,6 +98,9 @@ NOT RUN.
   and the offending line, else there is no finding.
 - **Reuse** — an existing helper or component the change re-implements.
 - **Altitude** — a special case bolted onto shared code instead of a fix at the right depth.
+- **Deletion test** — for each addition, and each module the change adds or reshapes. The
+  deletion test: removing a deep unit spreads its complexity across its callers; removing a
+  shallow one loses nothing anyone asked for. A shallow one is the finding.
 - **Silent failures** — errors swallowed, fallbacks nobody asked for.
 - **Tests** — a test that cannot fail on the behaviour it names.
 - **Comments and docs** — a statement that is false.

@@ -50,9 +50,11 @@ Axis: quality.
   what the change writes anew. Name it with its path.
 - Altitude: a special case added to shared code for one caller — a flag, a branch on who is
   calling — where the fix belongs in the caller or at a lower layer. Name the right depth.
-- The deletion test: what the change adds that could be removed with nothing anyone asked
-  for lost — a wrapper that only forwards, an option nobody passes, a parameter every caller
-  sets the same way. Give the concrete cost of keeping it.
+- The deletion test, for what the change adds — a wrapper that only forwards, an option
+  nobody passes, a parameter every caller sets the same way — and for each module it adds or
+  reshapes. The deletion test: removing a deep unit spreads its complexity across its
+  callers; removing a shallow one loses nothing anyone asked for. Give each shallow one the
+  concrete cost of keeping it.
 
 ## framework
 

@@ -127,6 +127,8 @@ Questions:
 3. The closest existing feature: its files, its states, how it is tested.
 4. The API contract the feature touches: the endpoints, fields and types, and where the
    API client lives.
+5. Existing mechanisms: for each mechanism <the feature> needs, the one the repository
+   already uses for that job, with the search that found it and its call-site count.
 <any question the conversation added>
 Open every file before citing it; never infer what a module does from its name. For a
 library or framework, read its own docs or llms.txt before a hosted index. Everything you

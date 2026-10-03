@@ -52,7 +52,17 @@ Add to `~/.claude/settings.json`:
 Then run `/reload-plugins`.
 
 Set `autoUpdate`. Auto-update is off by default for third-party marketplaces, so without
-it a push reaches nobody until someone runs `/plugin update`.
+it a release reaches nobody until someone runs `/plugin update`. With it on, a release
+reaches the next session. A session installs `main`, and `main` moves only at a release;
+unreleased work lives on the `dev` branch, as "Working on the devkit" describes.
+
+To try an unreleased change, start one session on the working tree, passing
+`--plugin-dir` once for each pack it needs (the flag is repeatable, per `claude --help` on
+2.1.283):
+
+```bash
+claude --plugin-dir <working tree>/plugins/core --plugin-dir <working tree>/plugins/vue
+```
 
 Enabling `vue` installs and enables `core` with it — `dependencies` is enforced, not
 advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is
@@ -69,7 +79,7 @@ enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
 
 | Plugin | Contents |
 | --- | --- |
-| `core` | `reviewer` and `implementer` agents · `investigating-bugs` (+ `references/batch.md`) · `fixing-bugs` (+ `references/loop.md`) · `syncing-branches` (+ 2 reference files) · `finishing-features` (+ `references/menu.md`) · `clarifying-features` (+ 2 reference files) · `planning-features` (+ 4 reference files) · `executing-plans` (+ 1 reference file) · `reviewing-changes` (+ 2 reference files) · `describing-changes` (+ `references/shaping-commits.md`) · `testing-changes` (+ 3 reference files) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 3 shared scripts |
+| `core` | `reviewer` and `implementer` agents · `investigating-bugs` (+ `references/batch.md`) · `fixing-bugs` (+ `references/loop.md`) · `syncing-branches` (+ 2 reference files) · `finishing-features` (+ `references/menu.md`) · `clarifying-features` (+ 2 reference files) · `planning-features` (+ 4 reference files) · `executing-plans` (+ 1 reference file) · `reviewing-changes` (+ 2 reference files) · `describing-changes` (+ `references/shaping-commits.md`) · `testing-changes` (+ 3 reference files) · `designing-architecture` (+ 3 reference files) · `optimizing-prompts` · `preparing-a-repo` · `verifying-ui` · 4 hooks · 3 shared scripts |
 | `vue` | `vue-engineering` (+ 8 reference files, including a review checklist and a version-gate table) |
 | `nuxt` | `nuxt-engineering` (+ 8 reference files, including an SSR review checklist that inverts four of `vue`'s verdicts) |
 
@@ -80,8 +90,8 @@ this paragraph and fails past the ceiling.
 Apart from the `reviewer` and `implementer` agents, each listed description is one
 capability clause, the phrasings a user actually types, and negative triggers naming the
 neighbouring component to use instead, kept within a per-component allotment of that
-ceiling. `preparing-a-repo` and `optimizing-prompts` are excluded because they are
-`disable-model-invocation`; `verifying-ui` is listed as a trial (see below).
+ceiling. `preparing-a-repo`, `optimizing-prompts` and `designing-architecture` are
+excluded because they are `disable-model-invocation`; `verifying-ui` is listed as a trial (see below).
 Skill bodies load on trigger; reference files load only when the body points at them, and
 a repo that enables just the pack matching its framework pays for one.
 
@@ -104,7 +114,7 @@ The `reviewer` agent's fully-qualified name is `core:reviewer`, and the skills t
 dispatch it use that name: it always resolves to the one shipped here even when a
 consuming repo has its own — plugin agents rank lowest in discovery precedence.
 
-Two components carry **`disable-model-invocation: true`**: Claude never reaches for
+Three components carry **`disable-model-invocation: true`**: Claude never reaches for
 them on its own, and their descriptions leave the always-on listing. Type them.
 
 - `preparing-a-repo` — it changes a host repository's own configuration and instructions,
@@ -113,6 +123,10 @@ them on its own, and their descriptions leave the always-on listing. Type them.
   whole job is to *not* carry out the text it is handed is the wrong thing for Claude to
   reach for on its own initiative. Typing it also settles a collision: a repo with its own
   prompt-rewriting skill would otherwise have two matching the same wording.
+- `designing-architecture` — it settles an architectural question or surveys a codebase
+  for restructuring candidates, and a design skill that fires on its own drives unasked
+  redesigns. Noticing a candidate during ordinary work belongs to its
+  `codebase-design.md` reference instead, which flags a candidate and never restructures.
 
 **`verifying-ui` is model-invocable, as a trial.** It carried the same flag until this
 was measured: hiding a skill from the model does not merely stop it firing unasked, it
@@ -701,6 +715,8 @@ shipped to consumers, is not part of any pack, and costs a consuming repository 
 | `/pack-parity` | Checks the delta contract for drift, for every family the manifests declare |
 | `/body-vs-reference-audit` | Which parts of a body have earned loading on every trigger |
 | `/cli-upgrade-check` | Revalidates the platform claims against the installed CLI and records the version they were verified on |
+| `/diagnosing-sessions` | Diagnoses past sessions from their transcripts with five parallel analysts, into an anonymised, cited report with a devkit-involvement verdict and proposed ideas |
+| `/release` | Proposes the version bump from the commits since the latest `v*` tag, then writes the versions and a `CHANGELOG.md` section, commits and tags on `dev` once approved; the user pushes `dev` and `main` |
 | `trigger-tester` | Whether a description would fire. Reads descriptions, never bodies — the author cannot judge their own, because they know what the skill does |
 | `eval-grader` | Dry-runs a `criteria.md` against synthetic answers before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants CI cannot check |
@@ -723,8 +739,8 @@ later needs no edit to `/pack-parity` — the relationship is read, not written 
 
 
 ```bash
-node scripts/validate.mjs                       # the five static checks CI runs
-bash scripts/test-hooks.sh                      # 464 assertions on the guarantees
+node scripts/validate.mjs                       # the six static checks CI runs
+bash scripts/test-hooks.sh                      # 473 assertions on the guarantees
 node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
@@ -744,6 +760,7 @@ than carrying its own copy, so the two cannot drift:
 | `references` | A cited `.md` that does not resolve **from the file citing it** |
 | `mcp-names` | A blocked `mcp__` tool absent from the table documenting it |
 | `scripts` | A `.mjs` that does not parse, or a script `hooks.json` names and does not exist |
+| `versions` | A `plugin.json` without `version`, one not `X.Y.Z`, two packs disagreeing, a `marketplace.json` entry declaring `version` or naming a non-path source, or no entries at all |
 
 Run one with `--checks=frontmatter,budget`.
 
@@ -777,33 +794,39 @@ settle whether a component earns that cost at all.
 
 `--strict` turns an unrecognised field into an error, which is the only way to catch a typo
 such as `mcpServer` for `mcpServers` — Claude Code ignores unknown fields at load time, so
-without it the component silently never loads. It also treats the absent `version` as an
-error, so it exits 1 here even when everything is correct; CI runs it and allows exactly
-that one finding.
+without it the component silently never loads. Every manifest carries `version`, so it is
+expected to exit clean here; CI fails a target on any finding or a non-zero exit.
 
 In `scripts/test-hooks.sh` the parse check runs before any behavioural assertion. A script
 with a syntax error and a script that deliberately blocks are indistinguishable by exit
 code, so without that ordering every result below it is unreadable.
 
-`version` is omitted from every manifest so a static `"1.0.0"` that nobody bumps never pins
-the update cache key. That holds for a directory source too — a local checkout registered
-in place of the GitHub source under "Install": observed on CLI 2.1.283 against an existing
-install, `core`, `vue` and `nuxt` each record `version` as the 12-character prefix of the
-checkout's `HEAD` SHA, with the full SHA as `gitCommitSha`. A directory source serves the
-working tree, whatever `installed_plugins.json` records: on 2.1.283, a `claude -p` session
-started in an unrelated directory reported `core`'s plugin path as `<checkout>/plugins/core`,
-listed skills and an agent that existed only in the working tree, and ran the working tree's
-`commit-hygiene.mjs`, while `installed_plugins.json` still named a copy under
-`~/.claude/plugins/cache/frontend-devkit/<plugin>/<sha>/`. A saved edit, committed or not,
-therefore reaches the next session in every repository that enables the plugin.
-`claude plugin validate` warns about the missing `version` regardless of source; that
-warning is the intended state.
+**Every pack shares one `version`, set in its `plugin.json` and nowhere else.** By the
+plugins reference (read from the documentation, CLI 2.1.283), an existing install stays on
+its cached copy until that string changes. The version decides only whether an update
+happens: the install source names no ref, so any install or update fetches the head of
+`main`. `marketplace.json` carries no `version`: the manifest's value overrides an
+entry's, and setting both draws a validator mismatch warning (same reference). The
+`versions` check holds all of this. The number stays `0.x` while the devkit has one user,
+starting at `0.1.0`: a minor bump for new or changed behaviour, breaking changes included,
+a patch bump for fixes and wording, and `1.0.0` when a second person installs it.
+`/release` is the only thing that bumps it: it lists the commits since the last release,
+proposes the level and, once approved, rewrites the version in every pack's `plugin.json`.
+Each release gets a [`CHANGELOG.md`](CHANGELOG.md) section, the readable history of every
+release, and an annotated `vX.Y.Z` tag that marks the release commit with its version and
+summary.
 
-**A live trial loads the plugin from a separate worktree pinned to a commit, never from the
-working tree being edited.** A session that loads the working tree runs each hook from the
-file on disk at the moment of the call, so a hook caught mid-edit can fail to parse, and a
-Node hook that throws exits 1 and fails open: the trial runs without the guarantee it is
-meant to exercise. `git worktree add --detach <path> <commit>` gives a checkout that stays
-at that commit while the working tree moves on, and `git -C <path> checkout --detach
-<commit>` moves it to a later one (git 2.43.0); register `<path>` as the directory source,
-or pass its plugin directories to `--plugin-dir`.
+**A session installs `main`, and `main` moves only at a release.** Development happens on
+the `dev` branch, pushed freely. `main` stays the GitHub default branch, so the install
+source stays `lidominik02/frontend-devkit` with no ref. `/release` runs on `dev`, makes the
+release commit and the `vX.Y.Z` tag there, and ends by asking the user to push
+`git push origin dev dev:main --follow-tags`, which moves `main` to the release commit; it
+never merges. CI runs on pushes to both branches. Commits on `dev` since the latest tag are
+not an error; CI prints a warning that `plugins/` holds unreleased changes.
+
+**A live trial of an unreleased change loads the working tree for one session with
+`--plugin-dir`**, once per pack it needs, as under "Install". No installed source serves the
+working tree, so the trial reaches no other session. That session runs each hook from the
+file on disk at the moment of the call: a hook caught mid-edit can fail to parse, and a Node
+hook that throws exits 1 and fails open, so the trial runs without the guarantee it is
+meant to exercise. Leave the hooks unedited while it runs.

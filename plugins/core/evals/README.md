@@ -41,6 +41,7 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `planning-from-spec` | Whether `PLAN.md` is built from `SPEC.md` — named vertical-slice tasks, the Global Constraints verbatim, every success criterion and Review Focus entry owned by a task, decisions not code, no commit step, only the fast gates in Done when — and whether an owned open question blocks only its task instead of the plan |
 | `planning-default-rules` | Whether planning records the default rules on disk — in `HANDOFF.md` — when the user sets none, and whether the rules it states are the current set rather than a retired one |
 | `checkpoint-kickoff` | Whether `checkpoint` mode has somewhere durable to put ad-hoc work with no plan, stays honest about what is verified, and ends with a paste-ready kickoff prompt |
+| `designing-architecture` | Whether `designing-architecture` with no decision to make stops after a short list of what is worth restructuring, changes no code, and recommends no abstraction with a single consumer — while still naming a rule copied into three files that change together |
 | `clarifying-rule-rationale` | Whether `clarifying-features` keeps a business rule's reason beside it in `SPEC.md`, and asks for the reason of a rule given without one instead of inventing it |
 | `clarifying-conflicting-sources` | Whether conflicting sources become a question whose recommendation follows authority — a confirmed rule over the story over the design, a derived document never over its source — recorded as a decision naming the losing source |
 | `clarifying-frontier` | Whether work with no story is clarified facts first — the classification with its reasons, a user's claim about the code checked, a rule's reason asked, forms with the recommended option first, no question the repository answers, nothing built — and whether a small change takes the in-chat design route instead |
@@ -83,10 +84,10 @@ says which combinations answer which question; run the environments against both
 than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
-that is the whole point of the field, and it applies to three of the twenty-six cases
-here. Enabling the plugin is not enough: type `/core:preparing-a-repo` or
-`/core:optimizing-prompts` — the second covers two cases — to start that arm, and keep the
-baseline arm's prompt identical apart from the invocation.
+that is the whole point of the field, and it applies to four of the twenty-seven cases
+here. Enabling the plugin is not enough: type `/core:preparing-a-repo`,
+`/core:designing-architecture` or `/core:optimizing-prompts` — the last covers two cases —
+to start that arm, and keep the baseline arm's prompt identical apart from the invocation.
 An arm that merely enables the plugin and waits is measuring the field, not the skill.
 
 ## Running them

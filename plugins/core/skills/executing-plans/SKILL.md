@@ -146,7 +146,9 @@ own `DECISIONS.md` entry and a `ruling · plan defect` ledger entry naming it.
 
 Stop and ask on an ambiguity `SPEC.md` and `DECISIONS.md` do not answer, on a product
 question, or on a gate failure the task caused and cannot fix — the baseline shows which
-failures predate it.
+failures predate it. A structural decision the task did not plan — a new module, a new
+shared abstraction, a move across folders — is the same stop, answered as the
+`NEEDS_CONTEXT` row in `references/dispatch.md` answers an implementer.
 
 ## 4. A git history or index task
 

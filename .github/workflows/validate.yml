@@ -2,14 +2,17 @@ name: validate
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      # Full history and tags, so the release warning can find the latest `v*` tag.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -25,7 +28,7 @@ jobs:
       - name: Hook regression suite
         run: bash scripts/test-hooks.sh
 
-      # Five static checks, none of which `claude plugin validate` performs:
+      # Six static checks, none of which `claude plugin validate` performs:
       #
       #   frontmatter  description present and under the 1024-char packaging cap,
       #                skill name matching its directory, and every field one
@@ -43,6 +46,8 @@ jobs:
       #                against a tool name a server chooses: when a server renames
       #                a tool the block silently matches nothing.
       #   scripts      every .mjs parses, and every script hooks.json names exists.
+      #   versions     every pack carries one shared X.Y.Z `version` in its
+      #                plugin.json, and no marketplace.json entry declares one.
       #
       # This is the same script the Stop hook runs locally. It lives in
       # scripts/validate.mjs rather than inline here so that a developer can run
@@ -65,11 +70,9 @@ jobs:
       #
       # It does NOT check component frontmatter — the step above owns that.
       #
-      # --strict also fails on the missing `version`, which is omitted
-      # deliberately so installs track the commit SHA. This step therefore runs
-      # strict and allows exactly that one finding, matched on the text 2.1.283
-      # prints: bare for a plugin, prefixed `plugins[N] plugin.json →` for the
-      # marketplace.
+      # Every manifest carries `version`, so nothing is expected: any `❯` finding
+      # or a non-zero exit fails the target. A new finding on a commit that
+      # changed nothing is the signal to run /cli-upgrade-check.
       #
       # The pack list is derived from marketplace.json rather than hardcoded, so
       # adding a pack cannot leave it unvalidated here.
@@ -78,14 +81,27 @@ jobs:
           fail=0
           targets=". $(node -p "require('./.claude-plugin/marketplace.json').plugins.map(p => p.source).join(' ')")"
           for target in $targets; do
-            out="$(claude plugin validate "$target" --strict 2>&1 || true)"
-            unexpected="$(printf '%s\n' "$out" | grep '❯' | grep -vE '❯ (plugins\[[0-9]+\] plugin\.json → )?version: No version specified\. Consider adding a version following semver \(e\.g\., "1\.0\.0"\)$' || true)"
-            if [ -n "$unexpected" ]; then
-              echo "::error::$target has findings beyond the intended version warning"
-              printf '%s\n' "$unexpected"
+            code=0
+            out="$(claude plugin validate "$target" --strict 2>&1)" || code=$?
+            findings="$(printf '%s\n' "$out" | grep '❯' || true)"
+            if [ "$code" -ne 0 ] || [ -n "$findings" ]; then
+              echo "::error::$target failed claude plugin validate --strict (exit $code)"
+              printf '%s\n' "$out"
               fail=1
             else
-              echo "$target ok (version warning is intended)"
+              echo "$target ok"
             fi
           done
           exit "$fail"
+
+      # Unreleased commits are not an error: a release is a deliberate bump, so
+      # this only reminds that plugins/ changed since the latest `v*` tag.
+      - name: Release warning
+        run: |
+          if ! tag="$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null)"; then
+            echo "::warning::Nothing is released yet: no v* tag exists."
+          elif ! git diff --quiet "$tag" HEAD -- plugins/; then
+            echo "::warning::plugins/ changed since $tag and is unreleased; run /release to ship it."
+          else
+            echo "plugins/ unchanged since $tag"
+          fi

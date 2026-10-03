@@ -37,9 +37,13 @@ Fail closed on a policy decision; fail open on a broken interpreter.
 invocation, and the checks that read component frontmatter select on `SKILL.md` or
 `agents/` — a file under `commands/` skips both.
 
-**No `version` field in `plugin.json`.** Omitted deliberately so installs track the
-commit SHA. `claude plugin validate --strict` reports this; it is the one expected
-finding and CI allows exactly it.
+**One shared `version`, in every pack's `plugin.json` only.** Every pack carries the
+same `X.Y.Z`; `marketplace.json` carries none. Only `/release` bumps it.
+`claude plugin validate --strict` is expected to exit clean.
+
+**A session installs `main`, and `main` moves only at a release.** Work happens on the
+`dev` branch; `/release` tags on `dev` and the user pushes `dev` to `main`. README's
+"Working on the devkit" describes the workflow.
 
 **Dependencies are declared directly, not transitively.** `nuxt` names both `core` and
 `vue`, because transitive resolution is not observable from `claude plugin validate` —
@@ -51,7 +55,7 @@ only at enable time.
 ## Gates
 
 ```
-node scripts/validate.mjs      # five static checks; also the Stop hook and CI
+node scripts/validate.mjs      # six static checks; also the Stop hook and CI
 bash scripts/test-hooks.sh     # hook behaviour by exit code
 node scripts/pack-graph.mjs    # pack layering, derived from the manifests
 ```
@@ -61,7 +65,8 @@ packaging cap, skill name matching its directory, every field one Claude Code ac
 reads, no `<` or `>` in any value), the always-on description budget against the figure
 and ceiling `README.md` publishes, that
 every cited `.md` resolves from the file citing it, that every blocked `mcp__` tool is
-documented under the skill that blocks it, and that every `.mjs` parses. `claude plugin validate --strict` does **not** read component frontmatter, which
+documented under the skill that blocks it, that every `.mjs` parses, and that the
+every pack's `plugin.json` carries one shared valid version. `claude plugin validate --strict` does **not** read component frontmatter, which
 is why that allowlist lives here.
 
 Run both before pushing. The Stop hook runs the first automatically when anything under
@@ -89,6 +94,8 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 | `/pack-parity` | Check the delta contract for drift, for every family the manifests declare |
 | `/body-vs-reference-audit` | Which parts of a body have earned their place there |
 | `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
+| `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
+| `/release` | Bump the shared version, write the CHANGELOG section, commit and tag; the user pushes |
 | `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
 | `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants above |
