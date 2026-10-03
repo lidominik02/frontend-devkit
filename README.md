@@ -56,6 +56,13 @@ it a release reaches nobody until someone runs `/plugin update`. With it on, a r
 reaches the next session. A session installs `main`, and `main` moves only at a release;
 unreleased work lives on the `dev` branch, as "Working on the devkit" describes.
 
+Switching an existing install to this source does not bring every pack along: on 2.1.283,
+after the marketplace entry moved from a `directory` source to this one, the next session
+updated `core` to the release while `vue` and `nuxt` kept their earlier commit-SHA
+version. Check with `claude plugin list` that every pack reports the release, and run
+`claude plugin update <pack>@frontend-devkit` for any that does not; it takes effect on
+restart.
+
 To try an unreleased change, start one session on the working tree, passing
 `--plugin-dir` once for each pack it needs (the flag is repeatable, per `claude --help` on
 2.1.283):
@@ -803,7 +810,8 @@ code, so without that ordering every result below it is unreadable.
 
 **Every pack shares one `version`, set in its `plugin.json` and nowhere else.** By the
 plugins reference (read from the documentation, CLI 2.1.283), an existing install stays on
-its cached copy until that string changes. The version decides only whether an update
+its cached copy until that string changes; [Install](#install) records an observed case
+where only some packs updated. The version decides only whether an update
 happens: the install source names no ref, so any install or update fetches the head of
 `main`. `marketplace.json` carries no `version`: the manifest's value overrides an
 entry's, and setting both draws a validator mismatch warning (same reference). The
