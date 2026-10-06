@@ -1,0 +1,49 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+# The only workflow that writes: it creates the GitHub Release. validate.yml stays read-only.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Marketplace checks
+        run: node scripts/validate.mjs
+
+      - name: Test suite
+        run: node --test "scripts/test/*.test.mjs"
+
+      # The release notes are the tagged version's CHANGELOG.md section, from its
+      # `## X.Y.Z — ` heading up to the next `## `.
+      - name: Release notes
+        run: |
+          node -e '
+          const fs = require("node:fs");
+          const version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+          const lines = fs.readFileSync("CHANGELOG.md", "utf8").replace(/\r\n/g, "\n").split("\n");
+          const start = lines.findIndex((l) => l.startsWith(`## ${version} — `));
+          if (start === -1) {
+            console.error(`CHANGELOG.md has no section for ${version}`);
+            process.exit(1);
+          }
+          const next = lines.findIndex((l, i) => i > start && l.startsWith("## "));
+          const section = lines.slice(start, next === -1 ? lines.length : next).join("\n").trim();
+          fs.writeFileSync(`${process.env.RUNNER_TEMP}/release-notes.md`, `${section}\n`);
+          '
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/release-notes.md"

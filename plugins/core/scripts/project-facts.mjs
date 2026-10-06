@@ -46,9 +46,10 @@
 // Usage:  node project-facts.mjs [--json]      (defaults to --json)
 // Import: import { detect } from './project-facts.mjs'
 
-import { readFileSync, existsSync, readdirSync, accessSync, constants } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, accessSync, constants, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 /** @typedef {{ command: string|null, script: string|null, source: string, declared: boolean, available: boolean|null }} Gate */
 
@@ -616,7 +617,8 @@ export function detect(dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
   return facts;
 }
 
-// CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
+// CLI. A hand-built file:// URL misses a path with a space, a non-ASCII
+// character or a symlink; import.meta.main does not exist before Node 22.18.
+if (import.meta.main ?? (Boolean(process.argv[1]) && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href)) {
   process.stdout.write(JSON.stringify(detect(), null, 2) + '\n');
 }

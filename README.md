@@ -51,6 +51,14 @@ Add to `~/.claude/settings.json`:
 
 Then run `/reload-plugins`.
 
+The plugins need Node 22 or later, as `node` on the `PATH`. Every hook starts through
+`scripts/run.mjs`, which checks the version first. On an older Node the hook does not load
+and a message names the version found and the fix: `block-secrets` blocks every tool call it
+matches, with the message each time; the other three fail open and print it once per
+session. Without `node` on the `PATH` no hook
+runs at all, and the error the shell reports is not the devkit's. The devkit's own
+development tooling has a separate, higher minimum: Node 22.18, or 24.2 on the 24 line.
+
 Set `autoUpdate`. Auto-update is off by default for third-party marketplaces, so without
 it a release reaches nobody until someone runs `/plugin update`. With it on, a release
 reaches the next session. A session installs `main`, and `main` moves only at a release;
@@ -744,10 +752,13 @@ governs; `core` is the framework-agnostic floor and forms no family. It reports 
 family's paired reference topics and the ones present on only one side, so adding a pack
 later needs no edit to `/pack-parity` — the relationship is read, not written down.
 
+The tooling below needs Node 22.18, or 24.2 on the 24 line. On an older Node,
+`validate.mjs` and `pack-graph.mjs` print the version they need and exit 1, so the `Stop`
+hook fails rather than passing silently.
 
 ```bash
-node scripts/validate.mjs                       # the six static checks CI runs
-bash scripts/test-hooks.sh                      # 473 assertions on the guarantees
+node scripts/validate.mjs                       # the nine static checks CI runs
+node --test "scripts/test/*.test.mjs"           # 546 tests on the guarantees
 node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
@@ -762,12 +773,19 @@ than carrying its own copy, so the two cannot drift:
 
 | Check | Catches |
 | --- | --- |
-| `frontmatter` | A missing description, one past the 1024-char packaging cap, a skill whose `name` does not match its directory, any frontmatter field Claude Code does not read, `permissionMode` in a plugin agent (honoured for a project agent and ignored for a plugin agent, observed on 2.1.283), and a `<` or `>` in any frontmatter value |
-| `budget` | The always-on description total drifting from the figure this README publishes, or exceeding the ceiling it publishes |
+| `frontmatter` | In every shipped component and every skill and agent under `.claude/`: a missing description, one past the 1024-char packaging cap, a `<` or `>` in the description, a skill whose `name` is not kebab-case or does not match its directory, an agent without a `name` or with a `:` in it, any frontmatter field Claude Code does not read, and `permissionMode` in a plugin agent (honoured for a project agent and ignored for a plugin agent, observed on 2.1.283) |
+| `skill-dirs` | A directory under a pack's `skills/` or under `.claude/skills/` without a `SKILL.md` |
+| `budget` | The always-on description total of the shipped packs drifting from the figure this README publishes, or exceeding the ceiling it publishes |
 | `references` | A cited `.md` that does not resolve **from the file citing it** |
 | `mcp-names` | A blocked `mcp__` tool absent from the table documenting it |
 | `scripts` | A `.mjs` that does not parse, or a script `hooks.json` names and does not exist |
-| `versions` | A `plugin.json` without `version`, one not `X.Y.Z`, two packs disagreeing, a `marketplace.json` entry declaring `version` or naming a non-path source, or no entries at all |
+| `plugin-root` | A `${CLAUDE_PLUGIN_ROOT}/` path in a component that does not resolve inside the component's own pack |
+| `versions` | A `plugin.json` without `version`, one not `X.Y.Z`, two packs disagreeing, a `marketplace.json` entry declaring `version`, or no entries at all |
+| `changelog` | A plugin version with no `## X.Y.Z` section in `CHANGELOG.md` |
+
+`skill-dirs`, `plugin-root`, `versions` and `changelog` read the packs through
+`pack-graph.mjs`, so a marketplace entry it cannot follow — a non-path source, a missing
+or invalid `plugin.json` — is a finding in each of them.
 
 Run one with `--checks=frontmatter,budget`.
 
@@ -804,9 +822,11 @@ such as `mcpServer` for `mcpServers` — Claude Code ignores unknown fields at l
 without it the component silently never loads. Every manifest carries `version`, so it is
 expected to exit clean here; CI fails a target on any finding or a non-zero exit.
 
-In `scripts/test-hooks.sh` the parse check runs before any behavioural assertion. A script
-with a syntax error and a script that deliberately blocks are indistinguishable by exit
-code, so without that ordering every result below it is unreadable.
+Every test runs a script through `scripts/test/helpers.mjs`, which runs `node --check` on
+it first and fails with a syntax error of its own. A script with a syntax error and a
+script that deliberately blocks can share an exit code, so without that check a broken
+script reads as a block. `scripts/test/parse.test.mjs` checks every `.mjs` in the
+repository on its own.
 
 **Every pack shares one `version`, set in its `plugin.json` and nowhere else.** By the
 plugins reference (read from the documentation, CLI 2.1.283), an existing install stays on
@@ -827,10 +847,14 @@ summary.
 **A session installs `main`, and `main` moves only at a release.** Development happens on
 the `dev` branch, pushed freely. `main` stays the GitHub default branch, so the install
 source stays `lidominik02/frontend-devkit` with no ref. `/release` runs on `dev`, makes the
-release commit and the `vX.Y.Z` tag there, and ends by asking the user to push
-`git push origin dev dev:main --follow-tags`, which moves `main` to the release commit; it
-never merges. CI runs on pushes to both branches. Commits on `dev` since the latest tag are
-not an error; CI prints a warning that `plugins/` holds unreleased changes.
+release commit and the `vX.Y.Z` tag there, and ends by asking the user to push in two
+steps; it never merges. First `git push origin dev --follow-tags`, which runs CI on the
+release commit and, on the tag, the release workflow that creates the GitHub Release.
+Then, only once CI is green, `git push origin dev:main`, which moves `main` to the release
+commit; a red CI leaves `main` where it is, and the fix is a new release. CI runs on pushes
+to both branches. Commits on `dev` since the latest tag are
+not an error; CI prints a warning that `plugins/` or `.claude-plugin/` holds unreleased
+changes.
 
 **A live trial of an unreleased change loads the working tree for one session with
 `--plugin-dir`**, once per pack it needs, as under "Install". No installed source serves the

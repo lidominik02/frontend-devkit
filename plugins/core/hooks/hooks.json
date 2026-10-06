@@ -8,7 +8,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/block-secrets.mjs"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/block-secrets.mjs"],
             "timeout": 10
           }
         ]
@@ -19,7 +19,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/commit-hygiene.mjs"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/commit-hygiene.mjs"],
             "timeout": 10
           }
         ]
@@ -32,7 +32,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/format-on-write.mjs"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/format-on-write.mjs"],
             "timeout": 60
           }
         ]
@@ -44,7 +44,7 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/verify-before-done.mjs"],
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/verify-before-done.mjs"],
             "timeout": 200
           }
         ]

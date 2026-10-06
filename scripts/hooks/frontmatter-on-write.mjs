@@ -26,11 +26,15 @@ if (!file) process.exit(0);
 const abs = path.resolve(ROOT, file);
 const rel = path.relative(ROOT, abs);
 
-// Only this marketplace's own components: a SKILL.md, or anything under agents/.
+// Only this marketplace's own components: a SKILL.md, or anything under agents/, in a
+// pack or in the repo-local .claude/skills and .claude/agents.
+const inLocal = (dir) => rel.startsWith(path.join('.claude', dir) + path.sep);
 const isComponent =
-  rel.startsWith('plugins') &&
   !rel.startsWith('..') &&
-  (path.basename(abs) === 'SKILL.md' || rel.includes(`${path.sep}agents${path.sep}`));
+  ((rel.startsWith('plugins') &&
+    (path.basename(abs) === 'SKILL.md' || rel.includes(`${path.sep}agents${path.sep}`))) ||
+   (inLocal('skills') && path.basename(abs) === 'SKILL.md') ||
+   (inLocal('agents') && abs.endsWith('.md')));
 if (!isComponent || !fs.existsSync(abs)) process.exit(0);
 
 const { ok, findings } = checkFrontmatter([abs]);

@@ -44,7 +44,7 @@ adding a third copy.
 
 ## Step 2 — The facts, already loaded
 
-!`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
+!`node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"`
 
 That is this repository, read from its own files — do not run it again. It gives package
 manager, stack, base branch, git host, commit convention, MR/PR templates, which gates

@@ -13,17 +13,18 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const r = (...p) => path.join(ROOT, ...p);
+// Printed and `--json` paths use `/` on every OS.
+const rel = (root, p) => path.relative(root, p).split(path.sep).join('/');
 
 const AGNOSTIC = 'core';
 
-export function packs() {
-  const manifest = JSON.parse(fs.readFileSync(r('.claude-plugin/marketplace.json'), 'utf8'));
+export function packs(root = ROOT) {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/marketplace.json'), 'utf8'));
   return manifest.plugins.map((entry) => {
-    const dir = path.join(ROOT, entry.source);
+    const dir = path.join(root, entry.source);
     const meta = JSON.parse(fs.readFileSync(path.join(dir, '.claude-plugin/plugin.json'), 'utf8'));
     const deps = (meta.dependencies ?? []).map((d) => d.name);
 
@@ -34,7 +35,7 @@ export function packs() {
           const refs = fs.existsSync(refsDir)
             ? fs.readdirSync(refsDir).filter((f) => f.endsWith('.md')).sort()
             : [];
-          return { name, refs, dir: path.relative(ROOT, path.join(skillsDir, name)) };
+          return { name, refs, dir: rel(root, path.join(skillsDir, name)) };
         })
       : [];
 
@@ -54,7 +55,7 @@ export function packs() {
       base: deps.find((d) => d !== AGNOSTIC) ?? null,
       skills,
       cases,
-      dir: path.relative(ROOT, dir),
+      dir: rel(root, dir),
     };
   });
 }
@@ -129,4 +130,9 @@ function cli() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) cli();
+// `import.meta.main` holds through a symlinked launch; older Node leaves it undefined.
+if (import.meta.main) cli();
+else if (import.meta.main === undefined) {
+  console.error(`pack-graph.mjs requires Node 22.18+ or 24.2+, this is Node ${process.versions.node}.`);
+  process.exit(1);
+}

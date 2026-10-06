@@ -42,7 +42,8 @@ same `X.Y.Z`; `marketplace.json` carries none. Only `/release` bumps it.
 `claude plugin validate --strict` is expected to exit clean.
 
 **A session installs `main`, and `main` moves only at a release.** Work happens on the
-`dev` branch; `/release` tags on `dev` and the user pushes `dev` to `main`. README's
+`dev` branch; `/release` tags on `dev`, the user pushes `dev` with the tag, and moves
+`main` to the release commit only once CI is green on it. README's
 "Working on the devkit" describes the workflow.
 
 **Dependencies are declared directly, not transitively.** `nuxt` names both `core` and
@@ -55,19 +56,27 @@ only at enable time.
 ## Gates
 
 ```
-node scripts/validate.mjs      # six static checks; also the Stop hook and CI
-bash scripts/test-hooks.sh     # hook behaviour by exit code
-node scripts/pack-graph.mjs    # pack layering, derived from the manifests
+node scripts/validate.mjs               # nine static checks; also the Stop hook and CI
+node --test "scripts/test/*.test.mjs"   # script and hook behaviour by exit code
+node scripts/pack-graph.mjs             # pack layering, derived from the manifests
 ```
 
-`scripts/validate.mjs` checks frontmatter (description present, under the 1024-char
-packaging cap, skill name matching its directory, every field one Claude Code actually
-reads, no `<` or `>` in any value), the always-on description budget against the figure
-and ceiling `README.md` publishes, that
-every cited `.md` resolves from the file citing it, that every blocked `mcp__` tool is
-documented under the skill that blocks it, that every `.mjs` parses, and that the
-every pack's `plugin.json` carries one shared valid version. `claude plugin validate --strict` does **not** read component frontmatter, which
-is why that allowlist lives here.
+The gates need Node 22.18, or 24.2 on the 24 line; on an older Node `validate.mjs` and
+`pack-graph.mjs` exit 1. The shipped plugins need only Node 22.
+
+`scripts/validate.mjs` checks the frontmatter of every shipped component and of every
+skill and agent under `.claude/` (description present, under the 1024-char packaging cap
+and free of `<` and `>`, skill name kebab-case and matching its directory, agent name
+present and free of `:`, every field one Claude Code actually reads), that every skill
+directory holds a `SKILL.md`, the always-on description budget of the shipped packs
+against the figure and ceiling `README.md` publishes, that every cited `.md` resolves
+from the file citing it, that every blocked `mcp__` tool is documented under the skill
+that blocks it, that every `.mjs` parses and every script `hooks.json` names exists, that
+every `${CLAUDE_PLUGIN_ROOT}/` path resolves inside its own pack, that every pack's
+`plugin.json` carries one shared valid version, and that `CHANGELOG.md` has a section for
+it. It reads the packs through `pack-graph.mjs`, and a marketplace entry that cannot be
+followed is a finding. `claude plugin validate --strict` does **not** read component
+frontmatter, which is why that allowlist lives here.
 
 Run both before pushing. The Stop hook runs the first automatically when anything under
 `plugins/`, `scripts/` or `README.md` has changed.
@@ -95,7 +104,7 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 | `/body-vs-reference-audit` | Which parts of a body have earned their place there |
 | `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
 | `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
-| `/release` | Bump the shared version, write the CHANGELOG section, commit and tag; the user pushes |
+| `/release` | Bump the shared version, write the CHANGELOG section, commit and tag; the user pushes `dev`, then `main` once CI is green |
 | `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
 | `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants above |

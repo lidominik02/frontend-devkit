@@ -77,7 +77,7 @@ Three things in this repo depend on CLI behaviour that is not contractual:
 
 ## Before you finish
 
-- `node scripts/validate.mjs` and `bash scripts/test-hooks.sh` both clean.
+- `node scripts/validate.mjs` and `node --test "scripts/test/*.test.mjs"` both clean.
 - Explain a CI failure by its upstream cause: which release, which finding or field
   changed, and what in the repo changed in response.
 - Say which claims you **observed** and which you only read. A comment asserting a

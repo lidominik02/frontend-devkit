@@ -30,7 +30,7 @@ if (event.stop_hook_active) process.exit(0);
 // rule that a gate with no diff to judge should not speak.
 let dirty = '';
 try {
-  dirty = execFileSync('git', ['status', '--porcelain', '--', 'plugins', 'scripts', 'README.md'], {
+  dirty = execFileSync('git', ['status', '--porcelain', '--', 'plugins', 'scripts', 'README.md', '.claude-plugin', 'CHANGELOG.md', '.claude'], {
     cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
   }).trim();
 } catch { /* not a git repo, or git missing: fall through and check anyway */ }

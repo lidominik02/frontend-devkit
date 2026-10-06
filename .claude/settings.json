@@ -5,7 +5,7 @@
     "allow": [
       "Bash(claude plugin validate:*)",
       "Bash(node scripts/validate.mjs:*)",
-      "Bash(bash scripts/test-hooks.sh)",
+      "Bash(node --test \"scripts/test/*.test.mjs\")",
       "Bash(git status)",
       "Bash(git diff:*)",
       "Bash(git log:*)"

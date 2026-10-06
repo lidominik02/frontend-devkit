@@ -50,7 +50,7 @@ instrument.
 or `mcp__*__browser_snapshot`. If they are there, a browser is drivable; if they are
 not, it is not, and nothing else can tell you otherwise.
 
-!`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
+!`node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"`
 
 That is this repository, read from its own files — do not run it again. Step 2 needs
 `devServer` from it. **Ignore `browserTools` unless your tool list came up empty**: it

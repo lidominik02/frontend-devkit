@@ -24,7 +24,7 @@ recorded it. Say what the change does and why; that is the whole job.
 
 ## Step 1 — The facts, already loaded
 
-!`node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs`
+!`node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"`
 
 That is this repository, read from its own files — do not run it again. It gives
 `commit` (whether a commitlint config enforces the convention, and where it lives),
