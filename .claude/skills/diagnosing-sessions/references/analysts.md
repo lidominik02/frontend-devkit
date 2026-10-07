@@ -120,5 +120,5 @@ Devkit involvement: <caused | contributed | not involved | cannot tell> — devk
 
 A dimension with no findings keeps its heading and says so, with the analyst's
 `Not seen:` line. Dropped findings are counted under the verdict. Proposed ideas
-follow the entry shape of `temp/ideas/IDEAS.md`; none is written there until the user
+follow the entry shape of `temp/backlog/INBOX.md`; none is written there until the user
 picks it.

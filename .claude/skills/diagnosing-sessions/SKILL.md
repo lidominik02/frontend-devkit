@@ -17,7 +17,7 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(node 
 
 The input is a symptom, optionally a session id and a time window. The output is
 `temp/diagnoses/<slug>/REPORT.md` in this repository (gitignored) and, after the user
-picks, new entries in `temp/ideas/IDEAS.md`. Nothing else is written outside the
+picks, new entries in `temp/backlog/INBOX.md`. Nothing else is written outside the
 session scratchpad.
 
 ## Anonymity, before any read
@@ -74,7 +74,7 @@ transcript read to the last line written, in chat as much as in files:
    the devkit.
 
 6. **Propose ideas.** The report ends with proposed `I<n>` entries, numbered on from
-   the highest id in `temp/ideas/IDEAS.md`. Ask the user which to write (a
+   the highest id in `temp/backlog/INBOX.md`. Ask the user which to write (a
    multi-select form). Append each picked entry in that file's entry shape, its
    `Source:` naming this report and the finding it came from.
 
