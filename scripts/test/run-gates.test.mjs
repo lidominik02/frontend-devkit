@@ -85,6 +85,7 @@ describe('run-gates: a missing binary is a broken toolchain', () => {
     const onWindows = (status) => (process.platform === 'win32' ? status : 'fail');
     const cmdLine = "'xyz' is not recognized as an internal or external command";
     const psLine = "The term 'xyz' is not recognized as the name of a cmdlet";
+    const pwsh7Line = "The term 'xyz' is not recognized as a name of a cmdlet, function, script file, or executable program.";
     // [stdout, stderr, exit code, expected status]
     const cases = [
       ['No such file or directory', '', 1, 'fail'],
@@ -96,6 +97,9 @@ describe('run-gates: a missing binary is a broken toolchain', () => {
       ['', `${psLine}\n`, 1, onWindows('not-run')],
       ['', `xyz : ${psLine}\n`, 1, onWindows('not-run')],
       ['', `xyz: ${psLine}\n`, 1, onWindows('not-run')],
+      // PowerShell 7.6.3 colours its error even with stderr piped (Windows 10 19045).
+      ['', `\x1b[31;1mxyz: \x1b[31;1m${pwsh7Line}\x1b[0m\r\n`, 1, onWindows('not-run')],
+      ['', `expected \x1b[31;1m${pwsh7Line}\x1b[0m\n`, 1, 'fail'],
       [`${psLine}\n`, '', 1, 'fail'],
       // stdout with no trailing newline must not take the stderr line's start away.
       ['partial', `${cmdLine}\n`, 1, onWindows('not-run')],

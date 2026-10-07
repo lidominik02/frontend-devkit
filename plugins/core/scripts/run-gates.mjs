@@ -373,11 +373,14 @@ function classify(proc, ms) {
   const out = `${proc.stdout ?? ''}${proc.stderr ?? ''}`;
   // Exit 127 means a missing binary on every OS; the words alone also appear in a failing
   // test's output. cmd.exe exits 1 instead, so on Windows a stderr line starting with the
-  // shell's own wording counts too; PowerShell may put `<name> :` before its wording.
+  // shell's own wording counts too; PowerShell may put `<name> :` before its wording, and
+  // PowerShell 7.6.3 colours the line even with stderr piped (Windows 10 19045).
   const notInstalled =
     code === 127
     || (process.platform === 'win32'
-      && /^(?:'[^']*' is not recognized as an internal or external command|(?:\S+ ?: )?The term '[^']*' is not recognized)/m.test(proc.stderr ?? ''));
+      && /^(?:'[^']*' is not recognized as an internal or external command|(?:\S+ ?: )?The term '[^']*' is not recognized)/m.test(
+        (proc.stderr ?? '').replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, ''),
+      ));
   if (notInstalled) {
     return {
       status: /** @type {const} */ ('not-run'),

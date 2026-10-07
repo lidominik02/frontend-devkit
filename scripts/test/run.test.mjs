@@ -37,7 +37,9 @@ function assertSame({ direct, viaRun }, expectedCode) {
 function verifyBeforeDoneEvent(t) {
   const dir = gitRepo(t);
   fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ scripts: { lint: 'node -e "process.exit(1)"' } }));
-  const env = { ...isolatedEnv(tempDir(t)), CLAUDE_PROJECT_DIR: dir };
+  // A fresh npm cache makes npm check for its own update, and only the first of the two runs
+  // prints the notice, so the gate output would differ between them.
+  const env = { ...isolatedEnv(tempDir(t)), npm_config_update_notifier: 'false', CLAUDE_PROJECT_DIR: dir };
   return { input: JSON.stringify({ stop_hook_active: false }), env };
 }
 
