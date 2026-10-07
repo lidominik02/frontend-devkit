@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 
 import { REPO_ROOT, runScript, tempDir } from './helpers.mjs';
-import { checkScripts } from '../validate.mjs';
+import { checkScripts, scriptRoots } from '../validate.mjs';
 
 const rel = (p) => path.relative(REPO_ROOT, p);
 
@@ -21,8 +21,8 @@ function mjsIn(dir) {
     .filter((p) => fs.statSync(p).isFile());
 }
 
-// The same two trees validate.mjs's scripts check walks, so both cover every .mjs.
-const scripts = [...mjsIn(path.join(REPO_ROOT, 'plugins')), ...mjsIn(path.join(REPO_ROOT, 'scripts'))];
+// The same trees validate.mjs's scripts check walks, so both cover every .mjs.
+const scripts = scriptRoots(REPO_ROOT).flatMap(mjsIn);
 
 describe('parse', () => {
   test('finds scripts to check', () => {

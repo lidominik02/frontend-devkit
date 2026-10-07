@@ -341,12 +341,24 @@ export function checkMcpNames(root = ROOT) {
 
 // --- every script parses, every hook target exists ---------------------------
 
+// A repo-local skill keeps its scripts in its own scripts/; the rest of .claude/ holds none.
+export function scriptRoots(root = ROOT) {
+  const skills = r(root, '.claude', 'skills');
+  const local = fs.existsSync(skills)
+    ? fs.readdirSync(skills, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => path.join(skills, e.name, 'scripts'))
+        .filter((p) => fs.existsSync(p))
+    : [];
+  return [r(root, 'plugins'), r(root, 'scripts'), ...local];
+}
+
 // A script with a syntax error and a script that deliberately blocks are
 // indistinguishable by exit code, so this runs before anything behavioural.
 export function checkScripts(root = ROOT) {
   const bad = [];
   const mjs = [];
-  for (const base of [r(root, 'plugins'), r(root, 'scripts')]) {
+  for (const base of scriptRoots(root)) {
     (function walk(dir) {
       if (!fs.existsSync(dir)) return;
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {

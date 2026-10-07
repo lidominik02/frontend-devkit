@@ -285,6 +285,25 @@ describe('the scripts check reads every listed pack\'s hooks.json, every arg ins
   });
 });
 
+describe('the scripts check parses a repo-local skill\'s own scripts', () => {
+  const scripts = (t, override) => byName(runChecks(['scripts'], fixture(t, { override }))).scripts.findings;
+
+  test('a skill-local script that does not parse is a finding', (t) => {
+    const findings = scripts(t, { '.claude/skills/tool/scripts/broken.mjs': 'export const x = ;\n' });
+    assert.equal(findings.length, 1);
+    assert.match(findings[0], /^\.claude\/skills\/tool\/scripts\/broken\.mjs -> SyntaxError/);
+  });
+
+  test('a skill-local script that parses, and a skill with no scripts/, are no finding', (t) => {
+    assert.deepEqual(scripts(t, { '.claude/skills/tool/scripts/ok.mjs': 'export const ok = true;\n' }), []);
+  });
+
+  // Only a skill's scripts/ is walked: a broken .mjs elsewhere under .claude/ is not a script the devkit runs.
+  test('a .mjs outside a skill\'s scripts/ is not parsed', (t) => {
+    assert.deepEqual(scripts(t, { '.claude/skills/tool/notes/broken.mjs': 'export const x = ;\n' }), []);
+  });
+});
+
 // Partway through adding a pack, its directory exists before its marketplace entry does.
 test('an unlisted plugins/ directory is a versions finding, and none of its components is counted', (t) => {
   const root = fixture(t, {
