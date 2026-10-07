@@ -4,11 +4,17 @@
   "permissions": {
     "allow": [
       "Bash(claude plugin validate:*)",
+      "PowerShell(claude plugin validate:*)",
       "Bash(node scripts/validate.mjs:*)",
+      "PowerShell(node scripts/validate.mjs:*)",
       "Bash(node --test \"scripts/test/*.test.mjs\")",
+      "PowerShell(node --test \"scripts/test/*.test.mjs\")",
       "Bash(git status)",
+      "PowerShell(git status)",
       "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "PowerShell(git diff:*)",
+      "Bash(git log:*)",
+      "PowerShell(git log:*)"
     ],
     "deny": [
       "Read(./.env)",

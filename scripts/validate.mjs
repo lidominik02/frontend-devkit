@@ -18,7 +18,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-import { packs } from './pack-graph.mjs';
+import { packs, runAsEntry } from './pack-graph.mjs';
+import { releaseNotes } from './ci/release-notes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const r = (root, ...p) => path.join(root, ...p);
@@ -87,43 +88,51 @@ export function isListed(text) {
   return !/^disable-model-invocation:\s*true/m.test(frontmatter(text) ?? '');
 }
 
-// Every component this marketplace ships: SKILL.md files and agent definitions.
-export function components(root = ROOT) {
+// What counts as a component, for the walks below and the write-time hook alike: a SKILL.md
+// or any file under agents/ in a pack, a SKILL.md under .claude/skills, a .md under .claude/agents.
+export function isComponent(root, file) {
+  const parts = path.relative(root, file).split(path.sep);
+  const name = parts.at(-1);
+  if (parts[0] === 'plugins') return name === 'SKILL.md' || parts.slice(1, -1).includes('agents');
+  if (parts[0] !== '.claude') return false;
+  if (parts[1] === 'skills') return name === 'SKILL.md';
+  if (parts[1] === 'agents') return name.endsWith('.md');
+  return false;
+}
+
+/** @returns {string[]} */
+function walkComponents(root, dir) {
   const out = [];
-  (function walk(dir) {
-    if (!fs.existsSync(dir)) return;
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = path.join(dir, e.name);
+  (function walk(d) {
+    if (!fs.existsSync(d)) return;
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name === 'SKILL.md' || p.includes(`${path.sep}agents${path.sep}`)) out.push(p);
+      else if (isComponent(root, p)) out.push(p);
     }
-  })(r(root, 'plugins'));
+  })(dir);
   return out;
+}
+
+// Every component this marketplace ships: SKILL.md files and agent definitions, in the packs
+// marketplace.json lists. A pack it does not list ships nothing; `versions` reports it.
+export function components(root = ROOT) {
+  return loadPacks(root).list.flatMap((pack) => walkComponents(root, r(root, pack.dir)));
 }
 
 // The repo-local components under .claude/: project skills and project agents. They are not
 // shipped, so they take the frontmatter rules but not the always-on budget.
 export function localComponents(root = ROOT) {
-  const out = [];
-  function walk(dir, isAgents) {
-    if (!fs.existsSync(dir)) return;
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = path.join(dir, e.name);
-      if (e.isDirectory()) walk(p, isAgents);
-      else if (isAgents ? e.name.endsWith('.md') : e.name === 'SKILL.md') out.push(p);
-    }
-  }
-  walk(r(root, '.claude', 'skills'), false);
-  walk(r(root, '.claude', 'agents'), true);
-  return out;
+  return [...walkComponents(root, r(root, '.claude', 'skills')), ...walkComponents(root, r(root, '.claude', 'agents'))];
 }
 
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-// `files` cannot default to `components(root)` in the signature: `root` is declared after it.
+// With no file list it checks what the `frontmatter` check does. `files` cannot default in
+// the signature: `root` is declared after it.
 export function checkFrontmatter(files, root = ROOT) {
-  const bad = [];
-  for (const p of files ?? components(root)) {
+  const bad = files ? [] : loadPacks(root).findings;
+  for (const p of files ?? [...components(root), ...localComponents(root)]) {
     if (!fs.existsSync(p)) continue;
     const text = read(p);
     const isSkill = path.basename(p) === 'SKILL.md';
@@ -184,6 +193,9 @@ export function budget(root = ROOT) {
 
 export function checkBudget(root = ROOT) {
   const { listed, packs } = budget(root);
+  const unread = loadPacks(root).findings;
+  // With no pack read, a total of 0 against the published figure is not news.
+  if (unread.length) return { name: 'budget', findings: unread, ok: false, unread: true, listed, packs };
   const readme = read(r(root, 'README.md'));
   const claimed = readme.match(/\*\*([\d.]+)k characters\*\*/);
   const ceiling = readme.match(/The ceiling is\s+([\d,]+)\s+characters/);
@@ -218,12 +230,10 @@ export function checkBudget(root = ROOT) {
 const CONCEPTUAL = new Set(['SKILL.md', 'README.md', 'CLAUDE.md', 'AGENTS.md']);
 
 export function checkReferences(root = ROOT) {
-  const roots = fs
-    .readdirSync(r(root, 'plugins'))
-    .flatMap((p) => ['skills', 'agents'].map((k) => r(root, 'plugins', p, k)))
+  const { list, findings: bad } = loadPacks(root);
+  const roots = list
+    .flatMap((pack) => ['skills', 'agents'].map((k) => r(root, pack.dir, k)))
     .filter((d) => fs.existsSync(d));
-
-  const bad = [];
 
   const ownerDir = (file) => {
     let d = path.dirname(file);
@@ -290,11 +300,10 @@ export function checkReferences(root = ROOT) {
 // reasoning, and a check that only ever looked at verifying-ui would let that
 // second list drift with nothing to catch it.
 export function checkMcpNames(root = ROOT) {
-  const bad = [];
+  const { list, findings: bad } = loadPacks(root);
   let totalBlocked = 0;
-  const skillsRoots = fs
-    .readdirSync(r(root, 'plugins'))
-    .map((p) => r(root, 'plugins', p, 'skills'))
+  const skillsRoots = list
+    .map((pack) => r(root, pack.dir, 'skills'))
     .filter((d) => fs.existsSync(d));
 
   for (const skillsRoot of skillsRoots) {
@@ -326,7 +335,7 @@ export function checkMcpNames(root = ROOT) {
     }
   }
 
-  if (!totalBlocked) bad.push('no mcp__ names blocked anywhere — did every disallowed-tools field move?');
+  if (!totalBlocked && list.length) bad.push('no mcp__ names blocked anywhere — did every disallowed-tools field move?');
   return { name: 'mcp-names', findings: bad, ok: bad.length === 0, count: totalBlocked };
 }
 
@@ -359,19 +368,25 @@ export function checkScripts(root = ROOT) {
     }
   }
 
-  // Every script named by hooks.json must exist: a renamed file is a dead hook.
-  const cfgPath = r(root, 'plugins/core/hooks/hooks.json');
-  if (fs.existsSync(cfgPath)) {
+  // Every arg a pack's hooks.json names must be a file inside that pack: a renamed file is a
+  // dead hook, and ${CLAUDE_PLUGIN_ROOT} is the root of the pack that holds the hooks.json.
+  const { list, findings: unread } = loadPacks(root);
+  bad.push(...unread);
+  for (const pack of list) {
+    const packDir = r(root, pack.dir);
+    const cfgPath = path.join(packDir, 'hooks', 'hooks.json');
+    if (!fs.existsSync(cfgPath)) continue;
     let cfg;
-    try { cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8')); }
-    catch { bad.push('plugins/core/hooks/hooks.json is not valid JSON'); }
-    if (cfg) {
-      for (const entries of Object.values(cfg.hooks ?? {})) {
-        for (const entry of entries) {
-          for (const h of entry.hooks ?? []) {
-            for (const a of h.args ?? []) {
-              const p = String(a).replace('${CLAUDE_PLUGIN_ROOT}', r(root, 'plugins/core'));
-              if (p.includes('/') && !fs.existsSync(p)) bad.push(`hooks.json names a missing script: ${rel(root, p)}`);
+    try { cfg = JSON.parse(read(cfgPath)); }
+    catch { bad.push(`${rel(root, cfgPath)} is not valid JSON`); continue; }
+    for (const entries of Object.values(cfg?.hooks ?? {})) {
+      for (const entry of Array.isArray(entries) ? entries : []) {
+        for (const h of entry?.hooks ?? []) {
+          for (const a of h?.args ?? []) {
+            const resolved = path.resolve(packDir, String(a).replaceAll('${CLAUDE_PLUGIN_ROOT}', packDir));
+            const inside = resolved.startsWith(packDir + path.sep);
+            if (!inside || !fs.statSync(resolved, { throwIfNoEntry: false })?.isFile()) {
+              bad.push(`${rel(root, cfgPath)} -> ${a} is not a file inside ${pack.dir}`);
             }
           }
         }
@@ -401,38 +416,21 @@ function marketplaceEntries(root) {
 }
 
 // packs() is the one walk from a marketplace entry to its pack, shared with pack-graph.mjs.
-// It throws on the first entry it cannot follow; that becomes a finding naming the entry.
+// It throws on the first entry it cannot follow, naming the entry or the file; that becomes a finding.
 function loadPacks(root) {
   try {
     return { list: packs(root), findings: [] };
   } catch (error) {
-    return { list: [], findings: [packsFailure(root, error)] };
+    const finding = error?.code === 'ERR_PACK_UNFOLLOWABLE'
+      ? `${error.message}, so no pack was checked`
+      : `the packs could not be read, so none was checked: ${error?.message}`;
+    return { list: [], findings: [finding] };
   }
-}
-
-function packsFailure(root, error) {
-  const entries = marketplaceEntries(root);
-  if (!entries) return `${MARKETPLACE} is missing, not valid JSON, or has no plugins list, so no pack was checked`;
-  for (const entry of entries) {
-    if (typeof entry?.source !== 'string') {
-      return `${MARKETPLACE} -> entry "${entry?.name}" has a non-path source, so no pack was checked`;
-    }
-    const manifest = r(root, entry.source, '.claude-plugin', 'plugin.json');
-    try {
-      JSON.parse(read(manifest));
-    } catch {
-      return `${rel(root, manifest)} is missing or not valid JSON, so no pack was checked`;
-    }
-  }
-  return `the packs could not be read, so none was checked: ${error.message}`;
 }
 
 function packVersions(root) {
   const { list, findings } = loadPacks(root);
-  const versions = list.map((pack) => {
-    const manifest = r(root, pack.dir, '.claude-plugin', 'plugin.json');
-    return [rel(root, manifest), JSON.parse(read(manifest)).version];
-  });
+  const versions = list.map((pack) => [path.posix.join(pack.dir, '.claude-plugin/plugin.json'), pack.version]);
   return { versions, findings };
 }
 
@@ -440,6 +438,15 @@ export function checkVersions(root = ROOT) {
   const { versions, findings: bad } = packVersions(root);
   const entries = marketplaceEntries(root) ?? [];
   if (entries.length === 0 && bad.length === 0) bad.push(`${MARKETPLACE} lists no plugins, so no version was checked`);
+  // Every check reads the packs the marketplace lists, so an unlisted one is checked by none.
+  if (bad.length === 0 && fs.existsSync(r(root, 'plugins'))) {
+    const listed = new Set(loadPacks(root).list.map((pack) => pack.dir));
+    for (const e of fs.readdirSync(r(root, 'plugins'), { withFileTypes: true })) {
+      if (e.isDirectory() && !listed.has(`plugins/${e.name}`)) {
+        bad.push(`plugins/${e.name} has no entry in ${MARKETPLACE}, so no check reads it`);
+      }
+    }
+  }
   for (const entry of entries) {
     if (entry && typeof entry === 'object' && 'version' in entry) {
       bad.push(`${MARKETPLACE} -> entry "${entry.name}" declares version; it belongs in plugin.json only`);
@@ -459,8 +466,9 @@ export function checkVersions(root = ROOT) {
 
 // --- the released version has its CHANGELOG section --------------------------
 
-// The release notes are that version's CHANGELOG.md section, so a version without one
-// releases with no notes.
+// The release notes are that version's CHANGELOG.md section, which the release workflow
+// extracts through scripts/ci/release-notes.mjs; a version without one fails that workflow
+// after the tag is pushed, so this accepts exactly the heading it reads and nothing looser.
 export function checkChangelog(root = ROOT) {
   const { versions, findings: bad } = packVersions(root);
   const wanted = new Set(versions.map(([, v]) => String(v)).filter((v) => SEMVER.test(v)));
@@ -469,8 +477,8 @@ export function checkChangelog(root = ROOT) {
     try { text = read(r(root, 'CHANGELOG.md')); }
     catch { bad.push('CHANGELOG.md is missing'); }
     for (const v of text === null ? [] : wanted) {
-      if (!new RegExp(`^## ${v.replace(/\./g, '\\.')}(\\s|$)`, 'm').test(text)) {
-        bad.push(`CHANGELOG.md has no "## ${v}" section for plugin version ${v}`);
+      if (releaseNotes(text, v) === null) {
+        bad.push(`CHANGELOG.md has no "## ${v} - YYYY-MM-DD" section for plugin version ${v}`);
       }
     }
   }
@@ -485,7 +493,10 @@ export function checkSkillDirs(root = ROOT) {
   const local = r(root, '.claude', 'skills');
   if (fs.existsSync(local)) dirs.push(...fs.readdirSync(local).map((name) => path.join(local, name)));
   for (const dir of dirs) {
-    if (fs.statSync(dir).isDirectory() && !fs.existsSync(path.join(dir, 'SKILL.md'))) {
+    // A dangling symlink or junction has no stat to read.
+    const stat = fs.statSync(dir, { throwIfNoEntry: false });
+    if (!stat) bad.push(`${rel(root, dir)} -> a link to nothing`);
+    else if (stat.isDirectory() && !fs.existsSync(path.join(dir, 'SKILL.md'))) {
       bad.push(`${rel(root, dir)} -> no SKILL.md`);
     }
   }
@@ -495,15 +506,26 @@ export function checkSkillDirs(root = ROOT) {
 // --- ${CLAUDE_PLUGIN_ROOT} paths resolve inside their own pack ----------------
 
 // The variable is the root of the pack that holds the component, so a path into another
-// pack, or a renamed script, resolves to nothing at runtime.
+// pack, or a renamed script, resolves to nothing at runtime. Every .md under skills/ and
+// agents/ is scanned, references included: a reference is followed at runtime as the body is.
+// hooks.json paths are the scripts check's.
 const PLUGIN_ROOT_REF = /\$\{CLAUDE_PLUGIN_ROOT\}\/([A-Za-z0-9._/-]*[A-Za-z0-9_-])/g;
+
+/** @returns {string[]} */
+function markdownUnder(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.md'))
+    .map((e) => path.join(e.parentPath, e.name))
+    .sort();
+}
 
 export function checkPluginRoot(root = ROOT) {
   const { list, findings: bad } = loadPacks(root);
-  const files = components(root);
   for (const pack of list) {
     const packDir = r(root, pack.dir);
-    for (const p of files.filter((f) => f.startsWith(packDir + path.sep))) {
+    for (const p of ['skills', 'agents'].flatMap((k) => markdownUnder(path.join(packDir, k)))) {
       const refs = new Set([...read(p).matchAll(PLUGIN_ROOT_REF)].map((m) => m[1]));
       for (const ref of refs) {
         const resolved = path.resolve(packDir, ref);
@@ -520,7 +542,7 @@ export function checkPluginRoot(root = ROOT) {
 // --- runner -----------------------------------------------------------------
 
 export const CHECKS = {
-  frontmatter: (root = ROOT) => checkFrontmatter([...components(root), ...localComponents(root)], root),
+  frontmatter: (root = ROOT) => checkFrontmatter(undefined, root),
   'skill-dirs': checkSkillDirs,
   budget: checkBudget,
   references: checkReferences,
@@ -563,10 +585,4 @@ function cli() {
   console.log(`\n${names.length} check(s) passed`);
 }
 
-// `import.meta.main` holds through a symlinked launch; older Node leaves it undefined, and
-// silently running nothing there would let the Stop hook and CI pass unchecked.
-if (import.meta.main) cli();
-else if (import.meta.main === undefined) {
-  console.error(`validate.mjs requires Node 22.18+ or 24.2+, this is Node ${process.versions.node}.`);
-  process.exit(1);
-}
+runAsEntry(import.meta.main, cli, 'validate.mjs');

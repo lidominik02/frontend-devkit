@@ -26,22 +26,10 @@ jobs:
         run: node --test "scripts/test/*.test.mjs"
 
       # The release notes are the tagged version's CHANGELOG.md section, from its
-      # `## X.Y.Z — ` heading up to the next `## `.
+      # `## X.Y.Z - YYYY-MM-DD` heading up to the next `## `; validate.mjs's changelog check
+      # requires the same heading through the same matcher.
       - name: Release notes
-        run: |
-          node -e '
-          const fs = require("node:fs");
-          const version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
-          const lines = fs.readFileSync("CHANGELOG.md", "utf8").replace(/\r\n/g, "\n").split("\n");
-          const start = lines.findIndex((l) => l.startsWith(`## ${version} — `));
-          if (start === -1) {
-            console.error(`CHANGELOG.md has no section for ${version}`);
-            process.exit(1);
-          }
-          const next = lines.findIndex((l, i) => i > start && l.startsWith("## "));
-          const section = lines.slice(start, next === -1 ? lines.length : next).join("\n").trim();
-          fs.writeFileSync(`${process.env.RUNNER_TEMP}/release-notes.md`, `${section}\n`);
-          '
+        run: node scripts/ci/release-notes.mjs "$GITHUB_REF_NAME" "$RUNNER_TEMP/release-notes.md"
 
       - name: Create GitHub Release
         env:

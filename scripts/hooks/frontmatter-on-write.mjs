@@ -13,7 +13,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { checkFrontmatter } from '../validate.mjs';
+import { checkFrontmatter, isComponent } from '../validate.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -24,18 +24,9 @@ const file = event?.tool_input?.file_path;
 if (!file) process.exit(0);
 
 const abs = path.resolve(ROOT, file);
-const rel = path.relative(ROOT, abs);
 
-// Only this marketplace's own components: a SKILL.md, or anything under agents/, in a
-// pack or in the repo-local .claude/skills and .claude/agents.
-const inLocal = (dir) => rel.startsWith(path.join('.claude', dir) + path.sep);
-const isComponent =
-  !rel.startsWith('..') &&
-  ((rel.startsWith('plugins') &&
-    (path.basename(abs) === 'SKILL.md' || rel.includes(`${path.sep}agents${path.sep}`))) ||
-   (inLocal('skills') && path.basename(abs) === 'SKILL.md') ||
-   (inLocal('agents') && abs.endsWith('.md')));
-if (!isComponent || !fs.existsSync(abs)) process.exit(0);
+// Only this marketplace's own components, by the same rule the validator's walks use.
+if (!isComponent(ROOT, abs) || !fs.existsSync(abs)) process.exit(0);
 
 const { ok, findings } = checkFrontmatter([abs]);
 if (ok) process.exit(0);

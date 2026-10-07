@@ -12,9 +12,11 @@ on:
 permissions:
   contents: read
 
+# Only a pull request cancels its superseded run in progress: a push to dev or main must
+# not cancel the release commit's run, the green run that moving main waits on.
 concurrency:
   group: validate-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # No install step for the repo itself: it is dependency-free by design and runs with
 # Node and the claude CLI alone.
@@ -63,11 +65,14 @@ jobs:
       #   mcp-names    every blocked mcp__ tool is documented under the skill that
       #                blocks it: when a server renames a tool the block silently
       #                matches nothing.
-      #   scripts      every .mjs parses, and every script hooks.json names exists.
-      #   plugin-root  every ${CLAUDE_PLUGIN_ROOT}/ path resolves inside its own pack.
+      #   scripts      every .mjs parses, and every hooks.json arg is a file inside
+      #                its own pack.
+      #   plugin-root  every ${CLAUDE_PLUGIN_ROOT}/ path in a .md under a pack's
+      #                skills/ or agents/ resolves inside that pack.
       #   versions     every pack carries one shared X.Y.Z `version` in its
-      #                plugin.json, and no marketplace.json entry declares one.
-      #   changelog    CHANGELOG.md has a section for that version.
+      #                plugin.json, no marketplace.json entry declares one, and
+      #                every plugins/ directory has an entry.
+      #   changelog    CHANGELOG.md has a dated section for that version.
       #
       # The same script the Stop hook runs locally, so CI and the hook cannot drift apart.
       - name: Marketplace checks

@@ -16,7 +16,7 @@ const FACTS = path.join(SCRIPTS, 'project-facts.mjs');
 const RUN_GATES = path.join(SCRIPTS, 'run-gates.mjs');
 const VERIFY = path.join(SCRIPTS, 'verify-before-done.mjs');
 
-const { detect } = await import(pathToFileURL(FACTS).href);
+const { detect, isEntry } = await import(pathToFileURL(FACTS).href);
 
 const PASS = 'node -e "process.exit(0)"';
 const FAIL = 'node -e "process.exit(1)"';
@@ -56,9 +56,26 @@ describe('project-facts: must describe any project without config, and never thr
   test('succeeds in an empty directory', (t) => expectExit0(tempDir(t)));
 
   // Only running a gate can say it is available.
-  test('a declared gate never claims available:true', () => {
-    const claimed = Object.values(detect(REPO_ROOT).gates).filter((g) => g.available === true);
-    assert.deepEqual(claimed, []);
+  test('a declared gate never claims available:true', (t) => {
+    const scripts = { lint: PASS, test: PASS, typecheck: PASS, build: PASS };
+    const { gates } = detect(project(t, { 'package.json': pkg({ scripts }) }));
+    for (const name of Object.keys(scripts)) {
+      assert.equal(gates[name].declared, true, `${name} is not declared`);
+      assert.equal(gates[name].available, null, `${name} claims available: ${gates[name].available}`);
+    }
+  });
+
+  // Inside a git hook, an inherited GIT_INDEX_FILE would point a script's own git at the caller's index.
+  test('a script under test does not inherit GIT_* from the test runner', (t) => {
+    const probe = path.join(tempDir(t), 'probe.mjs');
+    fs.writeFileSync(probe, 'process.stdout.write(String(process.env.GIT_INDEX_FILE));\n');
+    const saved = process.env.GIT_INDEX_FILE;
+    process.env.GIT_INDEX_FILE = path.join(tempDir(t), 'index');
+    t.after(() => {
+      if (saved === undefined) delete process.env.GIT_INDEX_FILE;
+      else process.env.GIT_INDEX_FILE = saved;
+    });
+    assert.equal(runScript(probe).stdout, 'undefined');
   });
 });
 
@@ -367,6 +384,52 @@ describe('project-facts: the CLI runs from any install path, and stays silent wh
     assert.equal(res.code, 0, `stderr: ${res.stderr.trim()}`);
     const out = JSON.parse(res.stdout);
     assert.equal(out.projectRoot, undefined);
+  });
+});
+
+// The fallback for Node before 22.18. The suite runs where import.meta.main
+// exists, so only a direct call exercises it.
+describe('project-facts: isEntry recognises the entry script by its real path', () => {
+  for (const sub of ['with space', 'ékezet']) {
+    test(`a script under "${sub}/" is the entry`, (t) => {
+      const file = path.join(tempDir(t), sub, 'entry.mjs');
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, '');
+      assert.equal(isEntry(pathToFileURL(fs.realpathSync(file)).href, file), true);
+    });
+  }
+
+  test('a script reached through a symlinked directory is the entry', (t) => {
+    const root = tempDir(t);
+    fs.mkdirSync(path.join(root, 'real'));
+    const file = path.join(root, 'real', 'entry.mjs');
+    fs.writeFileSync(file, '');
+    const link = path.join(root, 'link');
+    try {
+      fs.symlinkSync(path.join(root, 'real'), link, 'junction');
+    } catch (err) {
+      if (err.code === 'EPERM') return t.skip('creating a symlink needs a privilege this account lacks');
+      throw err;
+    }
+    assert.equal(isEntry(pathToFileURL(fs.realpathSync(file)).href, path.join(link, 'entry.mjs')), true);
+  });
+
+  test('another script is not the entry', (t) => {
+    const dir = tempDir(t);
+    fs.writeFileSync(path.join(dir, 'a.mjs'), '');
+    fs.writeFileSync(path.join(dir, 'b.mjs'), '');
+    assert.equal(isEntry(pathToFileURL(fs.realpathSync(path.join(dir, 'a.mjs'))).href, path.join(dir, 'b.mjs')), false);
+  });
+
+  test('no argv[1] is not the entry', () => {
+    assert.equal(isEntry(pathToFileURL(FACTS).href, undefined), false);
+  });
+
+  // `node -e "..." x` sets argv[1] to "x", which names no file.
+  test('an argv[1] that is not a path is not the entry, and does not throw', (t) => {
+    const missing = path.join(tempDir(t), 'x');
+    assert.equal(isEntry(pathToFileURL(FACTS).href, missing), false);
+    assert.equal(isEntry(pathToFileURL(FACTS).href, 'x'), false);
   });
 });
 

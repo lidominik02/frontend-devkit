@@ -11,7 +11,7 @@ description: >-
   scratch copy, reconciles the field allowlists, and updates the verified-on notes in
   the same pass.
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Edit, Bash(node scripts/validate.mjs:*), Bash(claude --version), Bash(claude plugin validate:*), Bash(npm view *), Bash(git log *), Bash(git diff *)
+allowed-tools: Read, Grep, Glob, Edit, Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*), Bash(claude --version), PowerShell(claude --version), Bash(claude plugin validate:*), PowerShell(claude plugin validate:*), Bash(npm view *), PowerShell(npm view *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *)
 ---
 
 # Check this marketplace against the installed CLI
@@ -73,7 +73,8 @@ Three things in this repo depend on CLI behaviour that is not contractual:
    `README.md` — several record "verified against" and are the thing most likely to be
    left behind. Change a number only for a claim re-observed in this pass, and name the
    version just observed, not the one meant to be tested. Where the finding text
-   changed, update the workflow's pattern and the comment above it together.
+   changed, update the `❯` filter in `scripts/ci/plugin-validate.mjs` and its header
+   comment together; the workflow only runs that script.
 
 ## Before you finish
 

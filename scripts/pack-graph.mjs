@@ -21,11 +21,31 @@ const rel = (root, p) => path.relative(root, p).split(path.sep).join('/');
 
 const AGNOSTIC = 'core';
 
+const MARKETPLACE = '.claude-plugin/marketplace.json';
+
+// Thrown when a marketplace entry cannot be followed; the message names the entry or the file.
+const unfollowable = (message) => Object.assign(new Error(message), { code: 'ERR_PACK_UNFOLLOWABLE' });
+
+/** @param {string} file */
+function readJson(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
 export function packs(root = ROOT) {
-  const manifest = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/marketplace.json'), 'utf8'));
-  return manifest.plugins.map((entry) => {
+  const list = readJson(path.join(root, MARKETPLACE))?.plugins;
+  if (!Array.isArray(list)) throw unfollowable(`${MARKETPLACE} is missing, not valid JSON, or has no plugins list`);
+  return list.map((entry) => {
+    if (typeof entry?.source !== 'string') {
+      throw unfollowable(`${MARKETPLACE} -> entry "${entry?.name}" has a non-path source`);
+    }
     const dir = path.join(root, entry.source);
-    const meta = JSON.parse(fs.readFileSync(path.join(dir, '.claude-plugin/plugin.json'), 'utf8'));
+    const manifest = path.join(dir, '.claude-plugin/plugin.json');
+    const meta = readJson(manifest);
+    if (meta === null || typeof meta !== 'object') throw unfollowable(`${rel(root, manifest)} is missing or not valid JSON`);
     const deps = (meta.dependencies ?? []).map((d) => d.name);
 
     const skillsDir = path.join(dir, 'skills');
@@ -49,6 +69,7 @@ export function packs(root = ROOT) {
 
     return {
       name: meta.name,
+      version: meta.version,
       deps,
       // The base is what this pack specialises. `core` is excluded: it is the
       // floor everything stands on, not a layer anything inverts.
@@ -130,9 +151,21 @@ function cli() {
   }
 }
 
-// `import.meta.main` holds through a symlinked launch; older Node leaves it undefined.
-if (import.meta.main) cli();
-else if (import.meta.main === undefined) {
-  console.error(`pack-graph.mjs requires Node 22.18+ or 24.2+, this is Node ${process.versions.node}.`);
-  process.exit(1);
+/**
+ * Runs `cli` when `main` (the caller's `import.meta.main`) is true. That holds through a
+ * symlinked launch; older Node leaves it undefined, and silently running nothing there would
+ * let the Stop hook and CI pass unchecked, so it exits 1 naming the script started.
+ * @param {boolean|undefined} main @param {() => void} cli @param {string} name
+ */
+export function runAsEntry(main, cli, name) {
+  if (main) cli();
+  else if (main === undefined) {
+    const started = process.argv[1] ? path.basename(process.argv[1]) : name;
+    console.error(`${started} requires Node 22.18+ or 24.2+, this is Node ${process.versions.node}.`);
+    process.exit(1);
+  }
 }
+
+// An importer (validate.mjs, the hooks) reaches this guard first, so on an older Node the
+// message names the script started rather than this one.
+runAsEntry(import.meta.main, cli, 'pack-graph.mjs');

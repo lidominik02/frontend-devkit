@@ -617,8 +617,23 @@ export function detect(dir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
   return facts;
 }
 
-// CLI. A hand-built file:// URL misses a path with a space, a non-ASCII
-// character or a symlink; import.meta.main does not exist before Node 22.18.
-if (import.meta.main ?? (Boolean(process.argv[1]) && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href)) {
+/**
+ * Whether the module at `url` is the script node was started with. The fallback
+ * for Node before 22.18, where import.meta.main does not exist. A hand-built
+ * file:// URL misses a path with a space, a non-ASCII character or a symlink;
+ * an argv[1] that is not a path (`node -e "..." x`) is not the entry.
+ * @param {string} url @param {string|undefined} argv1
+ */
+export function isEntry(url, argv1) {
+  if (!argv1) return false;
+  try {
+    return url === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
+// CLI.
+if (import.meta.main ?? isEntry(import.meta.url, process.argv[1])) {
   process.stdout.write(JSON.stringify(detect(), null, 2) + '\n');
 }

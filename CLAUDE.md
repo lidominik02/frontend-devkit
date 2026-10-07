@@ -71,15 +71,17 @@ present and free of `:`, every field one Claude Code actually reads), that every
 directory holds a `SKILL.md`, the always-on description budget of the shipped packs
 against the figure and ceiling `README.md` publishes, that every cited `.md` resolves
 from the file citing it, that every blocked `mcp__` tool is documented under the skill
-that blocks it, that every `.mjs` parses and every script `hooks.json` names exists, that
-every `${CLAUDE_PLUGIN_ROOT}/` path resolves inside its own pack, that every pack's
-`plugin.json` carries one shared valid version, and that `CHANGELOG.md` has a section for
-it. It reads the packs through `pack-graph.mjs`, and a marketplace entry that cannot be
-followed is a finding. `claude plugin validate --strict` does **not** read component
+that blocks it, that every `.mjs` parses and every `hooks.json` arg is a file inside its
+own pack, that every `${CLAUDE_PLUGIN_ROOT}/` path in a pack's skills and agents resolves
+inside that pack, that every pack's `plugin.json` carries one shared valid version, and
+that `CHANGELOG.md` has a dated section for it. It reads the packs `marketplace.json` lists
+through `pack-graph.mjs`; a marketplace entry that cannot be followed, and a `plugins/`
+directory with no entry, are findings. `claude plugin validate --strict` does **not** read component
 frontmatter, which is why that allowlist lives here.
 
 Run both before pushing. The Stop hook runs the first automatically when anything under
-`plugins/`, `scripts/` or `README.md` has changed.
+`plugins/`, `scripts/`, `.claude-plugin/` or `.claude/`, or `README.md` or `CHANGELOG.md`,
+has changed.
 
 ## Claims must be observed, not assumed
 

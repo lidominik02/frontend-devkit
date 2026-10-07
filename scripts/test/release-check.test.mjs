@@ -2,39 +2,23 @@
 // finding, and fail when validate.mjs exits 0 without having run its checks.
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { REPO_ROOT, gitRepo, runScript } from './helpers.mjs';
+import { REPO_ROOT, git, gitRepo, runScript, write } from './helpers.mjs';
 
 const SCRIPT = path.join(REPO_ROOT, 'scripts', 'release-check.mjs');
 const DESCRIPTION = 'Demo skill used as a release-check fixture; it exists only in a temporary repository.';
 
-function git(dir, args) {
-  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
-  const res = spawnSync('git', args, { cwd: dir, env, encoding: 'utf8' });
-  assert.equal(res.status, 0, `git ${args.join(' ')}: ${res.stderr}`);
-  return res.stdout;
-}
-
-function write(root, files) {
-  for (const [rel, text] of Object.entries(files)) {
-    const p = path.join(root, rel);
-    fs.mkdirSync(path.dirname(p), { recursive: true });
-    fs.writeFileSync(p, text);
-  }
-}
-
 const manifest = (version) => JSON.stringify({ name: 'core', version });
-const changelog = (...versions) => `# Changelog\n\n${versions.map((v) => `## ${v} — 2026-01-01\n\nRelease.\n`).join('\n')}`;
+const changelog = (...versions) => `# Changelog\n\n${versions.map((v) => `## ${v} - 2026-01-01\n\nRelease.\n`).join('\n')}`;
 
 // A committed 1.0.0 marketplace that every validate.mjs check passes, with the real
-// validate.mjs and the pack-graph.mjs it imports.
+// validate.mjs and the pack-graph.mjs and ci/release-notes.mjs it imports.
 function releasedRepo(t, { skillField = '' } = {}) {
   const root = gitRepo(t);
-  for (const rel of ['scripts/validate.mjs', 'scripts/pack-graph.mjs']) {
+  for (const rel of ['scripts/validate.mjs', 'scripts/pack-graph.mjs', 'scripts/ci/release-notes.mjs']) {
     fs.mkdirSync(path.join(root, path.dirname(rel)), { recursive: true });
     fs.copyFileSync(path.join(REPO_ROOT, rel), path.join(root, rel));
   }

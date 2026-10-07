@@ -3,12 +3,11 @@
 // ending on a red tree, and never twice in a row.
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
 
-import { REPO_ROOT, gitRepo, hookEvent, runScript, tempDir } from './helpers.mjs';
+import { REPO_ROOT, git, gitRepo, hookEvent, runScript, tempDir, write } from './helpers.mjs';
 
 const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const LOCAL_SKILL = '.claude/skills/local/SKILL.md';
@@ -29,19 +28,19 @@ function copyScript(root, rel) {
   return dest;
 }
 
-function write(root, files) {
-  for (const [rel, text] of Object.entries(files)) {
-    const p = path.join(root, rel);
-    fs.mkdirSync(path.dirname(p), { recursive: true });
-    fs.writeFileSync(p, text);
-  }
-}
-
-// validate.mjs imports pack-graph.mjs, so every hook copy needs both beside it.
+// validate.mjs imports pack-graph.mjs and ci/release-notes.mjs, so every hook copy needs them
+// beside it. Its checks read the packs marketplace.json lists, so the fixture lists core.
 function fixture(root, files = {}) {
-  write(root, { [SKILL]: skillText(), 'README.md': readmeText(), ...files });
+  write(root, {
+    '.claude-plugin/marketplace.json': JSON.stringify({ plugins: [{ name: 'core', source: './plugins/core' }] }),
+    'plugins/core/.claude-plugin/plugin.json': JSON.stringify({ name: 'core', version: '1.0.0' }),
+    [SKILL]: skillText(),
+    'README.md': readmeText(),
+    ...files,
+  });
   copyScript(root, 'scripts/validate.mjs');
   copyScript(root, 'scripts/pack-graph.mjs');
+  copyScript(root, 'scripts/ci/release-notes.mjs');
   return {
     root,
     frontmatter: copyScript(root, 'scripts/hooks/frontmatter-on-write.mjs'),
@@ -125,16 +124,19 @@ describe('the PostToolUse hooks exit 2 on a finding', () => {
       assert.match(res.stderr, new RegExp(`always-on listing is ${DESCRIPTION.length} chars .*README\\.md says 9\\.9k`), rel);
     }
   });
+
+  test('budget-on-write: an unreadable marketplace.json gets its finding, not the README advice', (t) => {
+    const fx = fixture(tempDir(t), { '.claude-plugin/marketplace.json': '{ "plugins": [' });
+    const res = onWrite('budget', fx, SKILL);
+    assert.equal(res.code, 2);
+    assert.match(res.stderr, /marketplace\.json is missing, not valid JSON, or has no plugins list, so no pack was checked/);
+    assert.doesNotMatch(res.stderr, /Always-on listing now/);
+    assert.doesNotMatch(res.stderr, /Update the figure in README\.md/);
+  });
 });
 
-// Inside a git hook, GIT_DIR and GIT_INDEX_FILE would point git at the caller's repository.
+// Inside a git hook, GIT_DIR and GIT_INDEX_FILE would point on-stop.mjs's git at the caller's repository.
 const NO_GIT_ENV = Object.fromEntries(Object.keys(process.env).filter((k) => k.startsWith('GIT_')).map((k) => [k, undefined]));
-
-function git(dir, args) {
-  const res = spawnSync('git', args, { cwd: dir, env: { ...process.env, ...NO_GIT_ENV }, encoding: 'utf8' });
-  if (res.error) throw res.error;
-  assert.equal(res.status, 0, `git ${args.join(' ')}: ${res.stderr.trim()}`);
-}
 
 describe('on-stop.mjs', () => {
   // A committed tree on which validate.mjs fails: README.md misstates the budget.

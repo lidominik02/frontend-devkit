@@ -10,7 +10,7 @@ description: >-
   keep-or-remove verdict.
 disable-model-invocation: true
 argument-hint: "[pack] [case-name]"
-allowed-tools: Read, Grep, Glob, Write, Edit, Bash(node scripts/validate.mjs:*), Bash(ls *), Bash(git log *), Bash(git diff *)
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *)
 ---
 
 # Add an eval case

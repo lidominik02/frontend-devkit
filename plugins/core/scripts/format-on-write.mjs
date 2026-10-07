@@ -13,7 +13,7 @@
 // not found" and has to re-read. That is why this runs a formatter only, never
 // a fixer that changes semantics.
 
-import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -27,6 +27,9 @@ const ALLOWED_FORMATTERS = new Set([
 
 const EXT_PRETTIER = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|vue|svelte|css|scss|less|json|jsonc|md|mdx|yml|yaml|html)$/;
 
+// The npm package that ships a formatter's command, where the two names differ.
+const PACKAGE_OF = /** @type {Record<string, string>} */ ({ biome: '@biomejs/biome' });
+
 let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (d) => { raw += d; });
@@ -35,20 +38,58 @@ process.stdin.on('end', () => {
   process.exit(0);
 });
 
-/** Walk up from the edited file looking for a local binary. In a pnpm or yarn
+/** Walk up from the edited file looking for a local install. In a pnpm or yarn
  * workspace the formatter is often installed in the workspace package rather
  * than the repo root, where checking only the root would find nothing.
- * @param {string} fromDir @param {string} stopDir @param {string} bin */
-function findLocalBin(fromDir, stopDir, bin) {
+ * @param {string} fromDir @param {string} stopDir @param {string} rel */
+function findUp(fromDir, stopDir, rel) {
   let dir = fromDir;
   for (let i = 0; i < 12; i++) {
-    const candidate = path.join(dir, 'node_modules', '.bin', bin);
+    const candidate = path.join(dir, rel);
     if (existsSync(candidate)) return candidate;
     if (dir === stopDir || dir === path.dirname(dir)) break;
     dir = path.dirname(dir);
   }
-  const atRoot = path.join(stopDir, 'node_modules', '.bin', bin);
+  const atRoot = path.join(stopDir, rel);
   return existsSync(atRoot) ? atRoot : null;
+}
+
+/** Whether `file` is a JavaScript entry point rather than a native executable.
+ * @param {string} file */
+function isNodeScript(file) {
+  if (/\.[cm]?js$/i.test(file)) return true;
+  const fd = openSync(file, 'r');
+  try {
+    const head = Buffer.alloc(128);
+    const n = readSync(fd, head, 0, head.length, 0);
+    return /^#!.*\bnode\b/.test(head.toString('utf8', 0, n).split('\n')[0] ?? '');
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/** The argument vector that launches a locally installed formatter, or null.
+ * The package's own `bin` entry is launched directly -- a JS entry through this
+ * Node -- because on Windows node_modules/.bin holds only shims: an extensionless
+ * sh script, which Windows cannot execute, and .cmd and .ps1 files, which need a
+ * shell that would re-parse the file path. So on Windows there is no .bin fallback.
+ * @param {string} fromDir @param {string} stopDir @param {string} name
+ * @returns {string[] | null} */
+function localFormatter(fromDir, stopDir, name) {
+  const manifest = findUp(fromDir, stopDir, path.join('node_modules', PACKAGE_OF[name] ?? name, 'package.json'));
+  if (manifest) {
+    try {
+      const { bin } = JSON.parse(readFileSync(manifest, 'utf8'));
+      const rel = typeof bin === 'string' ? bin : bin?.[name];
+      if (typeof rel === 'string') {
+        const entry = path.resolve(path.dirname(manifest), rel);
+        if (existsSync(entry)) return isNodeScript(entry) ? [process.execPath, entry] : [entry];
+      }
+    } catch { /* an unreadable package falls through to the shim */ }
+  }
+  if (process.platform === 'win32') return null;
+  const shim = findUp(fromDir, stopDir, path.join('node_modules', '.bin', name));
+  return shim ? [shim] : null;
 }
 
 /** Whether `file` resolves to a path inside `dir`, symlinks followed on both sides.
@@ -59,9 +100,10 @@ function inside(dir, file) {
   return rel !== '' && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
 }
 
-/** @param {string} bin @param {string[]} args */
-function run(bin, args) {
-  spawnSync(bin, args, { stdio: 'ignore', timeout: 30_000 });
+/** No shell, so the file path stays one argument whatever characters it holds.
+ * @param {string[]} launch the formatter's argument vector @param {string[]} args */
+function run([bin, ...prefix], args) {
+  spawnSync(bin, [...prefix, ...args], { stdio: 'ignore', timeout: 30_000 });
 }
 
 /** @param {string} input */
@@ -76,7 +118,7 @@ function main(input) {
 
   const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
   // A file outside the project (the user's auto-memory, an --add-dir directory) is not
-  // the project's to format, yet findLocalBin's fallback would run the project's formatter.
+  // the project's to format, yet findUp's fallback would run the project's formatter.
   if (!inside(projectDir, file)) return;
   const fileDir = path.dirname(path.resolve(file));
 
@@ -91,8 +133,7 @@ function main(input) {
         const parts = declared.split(/\s+/);
         const name = path.basename(parts[0] ?? '');
         if (ALLOWED_FORMATTERS.has(name)) {
-          const local = findLocalBin(fileDir, projectDir, name);
-          run(local ?? parts[0], [...parts.slice(1), file]);
+          run(localFormatter(fileDir, projectDir, name) ?? [parts[0]], [...parts.slice(1), file]);
           return;
         }
         process.stderr.write(
@@ -104,15 +145,14 @@ function main(input) {
   }
 
   if (EXT_PRETTIER.test(file)) {
-    const prettier = findLocalBin(fileDir, projectDir, 'prettier');
+    const prettier = localFormatter(fileDir, projectDir, 'prettier');
     if (prettier) run(prettier, ['--write', file]);
     return;
   }
-  if (file.endsWith('.go')) { run('gofmt', ['-w', file]); return; }
+  if (file.endsWith('.go')) { run(['gofmt'], ['-w', file]); return; }
   if (file.endsWith('.py')) {
-    const ruff = findLocalBin(fileDir, projectDir, 'ruff') ?? 'ruff';
-    run(ruff, ['format', file]);
+    run(localFormatter(fileDir, projectDir, 'ruff') ?? ['ruff'], ['format', file]);
     return;
   }
-  if (file.endsWith('.rs')) { run('rustfmt', [file]); }
+  if (file.endsWith('.rs')) { run(['rustfmt'], [file]); }
 }

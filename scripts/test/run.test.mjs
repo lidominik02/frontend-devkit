@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { REPO_ROOT, gitRepo, hookEvent, isolatedEnv, runScript, tempDir } from './helpers.mjs';
+import { REPO_ROOT, gitRepo, hookEvent, isolatedEnv, runScript, tempDir, write } from './helpers.mjs';
 
 const SCRIPTS = path.join(REPO_ROOT, 'plugins', 'core', 'scripts');
 const RUN = path.join(SCRIPTS, 'run.mjs');
@@ -50,8 +50,25 @@ describe('run.mjs on Node 22 or later: the hook behaves as if started directly',
     assertSame(both('commit-hygiene.mjs', { input: hookEvent('Bash', { command: 'git push' }) }), 2);
   });
 
-  test('format-on-write', () => {
-    assertSame(both('format-on-write.mjs', { input: hookEvent('Write', { file_path: '/nope/gone.ts' }) }), 0);
+  // A no-op exits 0 silently too, so the formatter leaves a mark on each run.
+  test('format-on-write', (t) => {
+    const proj = tempDir(t);
+    const log = path.join(tempDir(t), 'formatted');
+    const file = path.join(proj, 'a.ts');
+    write(proj, {
+      'node_modules/prettier/package.json': JSON.stringify({ name: 'prettier', bin: { prettier: 'bin/prettier.cjs' } }),
+      'node_modules/prettier/bin/prettier.cjs':
+        `require('node:fs').appendFileSync(${JSON.stringify(log)}, process.argv.slice(2).join(' ') + '\\n');\n`,
+      'a.ts': 'x\n',
+    });
+    const opts = { input: hookEvent('Write', { file_path: file }), env: { CLAUDE_PROJECT_DIR: proj } };
+    const marks = () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '');
+
+    const direct = runScript(hookPath('format-on-write.mjs'), opts);
+    assert.equal(marks(), `--write ${file}\n`, 'the hook started directly did not run the formatter');
+    const viaRun = runScript(RUN, { ...opts, args: [hookPath('format-on-write.mjs')] });
+    assert.equal(marks(), `--write ${file}\n--write ${file}\n`, 'the hook through run.mjs did not run the formatter');
+    assertSame({ direct, viaRun }, 0);
   });
 
   test('verify-before-done', (t) => {

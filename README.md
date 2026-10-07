@@ -31,7 +31,7 @@ the repo declares and says plainly when there is nothing to drive.
 
 ## Install
 
-Add to `~/.claude/settings.json`:
+Add to `~/.claude/settings.json` (on Windows, `%USERPROFILE%\.claude\settings.json`):
 
 ```json
 {
@@ -55,7 +55,8 @@ The plugins need Node 22 or later, as `node` on the `PATH`. Every hook starts th
 `scripts/run.mjs`, which checks the version first. On an older Node the hook does not load
 and a message names the version found and the fix: `block-secrets` blocks every tool call it
 matches, with the message each time; the other three fail open and print it once per
-session. Without `node` on the `PATH` no hook
+session. That holds from Node 14.8, the first that parses `run.mjs`; on an older Node every
+hook, `block-secrets` included, fails open without the message. Without `node` on the `PATH` no hook
 runs at all, and the error the shell reports is not the devkit's. The devkit's own
 development tooling has a separate, higher minimum: Node 22.18, or 24.2 on the 24 line.
 
@@ -546,7 +547,12 @@ That is the whole set. `gates` and `baseBranch` replace what detection found;
 `verifyOnStop: false` silences the Stop hook; `stages` is merged over the built-in stages
 by name, so the entry above *replaces* `fast` rather than adding to it, and an unknown
 name defines a new stage; `timeoutMs` sets the per-gate timeout, though a `--timeout`
-flag still wins over it.
+flag still wins over it, and a `--budget` flag caps each gate at what is left of the whole
+run. A timeout of `0` sets none; the budget still applies. A gate that times out is stopped
+with every process still reachable through it; on Windows a process whose parent shell has
+already exited is not. On macOS and Linux each gate runs in a process group of its own, which
+`run-gates.mjs` stops when it is interrupted or terminated; a `SIGKILL` to it, or to the
+process group it was started in, ends it without that cleanup, and the gate's processes run on.
 
 `gates.format` accepts only known formatters. The value is a string from a checked-out file
 handed to a subprocess, and the allowlist is what keeps it a convenience rather than an
@@ -594,7 +600,8 @@ Clone it and everything runs with Node and the `claude` CLI. No `package.json`, 
 
 Scripts are `.mjs` with JSDoc types — readable, and ready for `tsc --noEmit` if the logic
 ever grows enough to justify a toolchain. They are not TypeScript because plugins are
-copied into `~/.claude/plugins/cache` and executed directly: there is no build step at
+copied into `~/.claude/plugins/cache` (on Windows `%USERPROFILE%\.claude\plugins\cache`)
+and executed directly: there is no build step at
 install and no guaranteed TS runtime on a consumer's machine.
 
 A `package.json` in a plugin root does not by itself trigger a dependency install; that also
@@ -731,15 +738,16 @@ shipped to consumers, is not part of any pack, and costs a consuming repository 
 | `/body-vs-reference-audit` | Which parts of a body have earned loading on every trigger |
 | `/cli-upgrade-check` | Revalidates the platform claims against the installed CLI and records the version they were verified on |
 | `/diagnosing-sessions` | Diagnoses past sessions from their transcripts with five parallel analysts, into an anonymised, cited report with a devkit-involvement verdict and proposed ideas |
-| `/release` | Proposes the version bump from the commits since the latest `v*` tag, then writes the versions and a `CHANGELOG.md` section, commits and tags on `dev` once approved; the user pushes `dev` and `main` |
+| `/release` | Proposes the version bump from the commits since the latest `v*` tag, then writes the versions and a `CHANGELOG.md` section, commits and tags on `dev` once approved; the user pushes `dev`, then `main` once CI is green |
 | `trigger-tester` | Whether a description would fire. Reads descriptions, never bodies — the author cannot judge their own, because they know what the skill does |
 | `eval-grader` | Dry-runs a `criteria.md` against synthetic answers before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants CI cannot check |
 
 Three hooks in `.claude/settings.json` run the gates without being asked: `Stop` runs
-`validate.mjs` when anything under `plugins/`, `scripts/` or `README.md` has changed, and
-two `PostToolUse` hooks check the frontmatter of a component just written and recompute
-the always-on budget. All three are Node for the reason the shipped hooks are — a bash
+`validate.mjs` when anything under `plugins/`, `scripts/`, `.claude-plugin/` or `.claude/`,
+or `README.md` or `CHANGELOG.md`, has changed, and two `PostToolUse` hooks check the
+frontmatter of a component just written — a pack's, or a repo-local one under
+`.claude/skills/` or `.claude/agents/` — and recompute the always-on budget. All three are Node for the reason the shipped hooks are — a bash
 hook with a syntax error exits 2, which is the block signal, so it blocks every tool call
 including the edit that would repair it.
 
@@ -758,7 +766,7 @@ hook fails rather than passing silently.
 
 ```bash
 node scripts/validate.mjs                       # the nine static checks CI runs
-node --test "scripts/test/*.test.mjs"           # 546 tests on the guarantees
+node --test "scripts/test/*.test.mjs"           # the tests on the guarantees
 node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
@@ -778,14 +786,16 @@ than carrying its own copy, so the two cannot drift:
 | `budget` | The always-on description total of the shipped packs drifting from the figure this README publishes, or exceeding the ceiling it publishes |
 | `references` | A cited `.md` that does not resolve **from the file citing it** |
 | `mcp-names` | A blocked `mcp__` tool absent from the table documenting it |
-| `scripts` | A `.mjs` that does not parse, or a script `hooks.json` names and does not exist |
-| `plugin-root` | A `${CLAUDE_PLUGIN_ROOT}/` path in a component that does not resolve inside the component's own pack |
-| `versions` | A `plugin.json` without `version`, one not `X.Y.Z`, two packs disagreeing, a `marketplace.json` entry declaring `version`, or no entries at all |
-| `changelog` | A plugin version with no `## X.Y.Z` section in `CHANGELOG.md` |
+| `scripts` | A `.mjs` that does not parse, or a `hooks.json` arg that is not a file inside the pack holding that `hooks.json` |
+| `plugin-root` | A `${CLAUDE_PLUGIN_ROOT}/` path in any `.md` under a pack's `skills/` or `agents/`, references included, that does not resolve inside that pack |
+| `versions` | A `plugin.json` without `version`, one not `X.Y.Z`, two packs disagreeing, a `marketplace.json` entry declaring `version`, no entries at all, or a `plugins/` directory with no entry |
+| `changelog` | A plugin version with no `## X.Y.Z - YYYY-MM-DD` section in `CHANGELOG.md`, the heading the release workflow takes the notes from; `TBD` in place of the date is a finding |
 
-`skill-dirs`, `plugin-root`, `versions` and `changelog` read the packs through
+Every check that reads a pack reads the packs `marketplace.json` lists, through
 `pack-graph.mjs`, so a marketplace entry it cannot follow — a non-path source, a missing
-or invalid `plugin.json` — is a finding in each of them.
+or invalid `plugin.json` — is a finding in each of them, and a pack it does not list is
+read by none of them until it is, apart from the `scripts` check's parse step, which
+parses every `.mjs` under `plugins/` whether its pack is listed or not.
 
 Run one with `--checks=frontmatter,budget`.
 
@@ -822,11 +832,13 @@ such as `mcpServer` for `mcpServers` — Claude Code ignores unknown fields at l
 without it the component silently never loads. Every manifest carries `version`, so it is
 expected to exit clean here; CI fails a target on any finding or a non-zero exit.
 
-Every test runs a script through `scripts/test/helpers.mjs`, which runs `node --check` on
-it first and fails with a syntax error of its own. A script with a syntax error and a
-script that deliberately blocks can share an exit code, so without that check a broken
-script reads as a block. `scripts/test/parse.test.mjs` checks every `.mjs` in the
-repository on its own.
+A test that launches a script does so through `runScript` in `scripts/test/helpers.mjs`
+where it can, which runs `node --check` on the script first and fails with a syntax error
+of its own. A script with a syntax error and a script that deliberately blocks can share
+an exit code, so without that check a broken script reads as a block. Tests that import a
+module, or spawn `node` with flags of their own, skip that check, so
+`scripts/test/parse.test.mjs` parses every `.mjs` under `plugins/` and `scripts/` on its
+own — the same files `validate.mjs`'s `scripts` check covers.
 
 **Every pack shares one `version`, set in its `plugin.json` and nowhere else.** By the
 plugins reference (read from the documentation, CLI 2.1.283), an existing install stays on

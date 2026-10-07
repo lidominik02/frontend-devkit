@@ -30,8 +30,14 @@ const touchesBudget =
    rel === 'README.md');
 if (!touchesBudget) process.exit(0);
 
-const { ok, findings, listed, packs } = checkBudget();
+const { ok, unread, findings, listed, packs } = checkBudget();
 if (ok) process.exit(0);
+
+// No pack was read, so the total and the README advice would both be wrong.
+if (unread) {
+  console.error(findings.join('\n'));
+  process.exit(2);
+}
 
 const breakdown = Object.entries(packs)
   .map(([k, v]) => `  ${k.padEnd(6)} ${String(v).padStart(5)} chars`)

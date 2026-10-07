@@ -3,7 +3,7 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
-## 0.1.0 — 2026-10-03
+## 0.1.0 - 2026-10-03
 
 The first versioned release. An install from GitHub now updates only when a new release
 is published, never on an unreleased change.

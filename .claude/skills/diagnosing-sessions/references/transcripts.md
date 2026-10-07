@@ -11,9 +11,17 @@ value to guess.
 
 ## Layout
 
-Transcripts live under `~/.claude/projects/<encoded project path>/`. The directory name
+Transcripts live under `~/.claude/projects/<encoded project path>/` — on Windows,
+`%USERPROFILE%\.claude\projects\<encoded project path>\`. The directory name
 is the project's absolute path with separators replaced — it names the project, so it
 stays in the case file and never reaches the report.
+
+On Windows the name was observed (Claude Code 2.1.291, Windows 10 Pro 10.0.19045.6466)
+to replace each `:` and each `\` with `-`, so `C:\Users\<user>\Desktop\<repo>` became
+`c--Users-<user>-Desktop-<repo>`. The case of the drive letter depends on which launch
+created the folder first. NTFS treats `C:\` and `c:\` as the same location, so launches
+from VS Code (`c:\`) and Git Bash (`C:\`) were observed to share one folder, which keeps
+the name of the first launch. Compare names case-insensitively on Windows.
 
 | Path | What it holds |
 | --- | --- |
@@ -83,7 +91,8 @@ Read it from the session, not from today's install:
 - **The plugin path the session loaded.** Grep the session's files for the devkit's
   plugin directory — it appears in the base directory a loaded skill reports, in hook
   commands and in permission entries.
-  - Under `~/.claude/plugins/cache/frontend-devkit/<plugin>/<version>/` the last path
+  - Under `~/.claude/plugins/cache/frontend-devkit/<plugin>/<version>/` (on Windows
+    `%USERPROFILE%\.claude\plugins\cache\frontend-devkit\<plugin>\<version>\`) the last path
     segment is the version: a semver once manifests carry one, a commit SHA prefix
     before that.
   - Under a git worktree or a `--plugin-dir` working tree, the version is the commit
@@ -91,7 +100,8 @@ Read it from the session, not from today's install:
     `git reflog --date=iso` by the session's timestamps, and add whether the tree had
     uncommitted changes if anything records it; otherwise say the working-tree state
     is unknown.
-- **`~/.claude/plugins/installed_plugins.json`.** Its entry for
+- **`~/.claude/plugins/installed_plugins.json`** (on Windows
+  `%USERPROFILE%\.claude\plugins\installed_plugins.json`). Its entry for
   `core@frontend-devkit` (and `vue@`, `nuxt@`) gives `installPath`, `version`,
   `gitCommitSha` and `lastUpdated`. It describes the install now, so it confirms a
   session's version only when `lastUpdated` precedes the session and the path matches

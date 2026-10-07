@@ -20,7 +20,7 @@
 //
 // Opt out per repo with `"verifyOnStop": false` in .claude/project.json.
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
@@ -31,17 +31,21 @@ const RUN_GATES = fileURLToPath(new URL('./run-gates.mjs', import.meta.url));
 // The git calls and the gates share one budget inside the 200 s Stop timeout in
 // hooks.json: a hook killed at that timeout writes no block.
 const DEADLINE_MS = 190_000;
+// Held back from the budget run-gates receives, so it can stop a timed-out gate's
+// process tree and still write its report before this hook's own backstop fires.
+const RESERVE_MS = 5_000;
 
 let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (d) => { raw += d; });
 process.stdin.on('end', () => {
-  try { main(raw); } catch (err) {
-    // Same principle as the PreToolUse hook: a gate that cannot run must not
-    // become a turn you can never end.
-    process.stderr.write(`devkit verify-before-done: skipped, ${String(err)}\n`);
-  }
-  process.exit(0);
+  main(raw)
+    .catch((err) => {
+      // Same principle as the PreToolUse hook: a gate that cannot run must not
+      // become a turn you can never end.
+      process.stderr.write(`devkit verify-before-done: skipped, ${String(err)}\n`);
+    })
+    .finally(() => process.exit(0));
 });
 
 /**
@@ -86,8 +90,39 @@ function statePath(sessionId, dir) {
   return path.join(os.tmpdir(), `devkit-verify-before-done-${key}`);
 }
 
+/**
+ * What run-gates printed and how it exited, or null when it did not finish in time or could not start.
+ * @param {string} dir @returns {Promise<{ stdout: string, stderr: string, code: number|null }|null>}
+ */
+function runGates(dir) {
+  // performance.now() counts from process start, so time spent on git comes off the gates.
+  const left = Math.max(1, Math.floor(DEADLINE_MS - performance.now()));
+  const budget = Math.max(0, left - RESERVE_MS);
+  return new Promise((done) => {
+    const child = spawn(process.execPath, [RUN_GATES, '--stage', 'fast', '--json', '--budget', String(budget)], {
+      cwd: dir,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let out = '';
+    let err = '';
+    child.stdout.setEncoding('utf8').on('data', (d) => { out += d; });
+    child.stderr.setEncoding('utf8').on('data', (d) => { err += d; });
+    // A backstop only: run-gates stops its own gates' trees inside the budget.
+    const timer = setTimeout(() => {
+      if (process.platform === 'win32' && child.pid !== undefined) {
+        spawnSync('taskkill', ['/T', '/F', '/PID', String(child.pid)], { stdio: 'ignore' });
+      } else {
+        child.kill();
+      }
+      done(null);
+    }, left);
+    child.on('error', () => { clearTimeout(timer); done(null); });
+    child.on('close', (code) => { clearTimeout(timer); done({ stdout: out, stderr: err, code }); });
+  });
+}
+
 /** @param {string} input */
-function main(input) {
+async function main(input) {
   /** @type {any} */
   let evt = {};
   try { evt = JSON.parse(input); } catch { return; }
@@ -131,18 +166,27 @@ function main(input) {
     }
   }
 
-  const proc = spawnSync(process.execPath, [RUN_GATES, '--stage', 'fast', '--json'], {
-    cwd: dir,
-    encoding: 'utf8',
-    // performance.now() counts from process start, so time spent on git comes off the gates.
-    timeout: Math.max(1, Math.floor(DEADLINE_MS - performance.now())),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  if (proc.error) return;
+  const run = await runGates(dir);
+  if (run === null) return;
 
   /** @type {any} */
   let report;
-  try { report = JSON.parse(String(proc.stdout)); } catch { return; }
+  try {
+    report = JSON.parse(run.stdout);
+  } catch {
+    // run-gates stopped before writing a report, as on a usage error. Silence here
+    // would read as a pass, so the reason is handed back without blocking.
+    const said = run.stderr.trim().slice(-2000) || run.stdout.trim().slice(-2000) || 'no output';
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'Stop',
+        additionalContext:
+          `The fast gates were NOT RUN: run-gates exited ${run.code} without a report ` +
+          `(broken setup, not a code defect):\n${said}\nDo not describe these gates as passing.`,
+      },
+    }));
+    return;
+  }
 
   const results = Array.isArray(report?.results) ? report.results : [];
   const failed = results.filter((/** @type {any} */ r) => r.status === 'fail');

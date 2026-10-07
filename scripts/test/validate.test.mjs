@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 
 import { REPO_ROOT, hookEvent, runScript, tempDir } from './helpers.mjs';
-import { CHECKS, budget, checkFrontmatter, components, frontmatter, localComponents, runChecks } from '../validate.mjs';
+import { CHECKS, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
 
 const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const GUIDE = 'plugins/core/skills/demo/references/guide.md';
@@ -19,7 +19,7 @@ const DESCRIPTION = 'Demo skill used as a validate.mjs fixture; it exists only i
 const AGENT_DESCRIPTION = 'Demo agent used as a validate.mjs fixture.';
 // Long enough to move the rounded budget figure, were it counted.
 const LOCAL_DESCRIPTION = `Repo-local fixture component, never shipped. ${'Padding. '.repeat(30)}`.trim();
-const CHANGELOG = '# Changelog\n\n## 1.0.0 — 2026-01-01\n\nFirst release.\n';
+const CHANGELOG = '# Changelog\n\n## 1.0.0 - 2026-01-01\n\nFirst release.\n';
 
 function skillText({ extraField = '', blocked = 'mcp__srv__tool_a', cite = 'references/guide.md', script = 'ok.mjs' } = {}) {
   return [
@@ -102,9 +102,10 @@ function copyScript(root, rel) {
   return dest;
 }
 
-// validate.mjs imports pack-graph.mjs, so a runnable copy needs both.
+// validate.mjs imports pack-graph.mjs and ci/release-notes.mjs, so a runnable copy needs all three.
 function copyValidate(root) {
   copyScript(root, 'scripts/pack-graph.mjs');
+  copyScript(root, 'scripts/ci/release-notes.mjs');
   return copyScript(root, 'scripts/validate.mjs');
 }
 
@@ -126,7 +127,7 @@ describe('validate.mjs checks run against the root they are given', () => {
     versions: /^plugins\/core\/\.claude-plugin\/plugin\.json -> version "1\.0" is not X\.Y\.Z$/,
     'skill-dirs': /^plugins\/core\/skills\/orphan -> no SKILL\.md$/,
     'plugin-root': /^plugins\/core\/skills\/demo\/SKILL\.md -> \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/missing\.mjs does not resolve inside plugins\/core$/,
-    changelog: /^CHANGELOG\.md has no "## 1\.0\.0" section/,
+    changelog: /^CHANGELOG\.md has no "## 1\.0\.0 - YYYY-MM-DD" section/,
   };
 
   for (const [name, finding] of Object.entries(defects)) {
@@ -148,6 +149,39 @@ describe('validate.mjs checks run against the root they are given', () => {
     assert.deepEqual(components(root).sort(), [path.join(root, AGENT), path.join(root, SKILL)].sort());
     assert.equal(checkFrontmatter(undefined, root).ok, false);
     assert.equal(checkFrontmatter([path.join(root, SKILL)], root).ok, false);
+  });
+
+  test('checkFrontmatter() with no file list checks what the frontmatter check does', (t) => {
+    const override = { [LOCAL_AGENT]: agentText({ name: null, description: LOCAL_DESCRIPTION }) };
+    const root = fixture(t, { override });
+    assert.deepEqual(checkFrontmatter(undefined, root), byName(runChecks(['frontmatter'], root)).frontmatter);
+    assert.equal(checkFrontmatter(undefined, root).ok, false);
+  });
+
+  // The write hook decides by isComponent alone, so it must agree with the walks.
+  test('isComponent() accepts exactly what components() and localComponents() list', (t) => {
+    const root = fixture(t, { override: { 'plugins/core/skills/demo/notes.md': '# Notes\n', '.claude/skills/local/notes.md': '# Notes\n' } });
+    for (const p of [...components(root), ...localComponents(root)]) assert.equal(isComponent(root, p), true, p);
+    for (const rel of [GUIDE, 'plugins/core/skills/demo/notes.md', '.claude/skills/local/notes.md', 'README.md', 'pluginsX/SKILL.md']) {
+      assert.equal(isComponent(root, path.join(root, rel)), false, rel);
+    }
+    assert.equal(isComponent(root, path.join(path.dirname(root), 'SKILL.md')), false);
+  });
+
+  // statSync threw ENOENT on such an entry, and no later check reported.
+  test('a dangling link under .claude/skills is a skill-dirs finding, not a crash', (t) => {
+    const root = fixture(t);
+    const gone = path.join(tempDir(t), 'gone');
+    fs.mkdirSync(gone);
+    try {
+      fs.symlinkSync(gone, path.join(root, '.claude', 'skills', 'gone'), process.platform === 'win32' ? 'junction' : 'dir');
+    } catch (e) {
+      if (e.code === 'EPERM') return t.skip('creating a symlink needs a privilege this account lacks');
+      throw e;
+    }
+    fs.rmdirSync(gone);
+    const results = byName(runChecks(undefined, root));
+    assert.deepEqual(results['skill-dirs'].findings, ['.claude/skills/gone -> a link to nothing']);
   });
 });
 
@@ -215,6 +249,55 @@ test('plugin-root fails on a path that leaves its pack through .., even when the
   ]);
 });
 
+// A reference is followed at runtime as the body is, so its paths are checked too.
+test('plugin-root fails on a dead path in a reference file', (t) => {
+  const root = fixture(t, { override: { [GUIDE]: '# Guide\n\nRun `node "${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs"`.\n' } });
+  assert.deepEqual(byName(runChecks(['plugin-root'], root))['plugin-root'].findings, [
+    'plugins/core/skills/demo/references/guide.md -> ${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs does not resolve inside plugins/core',
+  ]);
+});
+
+describe('the scripts check reads every listed pack\'s hooks.json, every arg inside its own pack', () => {
+  const VUE = {
+    '.claude-plugin/marketplace.json': JSON.stringify({
+      plugins: [{ name: 'core', source: './plugins/core' }, { name: 'vue', source: './plugins/vue' }],
+    }),
+    'plugins/vue/.claude-plugin/plugin.json': JSON.stringify({ name: 'vue', version: '1.0.0' }),
+    'plugins/vue/scripts/own.mjs': 'export const own = true;\n',
+  };
+  const hooks = (...args) => JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node', args }] }] } });
+  const scripts = (t, override) => byName(runChecks(['scripts'], fixture(t, { override: { ...VUE, ...override } }))).scripts.findings;
+
+  test('an arg naming a file in its own pack passes', (t) => {
+    assert.deepEqual(scripts(t, { 'plugins/vue/hooks/hooks.json': hooks('${CLAUDE_PLUGIN_ROOT}/scripts/own.mjs') }), []);
+  });
+
+  test('a missing script in a pack other than core is a finding', (t) => {
+    assert.deepEqual(scripts(t, { 'plugins/vue/hooks/hooks.json': hooks('${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs') }), [
+      'plugins/vue/hooks/hooks.json -> ${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs is not a file inside plugins/vue',
+    ]);
+  });
+
+  test('an arg leaving its pack through .. is a finding, even when the target exists', (t) => {
+    assert.deepEqual(scripts(t, { 'plugins/vue/hooks/hooks.json': hooks('${CLAUDE_PLUGIN_ROOT}/../core/scripts/ok.mjs') }), [
+      'plugins/vue/hooks/hooks.json -> ${CLAUDE_PLUGIN_ROOT}/../core/scripts/ok.mjs is not a file inside plugins/vue',
+    ]);
+  });
+});
+
+// Partway through adding a pack, its directory exists before its marketplace entry does.
+test('an unlisted plugins/ directory is a versions finding, and none of its components is counted', (t) => {
+  const root = fixture(t, {
+    override: { 'plugins/react/skills/demo/SKILL.md': skillText().replace('${CLAUDE_PLUGIN_ROOT}/scripts/ok.mjs', '${CLAUDE_PLUGIN_ROOT}/gone.mjs') },
+  });
+  const results = byName(runChecks(undefined, root));
+  assert.deepEqual(results.versions.findings, ['plugins/react has no entry in .claude-plugin/marketplace.json, so no check reads it']);
+  for (const other of Object.values(results)) {
+    if (other.name !== 'versions') assert.deepEqual(other.findings, [], `${other.name} read the unlisted pack`);
+  }
+  assert.equal(budget(root).listed, DESCRIPTION.length + AGENT_DESCRIPTION.length);
+});
+
 describe('validate.mjs reports a marketplace pack-graph cannot follow as a finding', () => {
   const cases = {
     'a missing plugin.json': {
@@ -238,10 +321,27 @@ describe('validate.mjs reports a marketplace pack-graph cannot follow as a findi
   for (const [label, { override, finding }] of Object.entries(cases)) {
     test(`${label}`, (t) => {
       const results = byName(runChecks(undefined, fixture(t, { override })));
-      for (const name of ['skill-dirs', 'plugin-root', 'versions', 'changelog']) {
+      for (const name of Object.keys(CHECKS)) {
         assert.equal(results[name].ok, false, `${name} passed`);
         assert.ok(results[name].findings.some((f) => finding.test(f)), `${name}: ${results[name].findings.join(' | ')}`);
       }
+    });
+  }
+});
+
+// The release workflow takes the notes from the `## X.Y.Z - YYYY-MM-DD` heading, so the
+// check must accept that heading and nothing looser.
+describe('the changelog check accepts exactly the heading the release workflow reads', () => {
+  const changelog = (heading) => ({ 'CHANGELOG.md': `# Changelog\n\n${heading}\n\nFirst release.\n` });
+
+  test('`## X.Y.Z - YYYY-MM-DD` passes', (t) => {
+    assert.deepEqual(byName(runChecks(['changelog'], fixture(t, { override: changelog('## 1.0.0 - 2026-01-01') }))).changelog.findings, []);
+  });
+
+  for (const heading of ['## 1.0.0 — 2026-01-01', '## 1.0.0', '## 1.0.0 (2026-01-01)', '## 1.0.0 - TBD']) {
+    test(`\`${heading}\` is a finding`, (t) => {
+      const { changelog: result } = byName(runChecks(['changelog'], fixture(t, { override: changelog(heading) })));
+      assert.equal(result.ok, false, `findings: ${result.findings.join(' | ')}`);
     });
   }
 });

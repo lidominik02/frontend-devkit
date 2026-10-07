@@ -8,37 +8,25 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 
 import { REPO_ROOT, runScript, tempDir } from './helpers.mjs';
+import { checkScripts } from '../validate.mjs';
 
 const rel = (p) => path.relative(REPO_ROOT, p);
 
-const pluginDirs = fs
-  .readdirSync(path.join(REPO_ROOT, 'plugins'), { withFileTypes: true })
-  .filter((e) => e.isDirectory())
-  .map((e) => path.join(REPO_ROOT, 'plugins', e.name));
-
-function mjsIn(dir, { recursive }) {
+function mjsIn(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs
-    .readdirSync(dir, { recursive })
+    .readdirSync(dir, { recursive: true })
     .filter((f) => f.endsWith('.mjs'))
     .map((f) => path.join(dir, f))
     .filter((p) => fs.statSync(p).isFile());
 }
 
-const scripts = [
-  ...pluginDirs.flatMap((d) => mjsIn(path.join(d, 'scripts'), { recursive: true })),
-  ...mjsIn(path.join(REPO_ROOT, 'scripts'), { recursive: false }),
-  ...mjsIn(path.join(REPO_ROOT, 'scripts', 'hooks'), { recursive: false }),
-];
-
-const hookConfigs = pluginDirs
-  .map((d) => ({ pluginRoot: d, file: path.join(d, 'hooks', 'hooks.json') }))
-  .filter(({ file }) => fs.existsSync(file));
+// The same two trees validate.mjs's scripts check walks, so both cover every .mjs.
+const scripts = [...mjsIn(path.join(REPO_ROOT, 'plugins')), ...mjsIn(path.join(REPO_ROOT, 'scripts'))];
 
 describe('parse', () => {
-  test('finds scripts and hook configs to check', () => {
+  test('finds scripts to check', () => {
     assert.ok(scripts.length > 0, 'no .mjs found');
-    assert.ok(hookConfigs.length > 0, 'no plugins/*/hooks/hooks.json found');
   });
 
   for (const file of scripts) {
@@ -49,24 +37,11 @@ describe('parse', () => {
     });
   }
 
-  for (const { pluginRoot, file } of hookConfigs) {
-    test(`${rel(file)} is valid JSON and every arg names an existing file`, () => {
-      const cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
-      const missing = [];
-      for (const entries of Object.values(cfg.hooks ?? {})) {
-        for (const entry of entries) {
-          for (const hook of entry.hooks ?? []) {
-            for (const arg of hook.args ?? []) {
-              const substituted = String(arg).replaceAll('${CLAUDE_PLUGIN_ROOT}', pluginRoot);
-              const resolved = path.resolve(pluginRoot, substituted.replace(/[\\/]/g, path.sep));
-              if (!fs.existsSync(resolved)) missing.push(arg);
-            }
-          }
-        }
-      }
-      assert.deepEqual(missing, [], `${rel(file)} names files that do not exist`);
-    });
-  }
+  // validate.mjs's scripts check is the one reading of every listed pack's hooks.json.
+  test('every hooks.json is valid JSON and every arg names a file inside its own pack', () => {
+    assert.ok(fs.existsSync(path.join(REPO_ROOT, 'plugins', 'core', 'hooks', 'hooks.json')), 'no hooks.json to check');
+    assert.deepEqual(checkScripts().findings, []);
+  });
 
   test('runScript reports a syntax error as a syntax error, not a behaviour failure', (t) => {
     const dir = tempDir(t);

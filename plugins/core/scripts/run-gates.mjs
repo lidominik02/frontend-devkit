@@ -23,7 +23,8 @@
 //   node run-gates.mjs --gate lint        one named gate
 //   node run-gates.mjs --json             machine-readable
 //   node run-gates.mjs --list             show what would run, run nothing
-//   node run-gates.mjs --timeout 120000   per-gate timeout in ms
+//   node run-gates.mjs --timeout 120000   per-gate timeout in ms; 0 for none
+//   node run-gates.mjs --budget 180000    whole-run budget in ms; no gate outlives it
 //
 // Exit 0 = every gate this project HAS, ran and passed.
 // Exit 1 = a gate failed, or a gate that this project declares could not run.
@@ -34,7 +35,8 @@
 //          project-facts.mjs) also exits 1: nothing there can have passed. Its
 //          gates are not-run without `blocking`, so the Stop hook stays silent.
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 import { detect, readJson } from './project-facts.mjs';
 
@@ -54,6 +56,8 @@ const STAGES = /** @type {Record<string, string[]>} */ ({
 // than a gate. The PostToolUse hook already runs it.
 
 const DEFAULT_TIMEOUT_MS = 600_000;
+// After a gate's tree is killed, how long its pipes may stay open before the run moves on.
+const KILL_GRACE_MS = 2_000;
 
 // Scripts that never exit. A timeout catches these eventually, but only after
 // burning the whole budget, so the recognisable ones are named up front.
@@ -81,7 +85,28 @@ const stages = /** @type {Record<string, string[]>} */ (
     ? { ...STAGES, .../** @type {Record<string, string[]>} */ (overrides.stages) }
     : STAGES
 );
-const timeoutMs = Number(flagValue('--timeout') ?? overrides.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+// setTimeout turns NaN, or anything above 2^31-1, into 1 ms, which would report
+// every gate of a healthy project as timed out. A bad value is a usage error.
+const MAX_TIMER_MS = 2_147_483_647;
+/** @param {unknown} value @param {string} source @returns {number} */
+function milliseconds(value, source) {
+  const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  if (typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= MAX_TIMER_MS) return n;
+  process.stderr.write(`run-gates: ${source} must be a whole number of milliseconds from 0 to ${MAX_TIMER_MS}, got ${JSON.stringify(value)}\n`);
+  process.exit(1);
+}
+
+// 0 means no per-gate timeout, as it did under spawnSync; a budget still applies.
+const timeoutFlag = flagValue('--timeout');
+const timeoutMs = timeoutFlag !== null
+  ? milliseconds(timeoutFlag, '--timeout')
+  : overrides.timeoutMs !== undefined && overrides.timeoutMs !== null
+    ? milliseconds(overrides.timeoutMs, '"timeoutMs"')
+    : DEFAULT_TIMEOUT_MS;
+// Measured against performance.now(), which counts from this process's start, so
+// the time spent starting up comes off the budget too.
+const budgetFlag = flagValue('--budget');
+const budgetMs = budgetFlag === null ? Infinity : milliseconds(budgetFlag, '--budget');
 const wanted = oneGate ? [oneGate] : (stages[stageName] ?? STAGES.fast);
 
 /** @param {string} name */
@@ -104,14 +129,92 @@ function resolve(name) {
   return { run: true, command: gate.command, source: gate.source };
 }
 
+/** @typedef {{ status: number|null, stdout: string, stderr: string, error?: NodeJS.ErrnoException }} GateRun */
+
+// Stops a gate and everything it started. Killing only the shell is not enough:
+// on Windows a timed-out spawnSync stopped cmd.exe and left npm's node running,
+// holding the gate's cwd. On POSIX the gate leads its own process group, so the
+// negative pid reaches its descendants and never this script, Claude Code or a
+// test runner. taskkill /T finds descendants through a living root only: a
+// process whose parent shell has already exited is out of its reach.
+/** @param {number} pid */
+function killTree(pid) {
+  if (process.platform === 'win32') {
+    spawnSync('taskkill', ['/T', '/F', '/PID', String(pid)], { stdio: 'ignore' });
+  } else {
+    try { process.kill(-pid, 'SIGKILL'); } catch { /* the group has already exited */ }
+  }
+}
+
+/** The pid of the gate running now, if any. @type {number|undefined} */
+let inFlight;
+
+// On POSIX the gate's own process group puts it out of reach of a terminal's
+// Ctrl-C and of a SIGTERM sent to this script alone, so an interrupt that ends
+// this script stops the gate's tree first. Exit 128 + n is the shell convention.
+for (const signal of /** @type {const} */ (['SIGINT', 'SIGTERM', 'SIGHUP'])) {
+  process.on(signal, () => {
+    if (inFlight !== undefined) killTree(inFlight);
+    process.exit(128 + os.constants.signals[signal]);
+  });
+}
+
+/**
+ * @param {string} command @param {number} ms Infinity runs the gate with no timer
+ * @returns {Promise<GateRun>}
+ */
+function runGate(command, ms) {
+  return new Promise((done) => {
+    let stdout = '';
+    let stderr = '';
+    /** @type {NodeJS.ErrnoException|undefined} */
+    let error;
+    /** @type {NodeJS.Timeout|undefined} */
+    let grace;
+    let settled = false;
+    // Piped, not inherited: the captured output is what makes the not-run vs fail
+    // classification possible. It is echoed by the caller, so nothing is hidden.
+    const child = spawn(command, {
+      cwd: facts.dir,
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
+    });
+    inFlight = child.pid;
+    /** @param {number|null} status */
+    const finish = (status) => {
+      if (settled) return;
+      settled = true;
+      inFlight = undefined;
+      clearTimeout(timer);
+      clearTimeout(grace);
+      done({ status, stdout, stderr, error });
+    };
+    child.stdout.setEncoding('utf8').on('data', (d) => { stdout += d; });
+    child.stderr.setEncoding('utf8').on('data', (d) => { stderr += d; });
+    const timer = Number.isFinite(ms) ? setTimeout(() => {
+      error = Object.assign(new Error(`timed out after ${ms}ms`), { code: 'ETIMEDOUT' });
+      if (child.pid !== undefined) killTree(child.pid);
+      // A descendant out of the kill's reach can hold the pipes open indefinitely.
+      grace = setTimeout(() => {
+        child.stdout.destroy();
+        child.stderr.destroy();
+        finish(null);
+      }, KILL_GRACE_MS);
+    }, ms) : undefined;
+    child.on('error', (err) => { error ??= err; finish(null); });
+    child.on('close', (status) => finish(status));
+  });
+}
+
 // A non-zero exit is not one thing. Separate "your code is broken" from
 // "your toolchain is broken", because they have opposite fixes.
-/** @param {ReturnType<typeof spawnSync>} proc */
-function classify(proc) {
+/** @param {GateRun} proc @param {number} ms the timeout this gate ran under */
+function classify(proc, ms) {
   if (proc.error) {
-    const code = /** @type {NodeJS.ErrnoException} */ (proc.error).code;
+    const code = proc.error.code;
     if (code === 'ETIMEDOUT') {
-      return { status: /** @type {const} */ ('not-run'), blocking: true, reason: `timed out after ${Math.round(timeoutMs / 1000)}s` };
+      return { status: /** @type {const} */ ('not-run'), blocking: true, reason: `timed out after ${Math.round(ms / 1000)}s` };
     }
     return { status: /** @type {const} */ ('not-run'), blocking: true, reason: `could not execute: ${proc.error.message}` };
   }
@@ -121,8 +224,13 @@ function classify(proc) {
   const out = `${proc.stdout ?? ''}${proc.stderr ?? ''}`;
   // 127 is the POSIX "command not found". A package manager running a script
   // whose binary is absent exits 127 too -- a broken toolchain, not a defect in
-  // the code.
-  if (code === 127 || /command not found|: not found|No such file or directory/i.test(out)) {
+  // the code. On Windows cmd.exe and PowerShell exit 1 instead, and say so in
+  // their own words.
+  if (
+    code === 127 ||
+    /command not found|: not found|No such file or directory/i.test(out) ||
+    /is not recognized as an internal or external command|is not recognized as the name of a cmdlet/i.test(out)
+  ) {
     return {
       status: /** @type {const} */ ('not-run'),
       blocking: true,
@@ -159,17 +267,17 @@ for (const name of wanted) {
     say(`NOT RUN  ${name.padEnd(10)} ${r.reason}`);
     continue;
   }
+  const left = Math.floor(budgetMs - performance.now());
+  if (left <= 0) {
+    const reason = 'no time left in the budget';
+    results.push({ name, command: r.command, status: 'not-run', reason, blocking: true });
+    say(`NOT RUN  ${name.padEnd(10)} ${reason}`);
+    continue;
+  }
   say(`RUN      ${name.padEnd(10)} ${r.command}`);
-  // Piped, not inherited: the captured output is what makes the not-run vs fail
-  // classification possible. It is echoed below, so nothing is hidden.
-  const proc = spawnSync(/** @type {string} */ (r.command), {
-    cwd: facts.dir,
-    shell: true,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-    timeout: timeoutMs,
-  });
-  const verdict = classify(proc);
+  const gateTimeout = Math.min(timeoutMs === 0 ? Infinity : timeoutMs, left);
+  const proc = await runGate(/** @type {string} */ (r.command), gateTimeout);
+  const verdict = classify(proc, gateTimeout);
   if (!asJson) {
     const out = `${proc.stdout ?? ''}${proc.stderr ?? ''}`.trimEnd();
     if (out) process.stdout.write(out + '\n');

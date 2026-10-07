@@ -2,32 +2,16 @@
 // keeps temp/ and credential material out of every tree and diff it writes.
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { REPO_ROOT, gitRepo, runScript, tempDir } from './helpers.mjs';
+import { REPO_ROOT, git, gitRepo, runScript, tempDir, write } from './helpers.mjs';
 
 const SNAPSHOT = path.join(REPO_ROOT, 'plugins/core/scripts/snapshot.mjs');
 
-// Inside a git hook, GIT_DIR and GIT_INDEX_FILE would point git at the caller's repository.
+// Inside a git hook, GIT_DIR and GIT_INDEX_FILE would point snapshot.mjs's git at the caller's repository.
 const NO_GIT_ENV = Object.fromEntries(Object.keys(process.env).filter((k) => k.startsWith('GIT_')).map((k) => [k, undefined]));
-
-function git(dir, args) {
-  const res = spawnSync('git', args, { cwd: dir, env: { ...process.env, ...NO_GIT_ENV }, encoding: 'utf8' });
-  if (res.error) throw res.error;
-  assert.equal(res.status, 0, `git ${args.join(' ')}: ${res.stderr.trim()}`);
-  return res.stdout;
-}
-
-function write(root, files) {
-  for (const [rel, text] of Object.entries(files)) {
-    const p = path.join(root, rel);
-    fs.mkdirSync(path.dirname(p), { recursive: true });
-    fs.writeFileSync(p, text);
-  }
-}
 
 const snapshot = (repo, args) => runScript(SNAPSHOT, { args, cwd: repo, env: NO_GIT_ENV });
 const indexBytes = (repo) => fs.readFileSync(path.join(repo, '.git', 'index'));

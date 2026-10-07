@@ -9,7 +9,7 @@ description: >-
   to one sibling, before a release, or when a reviewer asks whether a split still
   earns its cost. Reports drift as unanswered inversions, leaked rules, duplicated
   text and one-directional pointers.
-allowed-tools: Read, Grep, Glob, Bash(node scripts/pack-graph.mjs:*), Bash(node scripts/validate.mjs:*), Bash(ls *), Bash(wc *), Bash(git log *), Bash(git diff *)
+allowed-tools: Read, Grep, Glob, Bash(node scripts/pack-graph.mjs:*), PowerShell(node scripts/pack-graph.mjs:*), Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *)
 ---
 
 # Pack parity

@@ -8,7 +8,7 @@ description: >-
   tag. Pushes nothing; it prints the two push commands, the second of which moves main
   once CI is green.
 disable-model-invocation: true
-allowed-tools: Read, Edit, AskUserQuestion, Bash(git branch --show-current), Bash(git describe *), Bash(git log *), Bash(git diff *), Bash(git status *), Bash(node scripts/release-check.mjs)
+allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-current), PowerShell(git branch --show-current), Bash(git describe *), PowerShell(git describe *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *), Bash(git status *), PowerShell(git status *), Bash(node scripts/release-check.mjs), PowerShell(node scripts/release-check.mjs), Bash(node scripts/ci/release-warning.mjs), PowerShell(node scripts/ci/release-warning.mjs)
 ---
 
 # Release the devkit
@@ -30,9 +30,9 @@ git describe --tags --match 'v*' --abbrev=0
 
 - **A tag exists:** list `git log --oneline <tag>..HEAD`. **No commits: say there is
   nothing to release since `<tag>` and stop.** Then run
-  `git diff --quiet <tag> HEAD -- plugins/ .claude-plugin/`; exit 0 means the commits
-  touch nothing a user installs, so say "nothing shipped changed since `<tag>`" before
-  step 2.
+  `node scripts/ci/release-warning.mjs`, the check CI runs, which owns the list of shipped
+  paths; output ending in "unchanged since `<tag>`" means the commits touch nothing a
+  user installs, so say "nothing shipped changed since `<tag>`" before step 2.
 - **No `v*` tag:** nothing is released yet. List `git log --oneline` and release the
   version the manifests already carry, unbumped — skip step 2.
 
@@ -61,7 +61,7 @@ stops the run. The user approves or changes it. Do not write anything before the
    release:
 
    ```
-   ## X.Y.Z — YYYY-MM-DD
+   ## X.Y.Z - YYYY-MM-DD
    ```
 
    dated today, with `### Added`, `### Changed` and `### Fixed` groups, omitting an empty
@@ -82,21 +82,28 @@ stops the run. The user approves or changes it. Do not write anything before the
 
 Draft the release commit message with `core:describing-changes`, which reads this
 repository's convention, and show it to the user. Commit only once they accept it, and
-include only the release files, so nothing else already staged slips in. Run these as
-three separate commands, each only after the previous one exited 0, so the tag exists
-only when the commit succeeded. The pathspec stays quoted: git expands it, the same way in
-every shell.
+include only the release files, so nothing else already staged slips in.
+
+With the Write tool, write the accepted message, exactly as accepted, to a file in the
+system temp directory, outside the repository, and the tag annotation —
+`vX.Y.Z — <one-line summary of the release>` — to a second file there. git reads a file
+verbatim; a message inside double quotes is rewritten by the shell first: PowerShell
+expands `$name` and backtick escapes, and a POSIX shell runs a backtick span as a command.
+
+Run these as three separate commands, each only after the previous one exited 0, so the
+tag exists only when the commit succeeded. The pathspec stays quoted: git expands it, the
+same way in every shell.
 
 ```
 git add -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.json"
 ```
 
 ```
-git commit -m "<accepted message>" -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.json"
+git commit -F "<message file>" -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.json"
 ```
 
 ```
-git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary of the release>"
+git tag -a vX.Y.Z -F "<annotation file>"
 ```
 
 The tag annotation marks the release commit with its version and summary;

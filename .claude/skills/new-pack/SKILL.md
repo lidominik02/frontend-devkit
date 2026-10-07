@@ -10,7 +10,7 @@ description: >-
   reference file in the wrong place.
 disable-model-invocation: true
 argument-hint: "[pack-name]"
-allowed-tools: Read, Grep, Glob, Write, Edit, Bash(node scripts/validate.mjs:*), Bash(ls *), Bash(claude plugin validate:*)
+allowed-tools: Read, Grep, Glob, Write, Edit, Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*), Bash(claude plugin validate:*), PowerShell(claude plugin validate:*)
 ---
 
 # Add a framework pack

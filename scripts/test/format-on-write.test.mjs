@@ -22,25 +22,24 @@ describe('format-on-write: must never block, whatever it is given', () => {
   }
 });
 
-// A project with a fake prettier that logs its arguments, one per line, plus a
-// directory outside it standing in for the user's auto-memory.
+// A project with a fake prettier package that logs its arguments, one per line,
+// plus a directory outside it standing in for the user's auto-memory.
 function fixture(t) {
   const root = tempDir(t);
   const proj = path.join(root, 'proj');
   const outside = path.join(root, 'memory');
   const log = path.join(root, 'formatted');
-  const bin = path.join(proj, 'node_modules', '.bin');
-  fs.mkdirSync(bin, { recursive: true });
+  const pkg = path.join(proj, 'node_modules', 'prettier');
+  fs.mkdirSync(path.join(pkg, 'bin'), { recursive: true });
   fs.mkdirSync(path.join(proj, 'src'));
   fs.mkdirSync(outside);
 
-  const prettier = path.join(bin, 'prettier');
+  fs.writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({ name: 'prettier', bin: { prettier: 'bin/prettier.cjs' } }));
   fs.writeFileSync(
-    prettier,
+    path.join(pkg, 'bin', 'prettier.cjs'),
     '#!/usr/bin/env node\n' +
       `require('node:fs').appendFileSync(${JSON.stringify(log)}, process.argv.slice(2).map((a) => a + '\\n').join(''));\n`,
   );
-  fs.chmodSync(prettier, 0o755);
 
   fs.writeFileSync(path.join(proj, 'src', 'a.ts'), 'x\n');
   fs.writeFileSync(path.join(outside, 'note.md'), 'x\n');
@@ -67,21 +66,19 @@ function symlinkOrSkip(t, target, link, type) {
   }
 }
 
-const WIN32_NO_SHIM =
-  'format-on-write does not yet resolve or launch a .cmd shim on Windows ' +
-  '(it spawns node_modules/.bin/prettier without a shell); remove this skip once it does';
-
-function skipOnWin32(t) {
-  if (process.platform !== 'win32') return false;
-  t.skip(WIN32_NO_SHIM);
-  return true;
-}
-
 describe('format-on-write: formats inside the project only, judged by resolved path', () => {
   test('a file inside the project is formatted', (t) => {
-    if (skipOnWin32(t)) return;
     const { proj, run, formatted } = fixture(t);
     const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(formatted(file));
+  });
+
+  // A shell would split the name at the space, and cmd.exe would read & and ^.
+  test('a file name a shell would split or re-parse reaches the formatter as one argument', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    const file = path.join(proj, 'src', 'a b&c^d.ts');
+    fs.writeFileSync(file, 'x\n');
     run(proj, file);
     assert.ok(formatted(file));
   });
@@ -102,7 +99,6 @@ describe('format-on-write: formats inside the project only, judged by resolved p
   });
 
   test('a project reached through a symlink is still formatted', (t) => {
-    if (skipOnWin32(t)) return;
     const { root, proj, run, formatted } = fixture(t);
     const projLink = path.join(root, 'proj-link');
     if (!symlinkOrSkip(t, proj, projLink, 'junction')) return;

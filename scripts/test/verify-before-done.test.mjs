@@ -2,13 +2,12 @@
 // only on a failing gate, and skips a tree it has already seen green.
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
 
-import { REPO_ROOT, gitRepo, isolatedEnv, runScript, tempDir } from './helpers.mjs';
+import { REPO_ROOT, git, gitRepo, isolatedEnv, runScript, tempDir } from './helpers.mjs';
 
 const HOOK = path.join(REPO_ROOT, 'plugins', 'core', 'scripts', 'verify-before-done.mjs');
 
@@ -20,17 +19,7 @@ const COUNT = "node -e \"require('fs').appendFileSync(process.env.DEVKIT_GATE_RU
 const COUNT_FAIL = "node -e \"require('fs').appendFileSync(process.env.DEVKIT_GATE_RUNS, 'x'); process.exit(1)\"";
 const FAIL_IF_BROKEN = "node -e \"process.exit(require('fs').existsSync('broken') ? 1 : 0)\"";
 
-function gitEnv() {
-  return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
-}
-
-function git(dir, ...args) {
-  const res = spawnSync('git', args, { cwd: dir, env: gitEnv(), encoding: 'utf8' });
-  if (res.error) throw res.error;
-  if (res.status !== 0) assert.fail(`git ${args.join(' ')} failed in ${dir}: ${res.stderr.trim()}`);
-}
-
-const commit = (dir, message) => git(dir, 'commit', '-q', '--no-verify', '-m', message);
+const commit = (dir, message) => git(dir, ['commit', '-q', '--no-verify', '-m', message]);
 
 const writeLint = (dir, lint) => fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ scripts: { lint } }));
 
@@ -91,7 +80,7 @@ describe('verify-before-done: an unchanged green tree is not re-verified, a red 
   const repo = (t, lint) => {
     const dir = gitRepo(t);
     writeLint(dir, lint);
-    git(dir, 'add', 'package.json');
+    git(dir, ['add', 'package.json']);
     commit(dir, 'init');
     fs.writeFileSync(path.join(dir, 'work.txt'), 'a');
     return dir;
@@ -184,13 +173,13 @@ describe('verify-before-done: a branch switch is a different tree', () => {
     const dir = gitRepo(t);
     writeLint(dir, FAIL_IF_BROKEN);
     fs.writeFileSync(path.join(dir, 'notes.txt'), 'notes\n');
-    git(dir, 'add', 'package.json', 'notes.txt');
+    git(dir, ['add', 'package.json', 'notes.txt']);
     commit(dir, 'init');
-    git(dir, 'checkout', '-q', '-b', 'red');
+    git(dir, ['checkout', '-q', '-b', 'red']);
     fs.writeFileSync(path.join(dir, 'broken'), 'x');
-    git(dir, 'add', 'broken');
+    git(dir, ['add', 'broken']);
     commit(dir, 'red');
-    git(dir, 'checkout', '-q', '-');
+    git(dir, ['checkout', '-q', '-']);
     fs.appendFileSync(path.join(dir, 'notes.txt'), 'edit\n');
     return dir;
   };
@@ -205,8 +194,52 @@ describe('verify-before-done: a branch switch is a different tree', () => {
     const dir = repo(t);
     const s = session();
     stop(dir, s);
-    git(dir, 'checkout', '-q', 'red');
+    git(dir, ['checkout', '-q', 'red']);
     assert.ok(blocks(stop(dir, s)));
+  });
+});
+
+// run-gates is resolved next to the hook, so a copy beside a stand-in shows what the hook does with it.
+function withStandIn(t, runGatesSource) {
+  const scripts = tempDir(t);
+  fs.copyFileSync(HOOK, path.join(scripts, 'verify-before-done.mjs'));
+  fs.writeFileSync(path.join(scripts, 'run-gates.mjs'), runGatesSource);
+  const dir = gitRepo(t);
+  writeLint(dir, PASS);
+  const res = runScript(path.join(scripts, 'verify-before-done.mjs'), {
+    input: JSON.stringify({ stop_hook_active: false }),
+    env: { ...isolatedEnv(tempDir(t)), CLAUDE_PROJECT_DIR: dir },
+  });
+  assert.equal(res.code, 0, `stderr: ${res.stderr.trim()}`);
+  return res;
+}
+
+describe('verify-before-done: run-gates stops its gates inside the hook budget', () => {
+  test('run-gates is handed what is left of the budget, less a reserve', (t) => {
+    const argsFile = path.join(tempDir(t), 'args.json');
+    withStandIn(
+      t,
+      `import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(argsFile)}, JSON.stringify(process.argv.slice(2)));\n` +
+        `process.stdout.write(JSON.stringify({ results: [] }));\n`,
+    );
+    const args = JSON.parse(fs.readFileSync(argsFile, 'utf8'));
+    const i = args.indexOf('--budget');
+    assert.notEqual(i, -1, `no --budget in ${JSON.stringify(args)}`);
+    const budget = Number(args[i + 1]);
+    assert.ok(budget > 0 && budget <= 185_000, `budget ${args[i + 1]}`);
+  });
+
+  // A usage error exits 1 with no report; staying silent there reads as a pass.
+  test('run-gates exiting without a report is a non-blocking notice quoting its stderr', (t) => {
+    const res = withStandIn(
+      t,
+      `process.stderr.write('run-gates: "timeoutMs" must be a whole number of milliseconds\\n');\nprocess.exit(1);\n`,
+    );
+    assert.notEqual(res.stdout, '', 'the hook printed nothing');
+    const out = JSON.parse(res.stdout);
+    assert.equal(out.decision, undefined);
+    assert.match(out.hookSpecificOutput.additionalContext, /NOT RUN/);
+    assert.match(out.hookSpecificOutput.additionalContext, /"timeoutMs" must be a whole number of milliseconds/);
   });
 });
 
@@ -229,7 +262,7 @@ describe('verify-before-done: repositories without a plain HEAD at the project r
     fs.mkdirSync(web);
     fs.mkdirSync(path.join(dir, 'shared'));
     writeLint(web, COUNT);
-    git(dir, 'add', 'web/package.json');
+    git(dir, ['add', 'web/package.json']);
     commit(dir, 'init');
     fs.writeFileSync(path.join(web, 'new.ts'), 'a');
     fs.writeFileSync(path.join(dir, 'shared', 'util.ts'), 'a');

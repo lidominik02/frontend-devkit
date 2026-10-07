@@ -10,7 +10,7 @@ description: >-
   session ran, ending with proposed entries for the ideas backlog.
 disable-model-invocation: true
 argument-hint: "<symptom> [session] [time window]"
-allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(ls *), Bash(node scripts/validate.mjs:*)
+allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*)
 ---
 
 # Diagnose past sessions
@@ -50,7 +50,7 @@ transcript read to the last line written, in chat as much as in files:
    transcript on the machine.
 
 2. **Verify the transcript paths.** Follow `references/transcripts.md` for the layout:
-   list the candidate `<sessionId>.jsonl` files under `~/.claude/projects/`, keep those
+   Glob the candidate `<sessionId>.jsonl` files under `~/.claude/projects/`, keep those
    whose entries fall in the window or match the given id, and confirm each exists and
    parses. Present the candidates by label, date and a paraphrased first request, and
    let the user confirm the set. **No matching transcript: say so and stop** — no case

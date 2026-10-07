@@ -8,7 +8,7 @@ description: >-
   skill to the always-on listing, or when a body has outgrown the references it
   cites. Reports movable sections with the trigger-time cost of each and what the
   body must keep to stay followable.
-allowed-tools: Read, Grep, Glob, Bash(node scripts/validate.mjs:*), Bash(wc *), Bash(ls *)
+allowed-tools: Read, Grep, Glob, Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*)
 ---
 
 # Body versus reference
@@ -52,8 +52,8 @@ Material consulted rather than followed, and not on the path of every invocation
 
 ## Method
 
-1. **Measure first.** `wc -l` every `SKILL.md` and every file under its
-   `references/`. A body larger than any of its own references is the signal to look
+1. **Measure first.** Glob every `SKILL.md` and every file under its `references/`,
+   Read each, and take its line count from the last line number Read shows. A body larger than any of its own references is the signal to look
    — it means the most-loaded file is also the biggest.
 
 2. **Classify each section of the body** as keep or candidate, by the two lists

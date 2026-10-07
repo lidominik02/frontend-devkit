@@ -13,7 +13,8 @@ export const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url
 const rel = (p) => path.relative(REPO_ROOT, p) || p;
 
 // A syntax error and a deliberate block can share an exit code, so the parse
-// check runs first and fails with its own message.
+// check runs first and fails with its own message. The script gets the
+// environment without GIT_*, as git() does, plus `env`.
 export function runScript(file, { args = [], input = '', env = {}, cwd = REPO_ROOT } = {}) {
   const check = spawnSync(process.execPath, ['--check', file], { cwd, encoding: 'utf8' });
   if (check.error) throw check.error;
@@ -21,7 +22,7 @@ export function runScript(file, { args = [], input = '', env = {}, cwd = REPO_RO
 
   const res = spawnSync(process.execPath, [file, ...args], {
     cwd,
-    env: { ...process.env, ...env },
+    env: { ...gitEnv(), ...env },
     input,
     encoding: 'utf8',
   });
@@ -40,15 +41,28 @@ export function tempDir(t) {
   return dir;
 }
 
-// Inside a git hook, GIT_DIR and GIT_INDEX_FILE would point git at the caller's repository.
+// Inside a git hook, GIT_DIR and GIT_INDEX_FILE would point git at the caller's repository,
+// both for the tests' own git calls and for the git a script under test spawns, so
+// git() and runScript() both start from this environment.
 function gitEnv() {
   return Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
 }
 
-function git(dir, args) {
+/** Runs git in `dir`, fails the test on a non-zero exit, and returns stdout. */
+export function git(dir, args) {
   const res = spawnSync('git', args, { cwd: dir, env: gitEnv(), encoding: 'utf8' });
   if (res.error) throw res.error;
   if (res.status !== 0) assert.fail(`git ${args.join(' ')} failed in ${dir}: ${res.stderr.trim()}`);
+  return res.stdout;
+}
+
+/** Writes each file, relative to `root`, creating its directories. */
+export function write(root, files) {
+  for (const [rel, text] of Object.entries(files)) {
+    const p = path.join(root, rel);
+    fs.mkdirSync(path.dirname(p), { recursive: true });
+    fs.writeFileSync(p, text);
+  }
 }
 
 export function gitRepo(t, { commit = false } = {}) {
