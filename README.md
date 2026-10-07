@@ -61,16 +61,28 @@ runs at all, and the error the shell reports is not the devkit's. The devkit's o
 development tooling has a separate, higher minimum: Node 22.18, or 24.2 on the 24 line.
 
 Set `autoUpdate`. Auto-update is off by default for third-party marketplaces, so without
-it a release reaches nobody until someone runs `/plugin update`. With it on, a release
-reaches the next session. A session installs `main`, and `main` moves only at a release;
-unreleased work lives on the `dev` branch, as "Working on the devkit" describes.
+it a release reaches nobody until someone runs `/plugin update`. With it on, a release is
+meant to reach the next session; that has not been observed (see below). A session
+installs `main`, and `main` moves only at a release; unreleased work lives on the `dev`
+branch, as "Working on the devkit" describes.
 
 Switching an existing install to this source does not bring every pack along: on 2.1.283,
 after the marketplace entry moved from a `directory` source to this one, the next session
 updated `core` to the release while `vue` and `nuxt` kept their earlier commit-SHA
-version. Check with `claude plugin list` that every pack reports the release, and run
-`claude plugin update <pack>@frontend-devkit` for any that does not; it takes effect on
-restart.
+version. An ordinary release can leave packs behind too. On 2.1.292 on Windows 10, a
+session opened before `autoUpdate` was switched on (in another window) and left open
+across the 0.1.1 release did not pick it up by itself in the few minutes observed: a
+skill still loaded from the 0.1.0 folder, `claude plugin list` reported 0.1.0 for every
+pack, and nothing was downloaded. Updating the marketplace from the `/plugin` menu then
+moved `core` to 0.1.1 while `vue` and `nuxt` stayed on 0.1.0, although their 0.1.1 was
+already in the cache; in that same running session the next skill loaded from the
+`core` 0.1.1 folder (hooks were not checked). Whether a new session with `autoUpdate` on
+brings the release by itself was not observed there, and other CLI versions and
+platforms may behave differently. Check with `claude plugin list` that every pack reports
+the release, and run `claude plugin update <pack>@frontend-devkit` for any that does not.
+The CLI then asks for a restart, but on 2.1.292 on Windows 10 the next skill launch in
+the running session already loaded the updated pack; whether hooks need the restart was
+not checked.
 
 To try an unreleased change, start one session on the working tree, passing
 `--plugin-dir` once for each pack it needs (the flag is repeatable, per `claude --help` on
