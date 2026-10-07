@@ -41,6 +41,11 @@ If `git status` shows uncommitted changes to `CHANGELOG.md` or a
 would carry them. Uncommitted changes anywhere else: name them; they are not part of this
 release, which contains only the commits listed, and they do not stop it.
 
+When the commits change something shipped — `release-warning.mjs` did not end in
+"unchanged since `<tag>`" — ask in one form whether `/windows-check` and `/try-unreleased`
+ran on this code. Each that did not run is named NOT RUN in the message that hands the push
+to the user. Neither stops the release.
+
 ## 2. The level
 
 Apply the bump rule to the listed commits:
@@ -108,7 +113,8 @@ git tag -a vX.Y.Z -F "<annotation file>"
 
 The tag annotation marks the release commit with its version and summary;
 `CHANGELOG.md` is the readable history. Never merge. End by asking the user to push in two
-steps, and push nothing yourself. First `dev` with the tag, which runs CI on the release
+steps, and push nothing yourself; that message names as NOT RUN each of `/windows-check` and
+`/try-unreleased` that section 1 found had not run. First `dev` with the tag, which runs CI on the release
 commit and the release workflow on the tag:
 
 ```

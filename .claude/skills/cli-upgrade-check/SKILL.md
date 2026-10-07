@@ -28,7 +28,7 @@ independently of any build, so check them even when CI is green.
 
 ## What is actually load-bearing
 
-Three things in this repo depend on CLI behaviour that is not contractual:
+Four things in this repo depend on CLI behaviour that is not contractual:
 
 1. **The clean strict exit.** CI runs `claude plugin validate --strict` and expects a
    clean exit: every manifest carries `version`, so no finding is allowed. A release
@@ -43,6 +43,12 @@ Three things in this repo depend on CLI behaviour that is not contractual:
    upstream is reported by this repo as an unknown field that "will be ignored at
    load time", which is now wrong and blocks a legitimate edit. A field removed
    upstream is silently accepted and does nothing.
+
+4. **The `/try-unreleased` driver's protocol** in
+   `.claude/skills/try-unreleased/scripts/driver.mjs`: `--permission-prompt-tool stdio`, the
+   `initialize` control request, the `can_use_tool` request a form arrives as, and the
+   answer returned in `updatedInput.answers`. A release that changes any of them leaves
+   `/try-unreleased` and `/windows-check` unable to run a session.
 
 ## Method
 
@@ -75,6 +81,25 @@ Three things in this repo depend on CLI behaviour that is not contractual:
    version just observed, not the one meant to be tested. Where the finding text
    changed, update the `❯` filter in `scripts/ci/plugin-validate.mjs` and its header
    comment together; the workflow only runs that script.
+
+6. **Re-observe the `/try-unreleased` driver's protocol.** The driver relies on CLI
+   behaviour no documentation covers: `--permission-prompt-tool stdio`, the `initialize`
+   control request, the `can_use_tool` request a form arrives as, and the answer returned
+   in `updatedInput.answers`. After the user agrees to a short run billed to their quota,
+   run the minimal scenario:
+
+   ```
+   node .claude/skills/try-unreleased/scripts/driver.mjs .claude/skills/try-unreleased/scenarios/protocol-check.md
+   ```
+
+   Exit 0 with status `completed` and an empty `notes` re-observes all four on the version
+   the report names: the driver voids a run whose `initialize` request is refused and notes
+   one that is never acknowledged, and the answer file holds the picked letter only when the
+   form went through `can_use_tool` and its answer through `updatedInput.answers`. Record
+   that version in the driver's header comment, which states the version the protocol was
+   observed on. Any other result means the driver needs work before the next
+   `/try-unreleased` or `/windows-check` run; report the status, its reason and the
+   expectation that failed.
 
 ## Before you finish
 

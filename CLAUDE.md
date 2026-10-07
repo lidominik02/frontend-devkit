@@ -107,6 +107,9 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 | `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
 | `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
 | `/release` | Bump the shared version, write the CHANGELOG section, commit and tag; the user pushes `dev`, then `main` once CI is green |
+| `/try-unreleased` | Run the working tree's plugins through a scripted `claude -p` session in a scratch repository, checked against a scenario |
+| `/windows-check` | The pre-release Windows check: gates, missing-binary probes per shell, a real Stop hook |
 | `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
 | `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants above |
+| `contract-auditor` | Finds artifact shapes whose writer and readers no longer agree; on request |

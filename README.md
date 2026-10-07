@@ -769,9 +769,12 @@ shipped to consumers, is not part of any pack, and costs a consuming repository 
 | `/cli-upgrade-check` | Revalidates the platform claims against the installed CLI and records the version they were verified on |
 | `/diagnosing-sessions` | Diagnoses past sessions from their transcripts with five parallel analysts, into an anonymised, cited report with a devkit-involvement verdict and proposed ideas |
 | `/release` | Proposes the version bump from the commits since the latest `v*` tag, then writes the versions and a `CHANGELOG.md` section, commits and tags on `dev` once approved; the user pushes `dev`, then `main` once CI is green |
+| `/try-unreleased` | Runs the working tree's plugins, never the installed ones, through a scripted `claude -p` session in a scratch repository under the OS temp directory, answers its forms from a scenario, and reports each expectation as met, not met or unverifiable; the kept scenarios are in `.claude/skills/try-unreleased/scenarios/` |
+| `/windows-check` | Runs on Windows only: the static checks and the tests with their durations, the missing-binary gate probes under cmd.exe, PowerShell 5.1 and 7, Yarn Berry, pnpm and Git Bash, and a real Stop hook on a failing lint gate, reported in the chat with every version |
 | `trigger-tester` | Whether a description would fire. Reads descriptions, never bodies — the author cannot judge their own, because they know what the skill does |
 | `eval-grader` | Dry-runs a `criteria.md` against synthetic answers before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants CI cannot check |
+| `contract-auditor` | Follows each changed artifact shape — ledger entry, brief field, HANDOFF section, script output, review-report field — to its writers and readers, prose ones included, and reports each pair that no longer agrees with a failing case; runs on request |
 
 Three hooks in `.claude/settings.json` run the gates without being asked: `Stop` runs
 `validate.mjs` when anything under `plugins/`, `scripts/`, `.claude-plugin/` or `.claude/`,
@@ -867,8 +870,9 @@ where it can, which runs `node --check` on the script first and fails with a syn
 of its own. A script with a syntax error and a script that deliberately blocks can share
 an exit code, so without that check a broken script reads as a block. Tests that import a
 module, or spawn `node` with flags of their own, skip that check, so
-`scripts/test/parse.test.mjs` parses every `.mjs` under `plugins/` and `scripts/` on its
-own — the same files `validate.mjs`'s `scripts` check covers.
+`scripts/test/parse.test.mjs` parses every `.mjs` under `plugins/`, `scripts/` and each
+`.claude/skills/<skill>/scripts/` on its own — the same files `validate.mjs`'s `scripts`
+check covers.
 
 **Every pack shares one `version`, set in its `plugin.json` and nowhere else.** By the
 plugins reference (read from the documentation, CLI 2.1.283), an existing install stays on
@@ -903,4 +907,6 @@ changes.
 working tree, so the trial reaches no other session. That session runs each hook from the
 file on disk at the moment of the call: a hook caught mid-edit can fail to parse, and a Node
 hook that throws exits 1 and fails open, so the trial runs without the guarantee it is
-meant to exercise. Leave the hooks unedited while it runs.
+meant to exercise. Leave the hooks unedited while it runs. For a scripted trial instead — a
+non-interactive session in a scratch repository, its forms answered from a scenario and its
+outcome checked against the scenario's expectations — run `/try-unreleased`.
