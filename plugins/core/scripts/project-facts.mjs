@@ -63,6 +63,7 @@ const GATE_ALIASES = /** @type {Record<string, string[]>} */ ({
   build: ['build'],
   format: ['format', 'format:write', 'prettier'],
 });
+export const GATE_NAMES = Object.keys(GATE_ALIASES);
 
 // The script that serves the app for a human to look at, in preference order.
 // `start` is last because in a production-oriented setup it serves a build

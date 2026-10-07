@@ -412,14 +412,45 @@ in a session started outside a project.
 
 Classification reads the exit code and the captured output, not `proc.error`: under
 `shell: true` a missing binary returns `{ status: 127, error: null }`, because the shell
-itself started fine. Probing `node_modules/.bin` is not a workaround — in a pnpm workspace
+itself started fine. On every OS exit 127 marks a missing binary; output such as
+`command not found` or `No such file or directory` under any other exit code is a `fail`.
+On Windows, where cmd.exe exits 1, a stderr line that starts with `'<x>' is not recognized
+as an internal or external command` marks it too (observed on Windows 10 Pro 10.0.19045,
+Node 22.23.3, npm); the same text in the middle of a line, or on stdout, is a `fail`.
+PowerShell's wording, `The term '<x>' is not recognized` after an optional `<x> :` prefix,
+is matched on stderr as well, but neither it nor the exit code Yarn Berry gives on Windows
+has been observed yet. Probing `node_modules/.bin` is not a workaround — in a pnpm workspace
 a binary such as `vue-tsc` lives in the workspace package and never at the root, so a root
 probe reports every workspace binary missing.
 
-Stages: `fast` (typecheck, lint) · `full` (+ test) · `release` (+ build). `build` is
-outside the review path because on a gate-poor repo it is often the only gate present, and
-a review that runs a production build verifies nothing about the diff. Every gate has a
-timeout, and a script that starts a watcher is refused rather than left to hang.
+Under `--json` every gate that ran and did not pass — a `fail`, or a `not-run` that timed
+out, whose command is not installed or whose script does not exist — carries an `output` field: the end of its stdout and stderr,
+merged in the order they arrived, cut to the last 60 lines and then to at most 4000
+characters. A `pass`, and a `not-run` that never started — its shell could not be spawned
+included — carry none. Without `--json` the
+whole output of each gate is printed, in the same arrival order.
+
+Stages: `fast` (typecheck, lint) · `full` (+ test) · `release` (+ build). Stages are picked
+by risk and by what the user has released: `build` is the slowest gate and guards the
+release, so it runs in the `release` stage only, when that stage is asked for. Every gate
+has a timeout, and a script that starts a watcher is refused rather than left to hang.
+A gate whose script rewrites files — `--fix`, `--write` or `--apply` (not `--fix-dry-run`),
+in the script itself or one level down in a script it runs through `run-s`, `run-p`,
+`npm-run-all`, `npm run`, `pnpm [run]` or `yarn [run]` — is never executed, `--gate format`
+included: it is `not-run` with `blocking: false`, and its reason asks for the package.json
+script to check only, with the fix moved into a separate script such as `lint:fix`.
+
+Exit codes: `0` every gate the project has that may run ran and passed (a refused fixer is
+`not-run` and does not fail the run) · `1` a gate failed, a gate the
+project declares could not run, or the directory is not a project root · `2` a usage
+error · `128 + n` stopped by signal `n` (SIGINT, SIGTERM or SIGHUP). A usage error runs no
+gate: an unknown `--stage`, a `--gate` that is not one of the canonical names `typecheck`,
+`lint`, `test`, `build`, `format` (an alias such as `test:unit` is refused), a flag with no
+value or another flag in its place (`--stage --json`), a flag given twice, an unknown flag (`--stag full`,
+`--jsn`) or an argument that belongs to no flag, or a bad `--timeout` or `--budget`.
+stderr says `run-gates: <message>`, and under `--json` stdout is
+`{"passed": false, "usageError": "<message>"}` with no `results`. The Stop hook hands that
+message back as a non-blocking notice and does not remember the tree as green.
 
 **`snapshot.mjs`** captures the working state as a git tree without committing or staging
 anything. `take` prints a tree id covering tracked, staged and untracked non-ignored files;
@@ -440,7 +471,7 @@ Submodule working-tree changes are not captured.
 | `block-secrets.mjs` | PreToolUse | Exit 2 on credential material, regardless of permission mode. Covers **file tools and `Bash`** — a `deny` rule does nothing about reading a dotenv file in a shell. Blocks exfiltration (upload flags, piping into a network client), interpreter one-liners, `source`, environment dumps and a download piped into a shell. Refuses hand-edits to lockfiles and `.git/`. Exempts `.example` / `.sample` / `.template`. A dotenv match requires a path context before it (start, whitespace, a quote, `=`, `/`, `~`), so it does not match inside `process.env` or `import.meta.env`. A heredoc body is stripped from the scan by locating its real closing line, not by truncating everything after the opening marker — truncating there would let anything typed after the heredoc closes through unscanned |
 | `commit-hygiene.mjs` | PreToolUse | Exit 2 on a `git commit` whose message carries an attribution trailer (`Co-Authored-By:`, `Generated with`) or names something only Claude and the user can see: a Claude/chat session, a handoff, a planning-artifact filename this pack's own skills write (`HANDOFF.md`, `PROGRESS.md`, …), or a roadmap phase/artifact. A bare "session", "roadmap", "phase N" or a decision/ADR id is deliberately not banned — each collides with ordinary engineering vocabulary (a login session, a product's own roadmap page, a numbered ADR a repository cites correctly) — see the file's own comments for exactly which forms are matched and why. The message is every `-m`/`--message` and `--trailer` value (`key=value` read as the `key: value` git writes, observed on git 2.43.0) and every `-F`/`--file` text, bundled (`-am`, `-aF`) and abbreviated (`--mess`) spellings included; the commit's options and paths and the other commands on the line (`git add HANDOFF.md && git commit …`) are not its message. When the message comes from stdin, a process substitution, a `/dev/` or `/proc/` path, a file this hook cannot read, or a file the same command also names, the whole command is scanned instead, since the message may be written anywhere in it. `git commit-tree` is denied outright, since a plumbing commit bypasses both the repository's own hooks and these checks. The user pushes and merges, so these are denied too, with a message telling Claude to hand the step back: every `git push`, `send-pack` and `http-push`; a `git merge` other than a bare `git merge --abort`; a `git pull` without `--rebase` or `-r`, which merges (`pull.rebase` config is not read); `git subtree push|pull|merge|add`, `git svn dcommit|set-tree|commit-diff` and `git p4 submit`; and a git subcommand given as an expansion (`git $X push`, `git "$@"`), which may be any of them — at the cost of denying a harmless one such as `git $X status`. `git fetch`, `git rebase`, `git pull --rebase`, `git merge-base` and the other `merge-*` subcommands pass. The command is read the way a shell reads it, so quoting, a leading assignment, a wrapper (`sudo`, `xargs`, `timeout`, …), an `env -S` string, a global option that takes a value (`-C <path>`, `-c <k=v>`, `--git-dir`, `--config-env`, …), a `bash -c` string, a heredoc, here-string or pipe into a shell, and a `$(…)`, backtick or `<(…)` substitution, two levels deep, do not hide the subcommand; a message that merely names one, or a command that never runs its arguments (`echo`, `grep`, …), is not a call to it. Some forms stay out of reach — a git alias, a quoted `eval` string, deeper nesting, a git command name produced by an expansion (`$g`, `$(command -v git)`), a command another interpreter or task runner runs (`python3 -c`, `node -e`, `make`, `npm run`), a git subcommand that runs another command (`git submodule foreach`, `git rebase --exec`), a host CLI (`gh pr merge`) — and the file's header lists every one |
 | `format-on-write.mjs` | PostToolUse | Formats what was just written with the project's own formatter, located by walking up from the file so workspace installs are found. A file whose resolved path lies outside the project directory (`CLAUDE_PROJECT_DIR`, else the working directory) is left as written — a file in the user's auto-memory or in an `--add-dir` directory elsewhere, or the target of a symlink that points out of the project — since the walk would otherwise fall back to the project's formatter. Never blocks — the edit has already happened, and PostToolUse cannot block |
-| `verify-before-done.mjs` | Stop | Runs the `fast` gates before the turn can end and returns the real failure output. Silent when the repo has no gates, when nothing has changed, when `verifyOnStop: false`, or when the directory it checks (`CLAUDE_PROJECT_DIR`, else the event's `cwd`) is not a project root — it has no `package.json` or `.claude/project.json` and is not the git top level — even if the gates at the top level fail. Honours `stop_hook_active` so it cannot loop. Skips the gates when the repository's tracked and untracked non-ignored files are unchanged since the last passing run in the same session — a change only to ignored files, such as generated types, is not detected, and a failing run is never remembered, so an unchanged red tree still blocks. Exits silently while a background subagent is running; a background shell such as a dev server never skips the gates. Its git calls and the gates share a 190-second budget inside the hook's 200-second timeout |
+| `verify-before-done.mjs` | Stop | Runs the `fast` gates before the turn can end. When one fails, it blocks with each failing gate's name, command and the end of its output — the last 60 lines, at most 4000 characters — followed by every gate that could not run, with its reason. Silent when the repo has no gates or its only gates are refused fixers, when nothing has changed, when `verifyOnStop: false`, or when the directory it checks (`CLAUDE_PROJECT_DIR`, else the event's `cwd`) is not a project root — it has no `package.json` or `.claude/project.json` and is not the git top level — even if the gates at the top level fail. Honours `stop_hook_active` so it cannot loop. Skips the gates when the repository's tracked and untracked non-ignored files are unchanged since the last passing run in the same session — a change only to ignored files, such as generated types, is not detected, and a failing run is never remembered, so an unchanged red tree still blocks. Exits silently while a background subagent is running; a background shell such as a dev server never skips the gates. Its git calls and the gates share a 190-second budget inside the hook's 200-second timeout |
 
 All four are Node, not bash. Bash exits `2` on a syntax error, and `2` is also the hook
 protocol's "block", so a shell hook with a syntax error blocks every tool call — including
@@ -545,9 +576,8 @@ gets wrong. It is never required.
 
 That is the whole set. `gates` and `baseBranch` replace what detection found;
 `verifyOnStop: false` silences the Stop hook; `stages` is merged over the built-in stages
-by name, so the entry above *replaces* `fast` rather than adding to it, and an unknown
-name defines a new stage; `timeoutMs` sets the per-gate timeout, though a `--timeout`
-flag still wins over it, and a `--budget` flag caps each gate at what is left of the whole
+by name, so the entry above *replaces* `fast` rather than adding to it; `timeoutMs` sets
+the per-gate timeout, though a `--timeout` flag still wins over it, and a `--budget` flag caps each gate at what is left of the whole
 run. A timeout of `0` sets none; the budget still applies. A gate that times out is stopped
 with every process still reachable through it; on Windows a process whose parent shell has
 already exited is not. On macOS and Linux each gate runs in a process group of its own, which

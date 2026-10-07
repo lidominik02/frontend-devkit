@@ -2,7 +2,7 @@
 // its own mkdtemp directory, never in the repository or the user's git index.
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,11 +14,20 @@ const rel = (p) => path.relative(REPO_ROOT, p) || p;
 
 // A syntax error and a deliberate block can share an exit code, so the parse
 // check runs first and fails with its own message. The script gets the
-// environment without GIT_*, as git() does, plus `env`.
+// environment without GIT_*, as git() does, plus `env`. A file is checked once
+// per test process, since the scripts under test do not change mid-run.
+const syncChecks = new Map();
+const asyncChecks = new Map();
+
 export function runScript(file, { args = [], input = '', env = {}, cwd = REPO_ROOT } = {}) {
-  const check = spawnSync(process.execPath, ['--check', file], { cwd, encoding: 'utf8' });
-  if (check.error) throw check.error;
-  if (check.status !== 0) assert.fail(`syntax error in ${rel(file)}: ${check.stderr.trim()}`);
+  const key = path.resolve(cwd, file);
+  if (!syncChecks.has(key)) {
+    const res = spawnSync(process.execPath, ['--check', file], { cwd, encoding: 'utf8' });
+    if (res.error) throw res.error;
+    syncChecks.set(key, { code: res.status, stderr: res.stderr });
+  }
+  const check = syncChecks.get(key);
+  if (check.code !== 0) assert.fail(`syntax error in ${rel(file)}: ${check.stderr.trim()}`);
 
   const res = spawnSync(process.execPath, [file, ...args], {
     cwd,
@@ -28,6 +37,28 @@ export function runScript(file, { args = [], input = '', env = {}, cwd = REPO_RO
   });
   if (res.error) throw res.error;
   return { code: res.status, stdout: res.stdout, stderr: res.stderr };
+}
+
+// runScript without blocking the event loop, so independent runs can overlap.
+export async function runScriptAsync(file, { args = [], input = '', env = {}, cwd = REPO_ROOT } = {}) {
+  const key = path.resolve(cwd, file);
+  if (!asyncChecks.has(key)) asyncChecks.set(key, spawnAsync(process.execPath, ['--check', file], { cwd }));
+  const check = await asyncChecks.get(key);
+  if (check.code !== 0) assert.fail(`syntax error in ${rel(file)}: ${check.stderr.trim()}`);
+  return spawnAsync(process.execPath, [file, ...args], { cwd, env: { ...gitEnv(), ...env }, input });
+}
+
+function spawnAsync(command, args, { input = '', ...options }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, options);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8').on('data', (d) => { stdout += d; });
+    child.stderr.setEncoding('utf8').on('data', (d) => { stderr += d; });
+    child.on('error', reject);
+    child.on('close', (code) => resolve({ code, stdout, stderr }));
+    child.stdin.end(input);
+  });
 }
 
 export function hookEvent(toolName, toolInput, extra = {}) {

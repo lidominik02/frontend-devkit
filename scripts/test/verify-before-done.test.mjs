@@ -7,12 +7,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
 
-import { REPO_ROOT, git, gitRepo, isolatedEnv, runScript, tempDir } from './helpers.mjs';
+import { REPO_ROOT, git, gitRepo, isolatedEnv, runScript, runScriptAsync, tempDir } from './helpers.mjs';
 
 const HOOK = path.join(REPO_ROOT, 'plugins', 'core', 'scripts', 'verify-before-done.mjs');
 
 const PASS = 'node -e "process.exit(0)"';
 const FAIL = 'node -e "process.exit(1)"';
+const FAIL_SAYING = "node -e \"console.log('src/app.ts:1 Unexpected any'); process.exitCode = 1\"";
 // The counter lives outside the repository, so a skipped run is told apart from a
 // silent pass without changing the tree being fingerprinted.
 const COUNT = "node -e \"require('fs').appendFileSync(process.env.DEVKIT_GATE_RUNS, 'x')\"";
@@ -54,9 +55,11 @@ describe('verify-before-done: a Stop gate that cannot trap the session', () => {
     assert.notEqual(stop(repo(t, FAIL), { stop_hook_active: false }), '');
   });
 
-  test('a block uses the Stop decision contract', (t) => {
+  test('a block uses the Stop decision contract and quotes what the failing gate said', (t) => {
     const { stop } = stopHook(t);
-    assert.ok(blocks(stop(repo(t, FAIL), { stop_hook_active: false })));
+    const out = stop(repo(t, FAIL_SAYING), { stop_hook_active: false });
+    assert.ok(blocks(out));
+    assert.match(JSON.parse(out).reason, /^ {6}src\/app\.ts:1 Unexpected any\r?$/m);
   });
 
   test('stop_hook_active prevents a loop', (t) => {
@@ -200,24 +203,26 @@ describe('verify-before-done: a branch switch is a different tree', () => {
 });
 
 // run-gates is resolved next to the hook, so a copy beside a stand-in shows what the hook does with it.
-function withStandIn(t, runGatesSource) {
+async function withStandIn(t, runGatesSource, payload = { stop_hook_active: false }) {
   const scripts = tempDir(t);
   fs.copyFileSync(HOOK, path.join(scripts, 'verify-before-done.mjs'));
   fs.writeFileSync(path.join(scripts, 'run-gates.mjs'), runGatesSource);
   const dir = gitRepo(t);
   writeLint(dir, PASS);
-  const res = runScript(path.join(scripts, 'verify-before-done.mjs'), {
-    input: JSON.stringify({ stop_hook_active: false }),
-    env: { ...isolatedEnv(tempDir(t)), CLAUDE_PROJECT_DIR: dir },
+  const stateDir = tempDir(t);
+  const res = await runScriptAsync(path.join(scripts, 'verify-before-done.mjs'), {
+    input: JSON.stringify(payload),
+    env: { ...isolatedEnv(stateDir), CLAUDE_PROJECT_DIR: dir },
   });
   assert.equal(res.code, 0, `stderr: ${res.stderr.trim()}`);
-  return res;
+  const remembered = fs.readdirSync(stateDir).some((f) => f.startsWith('devkit-verify-before-done-'));
+  return { ...res, remembered };
 }
 
-describe('verify-before-done: run-gates stops its gates inside the hook budget', () => {
-  test('run-gates is handed what is left of the budget, less a reserve', (t) => {
+describe('verify-before-done: run-gates stops its gates inside the hook budget', { concurrency: true }, () => {
+  test('run-gates is handed what is left of the budget, less a reserve', async (t) => {
     const argsFile = path.join(tempDir(t), 'args.json');
-    withStandIn(
+    await withStandIn(
       t,
       `import fs from 'node:fs';\nfs.writeFileSync(${JSON.stringify(argsFile)}, JSON.stringify(process.argv.slice(2)));\n` +
         `process.stdout.write(JSON.stringify({ results: [] }));\n`,
@@ -229,17 +234,57 @@ describe('verify-before-done: run-gates stops its gates inside the hook budget',
     assert.ok(budget > 0 && budget <= 185_000, `budget ${args[i + 1]}`);
   });
 
-  // A usage error exits 1 with no report; staying silent there reads as a pass.
-  test('run-gates exiting without a report is a non-blocking notice quoting its stderr', (t) => {
-    const res = withStandIn(
+  // Staying silent when run-gates wrote no report reads as a pass.
+  test('run-gates exiting without a report is a non-blocking notice quoting its stderr', async (t) => {
+    const res = await withStandIn(
       t,
-      `process.stderr.write('run-gates: "timeoutMs" must be a whole number of milliseconds\\n');\nprocess.exit(1);\n`,
+      `process.stderr.write('Error: Cannot find module ./project-facts.mjs\\n');\nprocess.exit(1);\n`,
     );
     assert.notEqual(res.stdout, '', 'the hook printed nothing');
     const out = JSON.parse(res.stdout);
     assert.equal(out.decision, undefined);
     assert.match(out.hookSpecificOutput.additionalContext, /NOT RUN/);
-    assert.match(out.hookSpecificOutput.additionalContext, /"timeoutMs" must be a whole number of milliseconds/);
+    assert.match(out.hookSpecificOutput.additionalContext, /Cannot find module \.\/project-facts\.mjs/);
+  });
+
+  // A usage error ran no gate, so remembering the tree as green would skip the next real run.
+  test('a usage-error report is a non-blocking notice quoting it, and the tree is not remembered', async (t) => {
+    const usageError = 'unknown stage "nope"; use one of: fast, full, release';
+    const res = await withStandIn(
+      t,
+      `process.stdout.write(${JSON.stringify(JSON.stringify({ passed: false, usageError }))});\nprocess.exit(2);\n`,
+      session(),
+    );
+    assert.notEqual(res.stdout, '', 'the hook printed nothing');
+    const out = JSON.parse(res.stdout);
+    assert.equal(out.decision, undefined);
+    assert.match(out.hookSpecificOutput.additionalContext, /NOT RUN/);
+    assert.ok(out.hookSpecificOutput.additionalContext.includes(usageError));
+    assert.equal(res.remembered, false);
+  });
+
+  // The control for the test above: the same stand-in setup does remember a green report.
+  test('a green report under a session is remembered', async (t) => {
+    assert.equal((await withStandIn(t, `process.stdout.write(JSON.stringify({ results: [] }));\n`, session())).remembered, true);
+  });
+
+  // A gate that could not run is still unverified when another one fails beside it.
+  test('a block carries each failing gate\'s output and every blocking gate that did not run', async (t) => {
+    const report = {
+      results: [
+        { name: 'typecheck', command: 'npm run typecheck', status: 'fail', code: 2, output: 'src/a.ts:1 error one\nsrc/b.ts:9 error two' },
+        { name: 'lint', command: 'npm run lint', status: 'not-run', blocking: true, reason: 'timed out after 30s', output: '' },
+      ],
+    };
+    const res = await withStandIn(t, `process.stdout.write(${JSON.stringify(JSON.stringify(report))});\nprocess.exitCode = 1;\n`);
+    const out = JSON.parse(res.stdout);
+    assert.equal(out.decision, 'block');
+    assert.ok(
+      out.reason.includes('  - typecheck: FAILED (npm run typecheck)\n      src/a.ts:1 error one\n      src/b.ts:9 error two'),
+      out.reason,
+    );
+    assert.ok(out.reason.includes('  - lint: NOT RUN (timed out after 30s)'), out.reason);
+    assert.doesNotMatch(out.reason, /to see the full output/);
   });
 });
 

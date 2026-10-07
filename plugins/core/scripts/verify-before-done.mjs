@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-// Stop hook -- runs this project's fast gates before the turn can end, and
-// hands back the real output when they fail. Every other component here only
-// instructs Claude to verify before reporting done; this makes the turn depend
-// on it.
+// Stop hook -- runs this project's fast gates before the turn can end, and when
+// they fail hands back the end of each failing gate's output with any gate that
+// could not run. Every other
+// component here only instructs Claude to verify before reporting done; this
+// makes the turn depend on it.
 //
 // What it does not do:
 //   - Run expensive gates. Fast stage only (typecheck + lint). Tests and builds
@@ -174,8 +175,8 @@ async function main(input) {
   try {
     report = JSON.parse(run.stdout);
   } catch {
-    // run-gates stopped before writing a report, as on a usage error. Silence here
-    // would read as a pass, so the reason is handed back without blocking.
+    // run-gates stopped before writing a report. Silence here would read as a
+    // pass, so the reason is handed back without blocking.
     const said = run.stderr.trim().slice(-2000) || run.stdout.trim().slice(-2000) || 'no output';
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
@@ -183,6 +184,19 @@ async function main(input) {
         additionalContext:
           `The fast gates were NOT RUN: run-gates exited ${run.code} without a report ` +
           `(broken setup, not a code defect):\n${said}\nDo not describe these gates as passing.`,
+      },
+    }));
+    return;
+  }
+
+  // A usage error runs no gate, so the tree is not remembered as green.
+  if (typeof report?.usageError === 'string') {
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'Stop',
+        additionalContext:
+          `The fast gates were NOT RUN: run-gates reported a usage or configuration error ` +
+          `(exit ${run.code}): ${report.usageError}\nDo not describe these gates as passing.`,
       },
     }));
     return;
@@ -199,19 +213,29 @@ async function main(input) {
     try { writeFileSync(stateFile, fp); } catch { /* the next Stop just runs again */ }
   }
 
-  // A project with no gates at all. Stay silent: the reviewer and the skills
-  // already report the gap, and repeating it every turn is noise.
+  // No gate ran and none is broken: the project has none, or only refused fixers.
+  // Stay silent: the reviewer and the skills already report it, and every turn is noise.
   if (ran.length === 0 && brokenSetup.length === 0) return;
 
+  const notRunDetail = brokenSetup.map((/** @type {any} */ r) => `  - ${r.name}: NOT RUN (${r.reason})`).join('\n');
+
   if (failed.length > 0) {
-    const detail = failed.map((/** @type {any} */ r) => `  - ${r.name}: FAILED (${r.command})`).join('\n');
+    const detail = failed.map((/** @type {any} */ r) => {
+      const output = typeof r.output === 'string' && r.output !== ''
+        ? '\n' + r.output.split(/\r?\n/).map((line) => `      ${line}`).join('\n')
+        : '';
+      return `  - ${r.name}: FAILED (${r.command})${output}`;
+    }).join('\n');
+    const notRun = brokenSetup.length > 0
+      ? `\n\nThese gates could not run (broken setup, not a code defect):\n${notRunDetail}`
+      : '';
     process.stdout.write(JSON.stringify({
       decision: 'block',
       reason:
-        `The turn cannot end yet: this project's fast gates are failing.\n\n${detail}\n\n` +
-        `Run \`node "${RUN_GATES}" --stage fast\` to see the full output, fix what it reports, ` +
-        `and try again. If a failure is pre-existing and unrelated to your change, say so ` +
-        `explicitly rather than fixing it silently.`,
+        `The turn cannot end yet: this project's fast gates are failing.\n\n${detail}${notRun}\n\n` +
+        `The end of each failing gate's output is above. Fix what it reports, and try again. ` +
+        `If a failure is pre-existing and unrelated to your change, say so explicitly rather ` +
+        `than fixing it silently.`,
     }));
     return;
   }
@@ -219,12 +243,11 @@ async function main(input) {
   if (brokenSetup.length > 0) {
     // Not a code defect, so it does not block but the report must never read
     // as though these gates passed.
-    const detail = brokenSetup.map((/** @type {any} */ r) => `  - ${r.name}: NOT RUN (${r.reason})`).join('\n');
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'Stop',
         additionalContext:
-          `Gates that could not run in this project (broken setup, not a code defect):\n${detail}\n` +
+          `Gates that could not run in this project (broken setup, not a code defect):\n${notRunDetail}\n` +
           `Do not describe these as passing.`,
       },
     }));
