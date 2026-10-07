@@ -37,6 +37,11 @@ Fail closed on a policy decision; fail open on a broken interpreter.
 invocation, and the checks that read component frontmatter select on `SKILL.md` or
 `agents/` — a file under `commands/` skips both.
 
+**A script lives with its one consumer.** A skill's own script sits in that skill's
+`scripts/`; a script more than one component, a hook or CI uses sits in the shared
+`scripts/` of its pack or of the repository. A script moved into a skill would make every
+other user reach into that skill's folder.
+
 **One shared `version`, in every pack's `plugin.json` only.** Every pack carries the
 same `X.Y.Z`; `marketplace.json` carries none. Only `/release` bumps it.
 `claude plugin validate --strict` is expected to exit clean.

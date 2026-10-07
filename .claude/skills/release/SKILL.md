@@ -8,7 +8,7 @@ description: >-
   tag. Pushes nothing; it prints the two push commands, the second of which moves main
   once CI is green.
 disable-model-invocation: true
-allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-current), PowerShell(git branch --show-current), Bash(git describe *), PowerShell(git describe *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *), Bash(git status *), PowerShell(git status *), Bash(node scripts/release-check.mjs), PowerShell(node scripts/release-check.mjs), Bash(node scripts/ci/release-warning.mjs), PowerShell(node scripts/ci/release-warning.mjs)
+allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-current), PowerShell(git branch --show-current), Bash(git describe *), PowerShell(git describe *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *), Bash(git status *), PowerShell(git status *), Bash(node .claude/skills/release/scripts/release-check.mjs), PowerShell(node .claude/skills/release/scripts/release-check.mjs), Bash(node scripts/ci/release-warning.mjs), PowerShell(node scripts/ci/release-warning.mjs)
 ---
 
 # Release the devkit
@@ -75,7 +75,7 @@ stops the run. The user approves or changes it. Do not write anything before the
 3. Validate what the release commit will hold, not the working tree. Run, without asking:
 
    ```
-   node scripts/release-check.mjs
+   node .claude/skills/release/scripts/release-check.mjs
    ```
 
    It checks out HEAD into a temporary directory without touching the index, copies the

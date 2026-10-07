@@ -8,7 +8,7 @@ import { test } from 'node:test';
 
 import { REPO_ROOT, git, gitRepo, runScript, write } from './helpers.mjs';
 
-const SCRIPT = path.join(REPO_ROOT, 'scripts', 'release-check.mjs');
+const SCRIPT = path.join(REPO_ROOT, '.claude', 'skills', 'release', 'scripts', 'release-check.mjs');
 const DESCRIPTION = 'Demo skill used as a release-check fixture; it exists only in a temporary repository.';
 
 const manifest = (version) => JSON.stringify({ name: 'core', version });
