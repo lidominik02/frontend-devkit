@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-agnostic development platform: a feature lifecycle (clarify, plan, execute, automatic review, QA), bug investigation, browser verification, commit/MR authoring, repo preparation, prompt rewriting, and deterministic hooks.",
   "author": { "name": "lidominik02" },
   "repository": "https://github.com/lidominik02/frontend-devkit",
