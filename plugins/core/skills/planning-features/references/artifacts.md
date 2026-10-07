@@ -181,11 +181,13 @@ interface a task consumes with the task that produces it.
 ## Ledger
 - <date> · execution start · <mode>
   - Baseline: <gate> pass | FAIL | NOT RUN (<reason>) · …
+  - Baseline files: <path>, …
   - Pre-execution tree: <id>
 - <date> · pruned · pre-execution tree <id>
   - Answer: review from the merge-base | stopped
 - <date> · <task name> · done | open
   - Skipped: <what was skipped>          (an open task only)
+  - Baseline files rewritten: after <open task name>   (the task after an open one, when the run went on)
   - Gates: <each with its result>
   - Rounds: <n>
   - Review: <verdict line>
@@ -195,6 +197,7 @@ interface a task consumes with the task that produces it.
   - Ref: <ref> at <commit>
 - <date> · baseline retaken · <task name>
   - Baseline: <gate> pass | FAIL | NOT RUN (<reason>) · …
+  - Baseline files: <path>, …
   - Pre-execution tree: <id>
   - Outside the final review: tasks <each Done task before it> | none · conflict files <each file its conflicts changed> | none
 - <date> · deferred · <task name> task review · <id> <severity>

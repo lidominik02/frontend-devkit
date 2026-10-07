@@ -69,9 +69,14 @@ and the repository are all you have.
    ```
 
    Report each gate's `status` as given: pass, fail, or not-run with its reason. A gate
-   that did not run is NOT RUN, never implied passed. A failure in a file you did not
-   touch is pre-existing: report it, do not fix it. Run nothing heavier — tests, build,
-   Storybook, a browser — unless the brief says it is released.
+   that did not run is NOT RUN, never implied passed. Exit 2 is a usage error in your
+   call, not a gate result: correct the call, not the code. Read "Judging a gate failure
+   against the baseline" in
+   `${CLAUDE_PLUGIN_ROOT}/skills/executing-plans/references/dispatch.md` and judge each
+   failure by it: fix the task's, report a pre-existing one without fixing it, and report
+   an undecided one as undecided with its location. Never judge by which files you touched.
+   Run nothing heavier — tests, build, Storybook, a browser — unless the brief says it is
+   released.
 
 10. **Self-review before returning.** Every acceptance item is met, with evidence. Run
 
@@ -81,8 +86,8 @@ and the repository are all you have.
 
     with `<file>` in the report's folder or outside the repository, and confirm its stat
     lists only files the brief names. This check is yours; the dispatcher runs the same
-    diff independently. No gate fails on a file you changed. Every claim in the report is
-    one you observed, not assumed.
+    diff independently. No gate failure that step 9 makes the task's is left, wherever it
+    is. Every claim in the report is one you observed, not assumed.
 
 11. **Write the report file** with the full detail:
 

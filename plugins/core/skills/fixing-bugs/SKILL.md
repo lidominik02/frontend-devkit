@@ -42,8 +42,11 @@ only, runs only the one test file it writes, and hands the result to `reviewing-
 4. **Baseline.** Before the first edit, the repro test included, run the fast gates and
    take the tree, and record both in FIX.md. The review diffs from the tree; section 4
    step 5 compares against the gates, so a failure that predates the fix is never blamed
-   on it. For a gate that fails here, run `run-gates.mjs --gate <name>` without `--json`,
-   which echoes the gate's output, and record the errors it names.
+   on it. For a gate that fails here, record the errors its `output` in the JSON names.
+   Only when that end of the output is not enough to name them, run
+   `run-gates.mjs --gate <name>` without `--json`, which echoes the gate's whole output.
+   Exit 2 is a usage error in the call, not a gate result: correct the call and run it
+   again.
 
    ```
    node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json

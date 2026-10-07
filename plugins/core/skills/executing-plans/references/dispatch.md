@@ -15,6 +15,7 @@ Feature: <feature-slug>
 Spec: temp/<feature>/planning/SPEC.md
 Decisions: temp/<feature>/planning/DECISIONS.md
 Report: temp/<feature>/tasks/<NN>-<task-slug>-report.md
+Baseline: <abs path of each baseline file>
 Scratch: <a directory outside the repository>
 Released: test released | held · build released | held
 Forbidden index writes: git add, git commit, git write-tree, git update-index, git read-tree, git commit-tree.
@@ -32,9 +33,10 @@ Forbidden index writes: git add, git commit, git write-tree, git update-index, g
 <each name this task consumes: the task that produced it and where it lives> | none
 ```
 
-The scratch location is the session's scratchpad directory when the host names one, else
-the system temp directory. A gate is released only when the rules in HANDOFF.md or the
-user released it.
+The Baseline line names the files in the `Baseline files:` sub-item of the latest
+`execution start` or `baseline retaken` ledger entry. The scratch location is the session's
+scratchpad directory when the host names one, else the system temp directory. A gate is
+released only when the rules in HANDOFF.md or the user released it.
 
 **The conflicts brief.** In subagent mode the conflicted files a git history or index task
 leaves go through the per-task steps 2 to 7 on this template, under the git task's number
@@ -151,6 +153,7 @@ Plan: temp/<feature>/planning/PLAN.md
 Spec: temp/<feature>/planning/SPEC.md
 Decisions: temp/<feature>/planning/DECISIONS.md
 Report: temp/<feature>/tasks/<NN>-fix-findings-report.md
+Baseline: <abs path of each of the feature's latest baseline files>
 Scratch: <a directory outside the repository>
 Released: test released | held · build released | held
 Forbidden index writes: git add, git commit, git write-tree, git update-index, git read-tree, git commit-tree.
@@ -165,10 +168,34 @@ Forbidden index writes: git add, git commit, git write-tree, git update-index, g
 <the PLAN.md section, verbatim>
 ```
 
+The Baseline line names the same files as a task brief's. A failure those files lack
+belongs to the feature's work as a whole, since every Done task has changed the tree since.
+
 A regression test is written at the seam its line names, and its line releases that one
 file: red before the fix and green after, by the command "Running one test file" in
 `../../fixing-bugs/references/loop.md` gives. The suite and the test gate stay as the
 Released line has them.
+
+## Judging a gate failure against the baseline
+
+The implementer and this skill judge every gate failure by this one rule. A failure is
+located from its gate's `output` and judged against the baseline files the brief's
+`Baseline:` line names, never by which files the task touched — a changed type can break a
+caller the task never opened, and an old error can sit in a file the task changed. An
+`output` is cut when it reached 60 lines or 4000 characters: an error can then lie past
+its start, so a comparison with it decides nothing.
+
+- **The task's**: its gate passed in the baseline; or it failed there, neither `output`
+  is cut, and the baseline's `output` lacks this error. Fixed, in an untouched file too.
+- **Pre-existing**: its gate failed in the baseline, neither `output` is cut, and the
+  baseline's `output` has the same error. Reported, not fixed, in a changed file too.
+- **Undecided**: its gate has no comparable baseline entry — no file for it, the gate
+  released after the baseline was taken, or NOT RUN there — or it failed there and either
+  `output` is cut. Reported with its gate and location, neither fixed nor called
+  pre-existing; the user rules on it, and it never enters a fix loop on its own.
+
+A brief with no `Baseline:` line: every failure is reported with its location, saying no
+baseline was given.
 
 ## The format pass after a Bash edit
 
@@ -198,9 +225,10 @@ the plan — how tightly its tasks couple, how many there are, what a shipped mi
 cost.
 
 **Pause after a task.** A short brief — what was built, the review result, the rounds,
-anything the user must weigh — then one AskUserQuestion form: Continue (recommended),
-Continue without pausing, Stop. Stop leaves HANDOFF.md with the next task as the next action
-and the kickoff prompt rewritten to match.
+each undecided gate failure with its gate and location, anything the user must weigh —
+then one AskUserQuestion form: Continue (recommended), Continue without pausing, Stop. Stop
+leaves HANDOFF.md with the next task as the next action and the kickoff prompt rewritten
+to match.
 
 **Deviation.** One AskUserQuestion form naming the change: Keep it as planned (recommended),
 or Change it, which writes a DECISIONS.md entry (superseding D<n> when it changes one).

@@ -55,19 +55,39 @@ mode and, inline, the framework rules: steps 1, 3 and 7.
    more than one task modifies, with those tasks; each interface a task consumes, with the
    task that produces it. Tasks run strictly one at a time in one working tree; the table is
    what each task's diff is checked against.
-5. **Baseline.** Run the fast gates once, so a failure that predates the run is never blamed
-   on a task, and take the pre-execution tree — the base the final review diffs from. Record
-   both in one ledger entry. A restarted run keeps the latest recorded tree. When "The final
-   review's base" in `../planning-features/references/artifacts.md` takes the base from a
-   `sync` entry, or from the merge-base of a `pruned` entry, that settles it for every later
-   run; otherwise check the tree with `git cat-file -e <tree>^{tree}`. A failed check, and any
+5. **Baseline.** Run the fast gates once, and each gate released at this moment once
+   (`--gate test --json`, `--gate build --json`), so a failure that predates the run is
+   never blamed on a task, and take the pre-execution tree — the base the final review diffs
+   from. Each command writes its JSON to its own file in the feature folder, which already
+   exists: `temp/<feature>/baseline-fast.json`, and `baseline-test.json` or
+   `baseline-build.json` for each released gate. Each is written with `>`, so every file
+   holds one JSON document, and a rerun — a corrected call, a retaken baseline, or the
+   rewrite below — overwrites it. A redirect to a file, never a pipe, so each exit code
+   survives, and each failing gate keeps its `output` for the comparison in section 2 step 6. Exit 2 is a
+   usage error in the call, not a gate result: correct the call and run it again. Record
+   the gates, each file's absolute path and the tree in one ledger entry. A restarted run keeps the latest
+   recorded tree. When "The final review's base" in
+   `../planning-features/references/artifacts.md` takes the base from a `sync` entry, or
+   from the merge-base of a `pruned` entry, that settles it for every later run; otherwise
+   check the tree with `git cat-file -e <tree>^{tree}`. A failed check, and any
    gate run that reports a hung gate or a directory that is not a project root, go by the
    troubleshooting table in `references/dispatch.md`, never as a task failure.
 
    ```
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json > <abs>/temp/<feature>/baseline-fast.json
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate test --json > <abs>/temp/<feature>/baseline-test.json     # test released only
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate build --json > <abs>/temp/<feature>/baseline-build.json   # build released only
    node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take
    ```
+
+   **A task left open with a gate failure.** When a task stays open with a gate failure and
+   the run goes on, in either mode, rerun the gate commands above before the next task
+   starts, overwriting the baseline files, so the next task sees the open failure in its
+   baseline and judges it pre-existing. This writes no ledger entry of its own: the next
+   task's `done | open` entry gains a `Baseline files rewritten: after <open task name>`
+   sub-item, because only then is it known that the run went on. It never writes a
+   `baseline retaken` entry and never takes a new pre-execution tree, so the final review's
+   base stays where "The final review's base" puts it.
 
 6. **Untracked `temp/`.** When `git check-ignore -q temp/` exits 1, say once that the briefs,
    reports and diffs land in an untracked `temp/`.
@@ -104,21 +124,32 @@ section 4 in place of steps 2 to 7:
    both, or one the conflict table gives to another task, is raised to the reviewer and to
    the user — never silently accepted.
 6. **Task review.** Run the fast gates once, and each released gate once
-   (`--gate test --json`, `--gate build --json`). Then dispatch `core:reviewer`, `sonnet`,
-   foreground, with the task-review prompt of `references/dispatch.md`: role `two-axis`, the
-   absolute diff path step 5 printed, its intent sources and one gate block per command run.
-7. **Fix loop**, for critical and important findings only: at most three rounds, each run
-   as the Fix rounds section of `references/dispatch.md` says, its decision check first.
+   (`--gate test --json`, `--gate build --json`). Exit 2 is a usage error in the call:
+   correct the call and run it again; it is no gate result and no finding. Judge every
+   failure, the ones the report calls pre-existing included, by "Judging a gate failure
+   against the baseline" in `references/dispatch.md`: it is the task's, pre-existing or
+   undecided. An undecided failure never enters the fix loop on its own, and always stops the run after this task, even when the user chose
+   "Continue without pausing": the pause brief and form of step 9 name each with its gate
+   and its location from the `output`, for the user to rule on. Then dispatch
+   `core:reviewer`, `sonnet`, foreground, with the task-review prompt of
+   `references/dispatch.md`: role `two-axis`, the absolute diff path step 5 printed, its
+   intent sources and one gate block per command run.
+7. **Fix loop**, for critical and important findings, and for every gate failure step 6
+   found to be the task's, which joins them as an important finding named by its gate and
+   its error from the `output`: at most three rounds, each run as the Fix rounds section of
+   `references/dispatch.md` says, its decision check first.
    A critical or important finding still open after round 3 stops the run for the user,
    unless it is a reversible plan defect, ruled on as section 3's Deviations says. Each
    minor finding, from any round, gets a `deferred` ledger entry; the final review sees the
    code again.
 8. **Close the task.** The row is Done only when every step ran and every gate in its Done
    when passed; otherwise it stays open and the ledger names what was skipped. One ledger
-   entry: the task, the gates, the rounds, the review result.
+   entry: the task, the gates, the rounds, the review result. A task left open with a gate
+   failure rewrites the baseline files before the next task's step 1, by pre-flight step 5.
 9. **Pause** after every task, unless the user chose "Continue without pausing" earlier in
    this run, with the pause brief and form in the Forms section of `references/dispatch.md`.
-   Without pausing, the run still stops and asks wherever a step above says to.
+   Without pausing, the run still stops and asks wherever a step above says to — step 6
+   on an undecided gate failure among them.
 
 ## 3. Inline
 
@@ -134,9 +165,14 @@ section 4 in place of steps 2 and 3:
    files it touched and no others.
 3. **Gates.** `node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json`, its
    result read from its exit code and JSON, never through a pipe that drops the exit code.
+   Exit 2 is a usage error in the call: correct the call, not the code. Each failure is
+   judged by "Judging a gate failure against the baseline" in `references/dispatch.md`:
+   the task's failures are fixed before the task closes. Inline no pause follows a task, so an undecided failure
+   stops the run: name each with its gate and location, and ask before the task closes.
 4. **Close** in one combined write: the task's `PROGRESS.md` row, its ledger entry, and
-   `HANDOFF.md`'s stage and Next action moved on to the next task. Continue with it without
-   pausing.
+   `HANDOFF.md`'s stage and Next action moved on to the next task. A task left open with a
+   gate failure rewrites the baseline files first, by pre-flight step 5. Continue with the
+   next task without pausing.
 
 **Deviations.** A change to what a plan step or a `DECISIONS.md` entry says, or to what an
 option the user picked promised, is asked with the deviation form in the Forms section of
@@ -145,10 +181,11 @@ interface name, a task order that cannot work — is ruled on without a form, ea
 own `DECISIONS.md` entry and a `ruling · plan defect` ledger entry naming it.
 
 Stop and ask on an ambiguity `SPEC.md` and `DECISIONS.md` do not answer, on a product
-question, or on a gate failure the task caused and cannot fix — the baseline shows which
-failures predate it. A structural decision the task did not plan — a new module, a new
-shared abstraction, a move across folders — is the same stop, answered as the
-`NEEDS_CONTEXT` row in `references/dispatch.md` answers an implementer.
+question, or on a gate failure the task caused and cannot fix — the baseline files decide
+which failures predate it, as section 2 step 6 judges them. A structural decision the
+task did not plan — a new module, a new shared abstraction, a move across folders — is the
+same stop, answered as the `NEEDS_CONTEXT` row in `references/dispatch.md` answers an
+implementer.
 
 ## 4. A git history or index task
 
@@ -164,8 +201,10 @@ since the user merges:
 2. Run the operation as the task words it. The conflicted files it leaves are code, changed
    before step 3 under the mode's own rules — in subagent mode by an implementer through
    section 2 steps 2 to 7, with a conflicts brief naming them (`references/dispatch.md`).
-3. Run the fast gates. When HEAD has moved, that run and a new pre-execution tree are the
-   new baseline: one `baseline retaken` ledger entry naming the task and what the new base
+3. Run the fast gates. When HEAD has moved, the gates run as pre-flight step 5 runs them —
+   the fast stage and each gate released at this moment, written to the baseline files — and
+   with a new pre-execution tree are the new baseline: one `baseline retaken` ledger entry
+   naming the task and what the new base
    leaves out of the final review — every Done task before it, each file its conflicts changed.
 4. Close the task by the mode's close step before any other work, so Next action never
    names an operation that already ran.

@@ -7,7 +7,7 @@ description: >-
   commit", "MR description", "PR description", "describe these changes", or asks for a
   changelog entry — even without naming the convention, on GitLab or GitHub. For
   "review this" or "is this safe to merge", use reviewing-changes.
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git log *) Bash(git diff *) Bash(git status *) Read Grep Glob
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs --stage fast *) Bash(git log *) Bash(git diff *) Bash(git status *) Read Grep Glob
 ---
 
 You turn a diff into the two artifacts a reviewer reads: a commit message and a merge
@@ -101,11 +101,23 @@ checklist often names the exact commands the project wants run. Otherwise:
 **The verification section is where honesty is load-bearing.** Write only what you
 actually ran. When the skill that called this one supplies gate results, they are the
 truth: use them as given, run no gate, and report a gate they leave out as NOT RUN.
-Otherwise get the truth from:
+Otherwise get the truth from the fast gates, unless the user has released more:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage full --json
+node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json
 ```
+
+The `test` and `build` gates are not in that run. Run each one the user has released on
+its own:
+
+```
+node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate test --json
+node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate build --json
+```
+
+When the project has one of them and the user has not released it, list it as NOT RUN
+in the verification section, with the reason "held until the user releases it". Never
+write it as passed. A gate the project does not have is covered by the last bullet below.
 
 - `status: "pass"` → say it passed.
 - `status: "fail"` → say it failed. Do not soften it.
