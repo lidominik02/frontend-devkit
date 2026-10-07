@@ -9,8 +9,9 @@ version: what it added, changed and fixed for someone using the devkit, newest f
 
 - The hooks and the gate runner work on Windows as well as on macOS and Linux, with no
   bash involved.
-- A gate that runs too long is stopped together with every process it started, and the
-  Stop hook keeps the gates within the time it has, so nothing is left running behind it.
+- A gate that runs too long is stopped together with every process still reachable
+  through it (on Windows, not one whose parent shell has already exited), and the Stop
+  hook keeps the gates within the time it has.
 - When a gate fails, its last output lines appear in the result, so you can read the
   failure without running it again.
 
