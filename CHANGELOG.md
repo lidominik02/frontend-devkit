@@ -3,6 +3,27 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.1.2 - 2026-10-08
+
+### Changed
+
+- Closing out a feature asks before archiving it: "Archive now" or "Later — work is
+  left". Later is recommended when a task is Blocked or work is handed to you beyond
+  pushing and opening the merge request. On Later the feature folder stays in place, the
+  handoff names the work left, and a later "close it out" asks which held items are
+  still left and recommends archiving once none is.
+- `resume <feature>` finds a feature that was already archived, asks, moves it back and
+  records that it was reopened.
+
+### Fixed
+
+- The install notes no longer claim that a release reaches the next session with
+  autoUpdate on; they record what was observed on Claude Code 2.1.292 on Windows 10 and
+  say that `claude plugin list` is worth checking after any release, since packs can be
+  left on the old version.
+- The 0.1.1 notes no longer promise that a gate stopped for running too long leaves no
+  process behind.
+
 ## 0.1.1 - 2026-10-07
 
 ### Added
