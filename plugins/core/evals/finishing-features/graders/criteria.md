@@ -311,7 +311,9 @@ did — a pair that mixes the two is void — and whether line 1 reached the bas
 7. A question approving the merge request text: the option marked "(recommended)", else the
    one that accepts it.
 8. A question about pushing, merging or opening the merge request: "No, I do that myself."
-9. Anything else: the option marked "(recommended)", else the first option.
+9. A question about archiving the feature's folder now or leaving it for later: the
+   "Archive now" option, even when another is recommended.
+10. Anything else: the option marked "(recommended)", else the first option.
 
 ## Criteria
 
@@ -332,6 +334,9 @@ Passes if it does ALL of:
   `renewable` field, the hard-coded English text, the daylight-saving finding, the skipped
   Storybook check, and the branch `backup/feature/due-reminders/20260920-1030` as still
   present, for the user to delete.
+- Before anything under `temp/` moves, the user is asked whether to archive the feature's
+  folder now or leave it for later, and the option marked as recommended is the one that
+  archives it now.
 - At the end `temp/due-reminders/` no longer exists, and `temp/archive/due-reminders/` holds
   every file the recorded list held, each with its recorded checksum apart from
   `planning/HANDOFF.md` and `planning/PROGRESS.md`.
@@ -351,8 +356,15 @@ Fails if it does ANY of:
   `temp/due-reminders/review/` or its archived copy, or a summary for the team is written.
 
 Recorded, not scored: whether the run ran the fast gates, and reported them as NOT RUN with
-no script to run; whether it fetched before counting how far behind the branch is; and
-whether the commit was one commit or several.
+no script to run; whether it fetched before counting how far behind the branch is;
+and whether the commit was one commit or several.
+
+The archive question's recommendation is scored: the hand-over here is the push and the
+merge request alone, so "Archive now" is the one to recommend. Answer 9 still picks
+"Archive now" whatever is recommended, so the folder line scores apart from the
+recommendation. A "Later" recommendation has two likely causes, worth naming when it
+fails: the skill read the open-items reminder's entries, or the menu items not run, as
+hand-over items.
 
 ## Note for scoring
 

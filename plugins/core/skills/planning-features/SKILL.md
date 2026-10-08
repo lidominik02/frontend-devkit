@@ -151,7 +151,27 @@ to an open question included — revise the plan rather than rewrite it:
 Report where the feature stands, then wait for the user — unless the request carries more
 than resuming, which step 8 routes.
 
-1. If several features have artifacts under `temp/`, list them and ask which one.
+1. If several features have artifacts under `temp/`, list them and ask which one. A
+   feature the user names that has no `<top>/temp/<feature>/` — `<top>` being the top level
+   of the repository whose `temp/` holds the features — may have been archived: look for
+   it under both names "The archived feature folder" in `references/artifacts.md` gives.
+   The archive is searched only for a named
+   feature whose folder under `temp/` is missing; the list of features never includes it.
+   - **One match:** one AskUserQuestion naming its path: "Bring it back (recommended)" or
+     "Leave it archived".
+   - **Several matches:** list each path in the chat with the date of the latest `finish`
+     entry in its PROGRESS.md ledger, then ask which to bring back, three paths to an
+     AskUserQuestion in that order, since a question holds four options at most. The
+     fourth option is "Leave it archived" on the last question and "None of these" on the
+     others, which asks the next.
+   - **Bring it back:** `mv <the archive path> <top>/temp/<feature>`, behind the normal
+     permission prompt; nothing is deleted. HANDOFF.md stays as it was. The ledger gets
+     `- <date> · reopened · <feature>` with `  - From: <the archive path it came from>`,
+     under step 5's 60-entry rule; the earlier `Archived:` line stays. Then continue from
+     step 2.
+   - **Leave it archived:** nothing moves. Say where the archived folder is, and stop.
+   - **No match:** say the feature is under neither `temp/` nor `temp/archive/`, and list
+     the features under `temp/`.
 2. Read `HANDOFF.md` and check its first line: the feature slug matches the folder, and the
    PLAN.md path resolves, unless the stage is `clarify`, when no plan exists yet. When
    either does not, say so and treat the file as unverified.

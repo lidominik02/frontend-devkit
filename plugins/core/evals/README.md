@@ -57,7 +57,9 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `qa-list-without-a-spec` | Whether, with no spec and no written requirement, `plan` derives criteria from the plan's task and the diff and discloses the weaker source, rather than inventing a story to look ordinary |
 | `design-intent-skip` | Whether `run` reports the design-intent cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
 | `storybook-skip` | The same skip discipline for the Storybook cases, when no Storybook script exists |
-| `finishing-features` | Whether closing out a feature surfaces what is left and asks whether the user is done before acting, commits only an accepted message, warns that the branch is behind before the MR text, reminds every open item including a backup branch, moves the feature's files aside rather than deleting them, and pushes nothing |
+| `finishing-features` | Whether closing out a feature surfaces what is left and asks whether the user is done before acting, commits only an accepted message, warns that the branch is behind before the MR text, reminds every open item including a backup branch, moves the feature's files aside rather than deleting them, recommends archiving now when only the push and the merge request are left, and pushes nothing |
+| `finishing-held-archive` | Whether closing out a feature whose hand-over still lists work past the push — a task blocked on an open question, a check that can run only after the merge — recommends archiving later, leaves the folder under `temp/`, tells the user what is left, records the held archive in the ledger with each item left, and points the handoff at that work |
+| `resume-reopen` | Whether resuming a feature by name that a close-out archived finds it under `temp/archive/`, asks before moving anything, moves it back under `temp/` rather than copying it, records the return in the ledger with where it came from, and leaves the handoff as it was |
 
 Two of these decide a component rather than only scoring an answer.
 
@@ -84,7 +86,7 @@ says which combinations answer which question; run the environments against both
 than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
-that is the whole point of the field, and it applies to four of the twenty-seven cases
+that is the whole point of the field, and it applies to four of the twenty-nine cases
 here. Enabling the plugin is not enough: type `/core:preparing-a-repo`,
 `/core:designing-architecture` or `/core:optimizing-prompts` — the last covers two cases —
 to start that arm, and keep the baseline arm's prompt identical apart from the invocation.

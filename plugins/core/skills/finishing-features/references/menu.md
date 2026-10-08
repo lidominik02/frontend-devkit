@@ -140,8 +140,8 @@ Lists, each with the file or command it comes from:
   `git branch -D <ref>` once it is no longer needed; this skill does not.
 
 Shows the list and asks nothing: picking the item was the confirmation. It says the
-artifacts it cites move with the folder to the archive target section 5 step 2 of
-`../SKILL.md` works out. Nothing is sent.
+artifacts it cites move with the folder to the archive target section 5 step 3 of
+`../SKILL.md` works out, when it is archived. Nothing is sent.
 
 ## Tidy temp/
 

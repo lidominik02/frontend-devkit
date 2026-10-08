@@ -26,6 +26,13 @@ temp/<feature>/
 When `temp/` is not gitignored in that repo, say so once, when the folder is created. The
 artifacts are never `git add`ed.
 
+## The archived feature folder
+
+finishing-features archives a feature's folder to `<top>/temp/archive/<feature>/`, or,
+when that exists, to `<top>/temp/archive/<feature>-<YYYYMMDD-HHMM>/`, `<top>` being the top
+level of the repository whose `temp/` holds the features. A skill looking for an archived
+feature looks for these two names.
+
 ## Reading the artifacts
 
 The main thread — the session the user works in — reads only what its next step needs, so a
@@ -222,6 +229,8 @@ interface a task consumes with the task that produces it.
 - <date> · plan revised · D<n>, …
   - Changed: <task names> | none
   - Added: <task names> | none
+- <date> · reopened · <feature>
+  - From: <the archive path it came from>
 - <date> · review · <overall line>
   - Report: <report path>
 - <date> · QA list · awaiting approval
@@ -237,10 +246,11 @@ interface a task consumes with the task that produces it.
 - <date> · fix · <slug> · <status>
   - FIX: <FIX.md path>
 - <date> · finish · <n> commits
-  - Items: <each menu item run>
-  - Commits: <hash subject>, …
+  - Items: <each menu item run> | none — menu skipped, nothing changed
+  - Commits: <hash subject>, … | none      (oldest first)
   - QA: skipped by the user                (when it was)
   - Archived: <the archive path the move used>
+  - Archive: held — <each item left, joined by "; ">   (instead of Archived:, when the archive was held)
 - <date> · <event kind> · <subject>
   - <Field>: <value>
 ```

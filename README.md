@@ -199,7 +199,9 @@ write that retires it: a superseded decision, an answered question, and, once th
 passes 60 entries, the entries of tasks marked Done, while open work, rulings and recent
 events stay. Nothing is deleted, an id stays unique across a live file and its archive, and
 a step that follows an id the live file no longer holds looks it up there. Intermediate
-files stay until the feature folder is archived.
+files stay until the feature folder is archived; the close-out recommends waiting until no
+work is left, and the user decides. Until then the folder stays under `temp/`, and another
+close-out archives it.
 
 **Clarification is front-loaded.** It starts from whatever exists — a written spec, a
 ticket, notes in any language, a design, or nothing — and looks facts up in the repository,
@@ -303,8 +305,12 @@ back, and the user picks the remaining items again. `describing-changes` writes 
 message and the MR text; the commit follows
 only a message the user accepted, and a branch behind `origin/<base>` is offered
 `syncing-branches` before the MR text. The feature folder then moves to
-`temp/archive/<feature>/`, with nothing deleted, and the user pushes, merges and opens the
-merge request: `commit-hygiene.mjs` denies Claude a push or a merge.
+`temp/archive/<feature>/`, with nothing deleted, when the user archives it now — recommended
+once no work is left; otherwise it stays
+under `temp/<feature>/` with the work left in its HANDOFF.md, and another close-out
+archives it. `resume <feature>` brings an archived feature back to `temp/<feature>/` once
+the user confirms, and records the reopening in its ledger. The user pushes, merges and
+opens the merge request: `commit-hygiene.mjs` denies Claude a push or a merge.
 
 **Four decisions reverse the devkit's earlier design.** An old-format feature still
 resumes; `handoff-format.md` maps its stages.
