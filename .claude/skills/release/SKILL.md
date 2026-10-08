@@ -4,9 +4,9 @@ description: >-
   Release the devkit from the dev branch: list the commits since the latest v* tag,
   propose the version bump by the bump rule for the user to approve, then write the
   shared version into every plugin.json, add a CHANGELOG.md section, and — once the
-  user accepts the release commit message — commit and create an annotated vX.Y.Z
-  tag. Pushes nothing; it prints the two push commands, the second of which moves main
-  once CI is green.
+  user accepts the release commit message — commit. Creates no tag and pushes nothing;
+  it prints the push of dev, the push that moves main once CI is green, and the tag
+  command the user runs on main, whose push creates the GitHub Release.
 disable-model-invocation: true
 allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-current), PowerShell(git branch --show-current), Bash(git describe *), PowerShell(git describe *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *), Bash(git status *), PowerShell(git status *), Bash(node .claude/skills/release/scripts/release-check.mjs), PowerShell(node .claude/skills/release/scripts/release-check.mjs), Bash(node scripts/ci/release-warning.mjs), PowerShell(node scripts/ci/release-warning.mjs)
 ---
@@ -14,9 +14,10 @@ allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-curren
 # Release the devkit
 
 A release is one commit on `dev` carrying the new version in every
-`plugins/*/.claude-plugin/plugin.json` and a new `CHANGELOG.md` section, marked by an
-annotated `vX.Y.Z` tag. Nothing is pushed: the user pushes `dev`, and moves `main` only
-once CI is green on the release commit.
+`plugins/*/.claude-plugin/plugin.json` and a new `CHANGELOG.md` section. Nothing is
+tagged or pushed here: the user pushes `dev`, moves `main` only once CI is green on the
+release commit, and then tags that commit. The release workflow runs on the pushed
+`vX.Y.Z` tag and creates the GitHub Release from the CHANGELOG section.
 Only committed work is released and checked; uncommitted changes are neither.
 
 ## 1. What is unreleased
@@ -83,21 +84,19 @@ stops the run. The user approves or changes it. Do not write anything before the
    or a run that did not report every check as passed, fails it: report the output and
    stop. No commit, no tag.
 
-## 4. Commit and tag
+## 4. Commit
 
 Draft the release commit message with `core:describing-changes`, which reads this
 repository's convention, and show it to the user. Commit only once they accept it, and
 include only the release files, so nothing else already staged slips in.
 
 With the Write tool, write the accepted message, exactly as accepted, to a file in the
-system temp directory, outside the repository, and the tag annotation —
-`vX.Y.Z — <one-line summary of the release>` — to a second file there. git reads a file
-verbatim; a message inside double quotes is rewritten by the shell first: PowerShell
-expands `$name` and backtick escapes, and a POSIX shell runs a backtick span as a command.
+system temp directory, outside the repository. git reads a file verbatim; a message
+inside double quotes is rewritten by the shell first: PowerShell expands `$name` and
+backtick escapes, and a POSIX shell runs a backtick span as a command.
 
-Run these as three separate commands, each only after the previous one exited 0, so the
-tag exists only when the commit succeeded. The pathspec stays quoted: git expands it, the
-same way in every shell.
+Run these as two separate commands, the second only after the first exited 0. The
+pathspec stays quoted: git expands it, the same way in every shell.
 
 ```
 git add -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.json"
@@ -107,18 +106,13 @@ git add -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.json"
 git commit -F "<message file>" -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.json"
 ```
 
-```
-git tag -a vX.Y.Z -F "<annotation file>"
-```
-
-The tag annotation marks the release commit with its version and summary;
-`CHANGELOG.md` is the readable history. Never merge. End by asking the user to push in two
-steps, and push nothing yourself; that message names as NOT RUN each of `/windows-check` and
-`/try-unreleased` that section 1 found had not run. First `dev` with the tag, which runs CI on the release
-commit and the release workflow on the tag:
+Create no tag here. `CHANGELOG.md` is the readable history. Never merge. End by asking the
+user to push in three steps, and push nothing yourself; that message names as NOT RUN each
+of `/windows-check` and `/try-unreleased` that section 1 found had not run. First `dev`,
+which runs CI on the release commit:
 
 ```
-git push origin dev --follow-tags
+git push origin dev
 ```
 
 Then, only once CI is green on the release commit, move `main` to it:
@@ -127,4 +121,13 @@ Then, only once CI is green on the release commit, move `main` to it:
 git push origin dev:main
 ```
 
-If CI is red, `main` stays where it is; the fix is a new release.
+Last, the tag on that commit; its push runs the release workflow, which validates again and
+creates the GitHub Release. Give the command with the version and a one-line summary of the
+release, written without `$` or backticks, since the shell reads the quotes:
+
+```
+git tag -a vX.Y.Z -m "vX.Y.Z — <one-line summary>" dev
+git push origin vX.Y.Z
+```
+
+If CI is red, `main` stays where it is and no tag is made; the fix is a new release.

@@ -786,7 +786,7 @@ shipped to consumers, is not part of any pack, and costs a consuming repository 
 | `/body-vs-reference-audit` | Which parts of a body have earned loading on every trigger |
 | `/cli-upgrade-check` | Revalidates the platform claims against the installed CLI and records the version they were verified on |
 | `/diagnosing-sessions` | Diagnoses past sessions from their transcripts with five parallel analysts, into an anonymised, cited report with a devkit-involvement verdict and proposed ideas |
-| `/release` | Proposes the version bump from the commits since the latest `v*` tag, then writes the versions and a `CHANGELOG.md` section, commits and tags on `dev` once approved; the user pushes `dev`, then `main` once CI is green |
+| `/release` | Proposes the version bump from the commits since the latest `v*` tag, then writes the versions and a `CHANGELOG.md` section, commits on `dev` once approved; the user pushes `dev`, then `main` once CI is green, then the tag, whose push creates the GitHub Release |
 | `/try-unreleased` | Runs the working tree's plugins, never the installed ones, through a scripted `claude -p` session in a scratch repository under the OS temp directory, answers its forms from a scenario, and reports each expectation as met, not met or unverifiable; the kept scenarios are in `.claude/skills/try-unreleased/scenarios/` |
 | `/windows-check` | Runs on Windows only: the static checks and the tests with their durations, the missing-binary gate probes under cmd.exe, PowerShell 5.1 and 7, Yarn Berry, pnpm and Git Bash, and a real Stop hook on a failing lint gate, reported in the chat with every version |
 | `trigger-tester` | Whether a description would fire. Reads descriptions, never bodies — the author cannot judge their own, because they know what the skill does |
@@ -905,17 +905,19 @@ a patch bump for fixes and wording, and `1.0.0` when a second person installs it
 `/release` is the only thing that bumps it: it lists the commits since the last release,
 proposes the level and, once approved, rewrites the version in every pack's `plugin.json`.
 Each release gets a [`CHANGELOG.md`](CHANGELOG.md) section, the readable history of every
-release, and an annotated `vX.Y.Z` tag that marks the release commit with its version and
-summary.
+release, and a `vX.Y.Z` tag on the release commit once `main` holds it, whose push makes the
+release workflow create the GitHub Release.
 
 **A session installs `main`, and `main` moves only at a release.** Development happens on
 the `dev` branch, pushed freely. `main` stays the GitHub default branch, so the install
 source stays `lidominik02/frontend-devkit` with no ref. `/release` runs on `dev`, makes the
-release commit and the `vX.Y.Z` tag there, and ends by asking the user to push in two
-steps; it never merges. First `git push origin dev --follow-tags`, which runs CI on the
-release commit and, on the tag, the release workflow that creates the GitHub Release.
+release commit there, and ends by asking the user to push in three steps; it never merges
+and creates no tag. First `git push origin dev`, which runs CI on the release commit.
 Then, only once CI is green, `git push origin dev:main`, which moves `main` to the release
-commit; a red CI leaves `main` where it is, and the fix is a new release. CI runs on pushes
+commit. Last, the user tags that commit (`git tag -a vX.Y.Z`) and pushes the tag, which runs
+the release workflow: it validates again and creates the GitHub Release from the CHANGELOG
+section. A red CI leaves `main` where it is and makes no tag, and the fix is a new release.
+CI runs on pushes
 to both branches. Commits on `dev` since the latest tag are
 not an error; CI prints a warning that `plugins/` or `.claude-plugin/` holds unreleased
 changes.

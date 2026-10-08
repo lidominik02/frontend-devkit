@@ -47,8 +47,9 @@ same `X.Y.Z`; `marketplace.json` carries none. Only `/release` bumps it.
 `claude plugin validate --strict` is expected to exit clean.
 
 **A session installs `main`, and `main` moves only at a release.** Work happens on the
-`dev` branch; `/release` tags on `dev`, the user pushes `dev` with the tag, and moves
-`main` to the release commit only once CI is green on it. README's
+`dev` branch; `/release` commits on `dev`, the user pushes `dev`, and moves `main` to the
+release commit only once CI is green on it, then tags that commit; the pushed tag runs the
+release workflow, which creates the GitHub Release. README's
 "Working on the devkit" describes the workflow.
 
 **Dependencies are declared directly, not transitively.** `nuxt` names both `core` and
@@ -111,7 +112,7 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 | `/body-vs-reference-audit` | Which parts of a body have earned their place there |
 | `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
 | `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
-| `/release` | Bump the shared version, write the CHANGELOG section, commit and tag; the user pushes `dev`, then `main` once CI is green |
+| `/release` | Bump the shared version, write the CHANGELOG section, commit; the user pushes `dev`, then `main` once CI is green, then the tag, whose push creates the GitHub Release |
 | `/try-unreleased` | Run the working tree's plugins through a scripted `claude -p` session in a scratch repository, checked against a scenario |
 | `/windows-check` | The pre-release Windows check: gates, missing-binary probes per shell, a real Stop hook |
 | `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
