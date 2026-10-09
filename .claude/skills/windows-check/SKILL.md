@@ -16,8 +16,8 @@ never a real PowerShell, Yarn Berry, pnpm or Git Bash script shell. The classifi
 missing binary in `plugins/core/scripts/run-gates.mjs` is tested against synthetic text for
 those; this skill observes the real text, before a release that changes `plugins/`.
 
-It writes nothing into the repository: no report file, and no edit to README's observed-on
-lines. The result is the table in the chat.
+It writes nothing into the repository: no report file, and no edit to the observed-on
+lines in `README.md`, `CONTRIBUTING.md` or `docs/`. The result is the table in the chat.
 
 ## 1. Probes
 
@@ -94,5 +94,5 @@ or NOT FOUND. Under it, each fail's stderr or reason verbatim.
 ## What this must not do
 
 - Run anywhere but Windows, or report a NOT RUN item as passing.
-- Write a file into the repository or edit README.md.
+- Write a file into the repository or edit `README.md`, `CONTRIBUTING.md` or `docs/`.
 - Start the Stop-hook session without the user's answer to the form in step 3.

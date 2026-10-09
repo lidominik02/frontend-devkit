@@ -27,13 +27,25 @@ try {
 if (event.stop_hook_active) process.exit(0);
 
 // Silent when nothing this repo validates has changed, matching the devkit's own
-// rule that a gate with no diff to judge should not speak.
-let dirty = '';
+// rule that a gate with no diff to judge should not speak. The paths come from
+// devkit.config.json — stopHook.watch plus the docs.roots the link check reads —
+// and without a usable list every stop validates and says why.
+const isPathList = (l) => Array.isArray(l) && l.length > 0 && l.every((p) => typeof p === 'string' && p);
+let watch = null;
 try {
-  dirty = execFileSync('git', ['status', '--porcelain', '--', 'plugins', 'scripts', 'README.md', '.claude-plugin', 'CHANGELOG.md', '.claude'], {
-    cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
-} catch { /* not a git repo, or git missing: fall through and check anyway */ }
+  const fs = await import('node:fs');
+  const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'devkit.config.json'), 'utf8'));
+  const roots = config?.docs?.roots;
+  if (isPathList(config?.stopHook?.watch)) watch = [...new Set([...config.stopHook.watch, ...(isPathList(roots) ? roots : [])])];
+} catch { /* unreadable config: validate below */ }
+let dirty = 'unknown';
+if (watch) {
+  try {
+    dirty = execFileSync('git', ['status', '--porcelain', '--', ...watch], {
+      cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch { /* not a git repo, or git missing: fall through and check anyway */ }
+}
 if (dirty === '') process.exit(0);
 
 let out = '';
@@ -47,7 +59,17 @@ try {
   out = `${e.stdout ?? ''}${e.stderr ?? ''}`;
 }
 
-if (!failed) process.exit(0);
+if (!failed && watch) process.exit(0);
+
+// A green tree with an unusable watch list still stops once: otherwise every turn would
+// validate with nobody told why.
+if (!failed) {
+  console.error(
+    'devkit.config.json has no usable stopHook.watch list (a non-empty list of paths), ' +
+    'so this hook validates on every stop. Fix the key.'
+  );
+  process.exit(2);
+}
 
 // Exit 2 puts stderr in front of Claude and stops the turn ending on a red tree.
 // The real output is returned, not a summary of it: a gate that says "something

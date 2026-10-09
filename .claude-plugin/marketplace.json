@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "frontend-devkit",
-  "description": "Private development platform: a framework-agnostic core plus per-framework engineering packs. Repo-specific facts live in each consuming repo's .claude/project.json, never in a component.",
+  "description": "A framework-agnostic core plus per-framework engineering packs for frontend work in Claude Code. Every project fact is read from the files a repository already maintains; no component carries a fact about an individual repository.",
   "owner": {
     "name": "lidominik02",
     "url": "https://github.com/lidominik02"
@@ -10,7 +10,7 @@
     {
       "name": "core",
       "source": "./plugins/core",
-      "description": "Framework-agnostic: a read-only reviewer agent, bug investigation, feature planning, commit/MR authoring, prompt rewriting, and three deterministic hooks. Install in every repository.",
+      "description": "Framework-agnostic: a feature lifecycle with automatic review, bug investigation and fixing, branch syncing, browser verification, commit/MR authoring, repo preparation, prompt rewriting, and four deterministic hooks. Install in every repository.",
       "category": "development",
       "keywords": [
         "review",

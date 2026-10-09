@@ -6,7 +6,8 @@ description: >-
   unpinned, so use this when CI turns red on a commit that changed nothing, when a new
   Claude Code version ships, when a validator finding appears that no commit explains,
   when a frontmatter field may have been added or removed upstream, or when the
-  verified-on versions in comments and README.md have fallen behind the installed CLI.
+  verified-on versions in comments, README.md, CONTRIBUTING.md and docs/ have fallen behind
+  the installed CLI.
   Diffs the strict findings against what CI allows, probes the frontmatter claim on a
   scratch copy, reconciles the field allowlists, and updates the verified-on notes in
   the same pass.
@@ -75,8 +76,8 @@ Four things in this repo depend on CLI behaviour that is not contractual:
    additions and removals separately: an addition blocks legitimate work, a removal
    silently accepts dead config.
 
-5. **Record the verified-on version.** Grep for every version number in comments and
-   `README.md` — several record "verified against" and are the thing most likely to be
+5. **Record the verified-on version.** Grep for every version number in comments,
+   `README.md`, `CONTRIBUTING.md` and `docs/` — several record "verified against" and are the thing most likely to be
    left behind. Change a number only for a claim re-observed in this pass, and name the
    version just observed, not the one meant to be tested. Where the finding text
    changed, update the `❯` filter in `scripts/ci/plugin-validate.mjs` and its header

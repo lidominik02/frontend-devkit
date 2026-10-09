@@ -36,7 +36,8 @@ function releasedRepo(t, { skillField = '' } = {}) {
       'Blocked: `tool_a`.',
       '',
     ].join('\n'),
-    'README.md': `Listing cost: **${Math.round(DESCRIPTION.length / 100) / 10}k characters** in total.\nThe ceiling is 2,000 characters.\n`,
+    'README.md': '# Demo\n',
+    'devkit.config.json': JSON.stringify({ budget: { ceiling: 2000 }, docs: { roots: ['README.md'] } }),
     'CHANGELOG.md': changelog('1.0.0'),
   });
   git(root, ['add', '-A']);

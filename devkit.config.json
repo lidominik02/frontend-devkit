@@ -1,0 +1,11 @@
+{
+  "budget": {
+    "ceiling": 6500
+  },
+  "stopHook": {
+    "watch": ["plugins", "scripts", "docs", ".claude-plugin", ".claude", "README.md", "CONTRIBUTING.md", "CHANGELOG.md", "CLAUDE.md", "devkit.config.json"]
+  },
+  "docs": {
+    "roots": ["README.md", "CONTRIBUTING.md", "CLAUDE.md", "CHANGELOG.md", "docs"]
+  }
+}

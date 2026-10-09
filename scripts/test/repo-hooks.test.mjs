@@ -13,12 +13,13 @@ const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const LOCAL_SKILL = '.claude/skills/local/SKILL.md';
 const LOCAL_AGENT = '.claude/agents/local-agent.md';
 const DESCRIPTION = 'Demo skill used as a repo-local hook fixture; it exists only in a temporary tree.';
-const FIGURE = Math.round(DESCRIPTION.length / 100) / 10;
 
 const skillText = (extra = '') =>
   ['---', 'name: demo', `description: ${DESCRIPTION}`, ...(extra ? [extra] : []), '---', '', 'Demo.', ''].join('\n');
-const readmeText = (figure = FIGURE) =>
-  `Listing cost: **${figure}k characters** in total.\nThe ceiling is 2,000 characters.\n`;
+const WATCH = ['plugins', 'scripts', 'docs', '.claude-plugin', '.claude', 'README.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'CLAUDE.md', 'devkit.config.json'];
+// A ceiling under the one demo description puts the tree over budget.
+const configText = ({ ceiling = 2000, watch = WATCH, roots = ['README.md'], extra = {} } = {}) =>
+  JSON.stringify({ budget: { ceiling }, ...(watch ? { stopHook: { watch } } : {}), docs: { roots }, ...extra });
 
 // The hooks bind their root from their own location, so copies run against the fixture.
 function copyScript(root, rel) {
@@ -35,7 +36,8 @@ function fixture(root, files = {}) {
     '.claude-plugin/marketplace.json': JSON.stringify({ plugins: [{ name: 'core', source: './plugins/core' }] }),
     'plugins/core/.claude-plugin/plugin.json': JSON.stringify({ name: 'core', version: '1.0.0' }),
     [SKILL]: skillText(),
-    'README.md': readmeText(),
+    'README.md': '# Demo\n',
+    'devkit.config.json': configText(),
     ...files,
   });
   copyScript(root, 'scripts/validate.mjs');
@@ -57,7 +59,7 @@ describe('the PostToolUse hooks stay silent on what they do not check', () => {
   for (const hook of ['frontmatter', 'budget']) {
     test(`${hook}-on-write exits 0 on stdin that is not JSON`, (t) => {
       // A tree with a finding, so a hook that checked anyway would exit 2.
-      const fx = fixture(tempDir(t), { [SKILL]: skillText('disable-model-invokation: true'), 'README.md': readmeText(9.9) });
+      const fx = fixture(tempDir(t), { [SKILL]: skillText('disable-model-invokation: true'), 'devkit.config.json': configText({ ceiling: 10 }) });
       assert.deepEqual(runHook(hook, fx, 'not json {'), SILENT);
     });
   }
@@ -74,9 +76,9 @@ describe('the PostToolUse hooks stay silent on what they do not check', () => {
     for (const rel of Object.keys(outside)) assert.deepEqual(onWrite('frontmatter', fx, rel), SILENT, rel);
   });
 
-  test('budget-on-write exits 0 on a file that cannot move the budget, while README.md is stale', (t) => {
-    const fx = fixture(tempDir(t), { 'README.md': readmeText(9.9), 'docs/notes.md': '# Notes\n', [LOCAL_SKILL]: skillText() });
-    for (const rel of ['docs/notes.md', 'scripts/validate.mjs', LOCAL_SKILL]) {
+  test('budget-on-write exits 0 on a file that cannot move the budget, while the listing is over the ceiling', (t) => {
+    const fx = fixture(tempDir(t), { 'devkit.config.json': configText({ ceiling: 10 }), 'docs/notes.md': '# Notes\n', [LOCAL_SKILL]: skillText() });
+    for (const rel of ['docs/notes.md', 'scripts/validate.mjs', LOCAL_SKILL, 'README.md']) {
       assert.deepEqual(onWrite('budget', fx, rel), SILENT, rel);
     }
   });
@@ -113,25 +115,26 @@ describe('the PostToolUse hooks exit 2 on a finding', () => {
     assert.match(agent.stderr, /\.claude\/agents\/local-agent\.md -> no name/);
   });
 
-  test('budget-on-write: a total that no longer matches README.md, on a skill or a README write', (t) => {
+  test('budget-on-write: a total over the ceiling, on a skill or a config write', (t) => {
     const fx = fixture(tempDir(t));
     assert.deepEqual(onWrite('budget', fx, SKILL), SILENT);
 
-    write(fx.root, { 'README.md': readmeText(9.9) });
-    for (const rel of [SKILL, 'README.md']) {
+    write(fx.root, { 'devkit.config.json': configText({ ceiling: 10 }) });
+    for (const rel of [SKILL, 'devkit.config.json']) {
       const res = onWrite('budget', fx, rel);
       assert.equal(res.code, 2, rel);
-      assert.match(res.stderr, new RegExp(`always-on listing is ${DESCRIPTION.length} chars .*README\\.md says 9\\.9k`), rel);
+      assert.match(res.stderr, new RegExp(`always-on listing is ${DESCRIPTION.length} chars, over the 10-char ceiling in devkit\\.config\\.json`), rel);
+      assert.match(res.stderr, /raise budget\.ceiling in devkit\.config\.json only with the user's approval/, rel);
     }
   });
 
-  test('budget-on-write: an unreadable marketplace.json gets its finding, not the README advice', (t) => {
+  test('budget-on-write: an unreadable marketplace.json gets its finding, not the ceiling advice', (t) => {
     const fx = fixture(tempDir(t), { '.claude-plugin/marketplace.json': '{ "plugins": [' });
     const res = onWrite('budget', fx, SKILL);
     assert.equal(res.code, 2);
     assert.match(res.stderr, /marketplace\.json is missing, not valid JSON, or has no plugins list, so no pack was checked/);
     assert.doesNotMatch(res.stderr, /Always-on listing now/);
-    assert.doesNotMatch(res.stderr, /Update the figure in README\.md/);
+    assert.doesNotMatch(res.stderr, /raise budget\.ceiling/);
   });
 });
 
@@ -139,9 +142,9 @@ describe('the PostToolUse hooks exit 2 on a finding', () => {
 const NO_GIT_ENV = Object.fromEntries(Object.keys(process.env).filter((k) => k.startsWith('GIT_')).map((k) => [k, undefined]));
 
 describe('on-stop.mjs', () => {
-  // A committed tree on which validate.mjs fails: README.md misstates the budget.
-  function committed(t) {
-    const fx = fixture(gitRepo(t), { 'README.md': readmeText(9.9) });
+  // A committed tree on which validate.mjs fails: the listing is over the ceiling.
+  function committed(t, config = {}, files = {}) {
+    const fx = fixture(gitRepo(t), { 'devkit.config.json': configText({ ceiling: 10, ...config }), ...files });
     git(fx.root, ['add', '-A']);
     git(fx.root, ['commit', '-q', '--no-verify', '-m', 'fixture']);
     return fx;
@@ -155,7 +158,7 @@ describe('on-stop.mjs', () => {
     const res = stop(fx);
     assert.equal(res.code, 2);
     assert.match(res.stderr, /Marketplace validation failed/);
-    assert.match(res.stderr, /FAIL {2}budget\n.*README\.md says 9\.9k/);
+    assert.match(res.stderr, /FAIL {2}budget\n.*over the 10-char ceiling in devkit\.config\.json/);
   });
 
   test('exits 0 on stop_hook_active, so a blocked stop does not loop', (t) => {
@@ -171,6 +174,9 @@ describe('on-stop.mjs', () => {
     '.claude-plugin': '.claude-plugin/marketplace.json',
     'CHANGELOG.md': 'CHANGELOG.md',
     '.claude': '.claude/skills/local/notes.md',
+    docs: 'docs/notes.md',
+    'CONTRIBUTING.md': 'CONTRIBUTING.md',
+    'CLAUDE.md': 'CLAUDE.md',
   };
   for (const [spec, rel] of Object.entries(watched)) {
     test(`runs validate.mjs when ${spec} changed`, (t) => {
@@ -184,7 +190,69 @@ describe('on-stop.mjs', () => {
   test('stays silent when only paths it does not validate changed', (t) => {
     const fx = committed(t);
     assert.deepEqual(stop(fx), SILENT);
-    write(fx.root, { 'docs/notes.md': '# Notes\n' });
+    write(fx.root, { 'notes/scratch.md': '# Notes\n' });
     assert.deepEqual(stop(fx), SILENT);
   });
+
+  // The edit keeps the config valid JSON, so only the watch list can make the hook look.
+  test('runs validate.mjs when devkit.config.json changed, and only because it is watched', (t) => {
+    const fx = committed(t);
+    write(fx.root, { 'devkit.config.json': configText({ ceiling: 10, extra: { note: 'changed' } }) });
+    assert.equal(stop(fx).code, 2);
+
+    const unwatched = committed(t, { watch: WATCH.filter((p) => p !== 'devkit.config.json') });
+    write(unwatched.root, { 'devkit.config.json': configText({ ceiling: 10, watch: WATCH.filter((p) => p !== 'devkit.config.json'), extra: { note: 'changed' } }) });
+    assert.deepEqual(stop(unwatched), SILENT);
+  });
+
+  test('watches every docs.roots entry, even one stopHook.watch leaves out', (t) => {
+    const fx = committed(t, { watch: ['plugins'], roots: ['README.md', 'GUIDE.md'] });
+    write(fx.root, { 'GUIDE.md': '# Guide\n' });
+    assert.equal(stop(fx).code, 2);
+  });
+
+  // What validate.mjs needs beyond the base fixture to pass every check.
+  const GREEN = {
+    [SKILL]: skillText('disallowed-tools: mcp__srv__tool_a') + 'Blocked: `tool_a`.\n',
+    'CHANGELOG.md': '# Changelog\n\n## 1.0.0 - 2026-01-01\n\nFirst release.\n',
+  };
+  const unusable = {
+    'a missing watch list': { watch: null },
+    'a watch list that is a string': { watch: 'plugins' },
+    'a watch list holding an empty path': { watch: ['plugins', ''] },
+  };
+  for (const [label, config] of Object.entries(unusable)) {
+    test(`validates on every stop, and says why, with ${label}`, (t) => {
+      const red = committed(t, config);
+      assert.match(stop(red).stderr, /Marketplace validation failed/);
+
+      const green = committed(t, { ...config, ceiling: 2000 }, GREEN);
+      const res = stop(green);
+      assert.equal(res.code, 2);
+      assert.match(res.stderr, /no usable stopHook\.watch list/);
+    });
+  }
+
+  test('validates on every stop when the config is not JSON', (t) => {
+    const fx = committed(t);
+    write(fx.root, { 'devkit.config.json': '{ "stopHook": ' });
+    git(fx.root, ['commit', '-qam', 'broken config', '--no-verify']);
+    const res = stop(fx);
+    assert.equal(res.code, 2);
+    assert.match(res.stderr, /devkit\.config\.json is not a JSON object/);
+  });
+});
+
+describe('budget-on-write with an unusable config', () => {
+  for (const [label, text] of Object.entries({ missing: null, 'not JSON': '{ "budget": ', 'a string ceiling': JSON.stringify({ budget: { ceiling: '6,500' } }) })) {
+    test(`${label}: prints the config finding and no advice to shorten a description`, (t) => {
+      const fx = fixture(tempDir(t));
+      if (text === null) fs.rmSync(path.join(fx.root, 'devkit.config.json'));
+      else write(fx.root, { 'devkit.config.json': text });
+      const res = onWrite('budget', fx, SKILL);
+      assert.equal(res.code, 2);
+      assert.match(res.stderr, /devkit\.config\.json/);
+      assert.doesNotMatch(res.stderr, /Always-on listing now|raise budget\.ceiling/);
+    });
+  }
 });

@@ -4,7 +4,8 @@ A Claude Code marketplace: a framework-agnostic `core` plugin plus per-framework
 packs (`vue`, `nuxt`). The product is the components themselves, so a change here is a
 change to how Claude behaves in every repository that installs it.
 
-`README.md` is the full reference. This file is only the rules that must hold.
+`docs/README.md` maps the full documentation and `CONTRIBUTING.md` covers working on the
+devkit. This file is only the rules that must hold; `docs/adr/` records why they hold.
 
 ## Invariants
 
@@ -13,7 +14,7 @@ no file paths, helper names or conventions from a specific codebase. Those belon
 that repo's own `CLAUDE.md`. Every project-specific fact — package manager, gates, base
 branch, git host, commit convention — is read at the moment of use by
 `plugins/core/scripts/project-facts.mjs` from a file the project already maintains.
-Nothing is cached, so nothing goes stale.
+Nothing is cached, so nothing goes stale. (ADR 0003)
 
 **A specialised pack is a delta on its base, not a copy of it.** It carries only what
 its layer inverts or adds, and names the base rules that do not apply there. Duplicated
@@ -21,17 +22,17 @@ text drifts, and a rule correct for the base and wrong for the specialisation
 manufactures confident, wrong output — worse than no rule. A pack's base is its
 non-`core` dependency; `core` is the floor and forms no family. Today that is
 `nuxt` → `vue` → `core`. `node scripts/pack-graph.mjs` reports the current shape, so
-never hardcode a pair.
+never hardcode a pair. (ADR 0004)
 
 **Three tiers of context cost.** Descriptions load always, in every session of every
 repo that enables the pack. Bodies load on trigger. References load only when the body
 points at them. Guardrails and ordering belong in the body; lookup material belongs in
-a reference.
+a reference. (ADR 0007)
 
 **Hooks are Node, never bash.** Bash exits `2` on a syntax error and `2` is the hook
 protocol's block signal, so a broken shell hook blocks every tool call — including the
 edit that would repair it. Node exits `1` on a `SyntaxError`, which is non-blocking.
-Fail closed on a policy decision; fail open on a broken interpreter.
+Fail closed on a policy decision; fail open on a broken interpreter. (ADR 0001)
 
 **Components live in `skills/`, never `commands/`.** A skill already carries the slash
 invocation, and the checks that read component frontmatter select on `SKILL.md` or
@@ -49,20 +50,24 @@ same `X.Y.Z`; `marketplace.json` carries none. Only `/release` bumps it.
 **A session installs `main`, and `main` moves only at a release.** Work happens on the
 `dev` branch; `/release` commits on `dev`, the user pushes `dev`, and moves `main` to the
 release commit only once CI is green on it, then tags that commit; the pushed tag runs the
-release workflow, which creates the GitHub Release. README's
-"Working on the devkit" describes the workflow.
+release workflow, which creates the GitHub Release. `CONTRIBUTING.md` describes the
+workflow. (ADR 0010)
 
 **Dependencies are declared directly, not transitively.** `nuxt` names both `core` and
 `vue`, because transitive resolution is not observable from `claude plugin validate` —
 only at enable time.
 
 **No runtime dependencies.** Node and the `claude` CLI alone. Do not add a
-`package.json`, a lockfile, or an npm package.
+`package.json`, a lockfile, or an npm package. (ADR 0002)
+
+**Values the tooling reads live in `devkit.config.json`, never in prose.** A script that
+needed a figure from a Markdown sentence would tie the documentation's wording to a check.
+Documentation says how to query such a value, and does not restate it. (ADR 0012)
 
 ## Gates
 
 ```
-node scripts/validate.mjs               # nine static checks; also the Stop hook and CI
+node scripts/validate.mjs               # the static checks; also the Stop hook and CI
 node --test "scripts/test/*.test.mjs"   # script and hook behaviour by exit code
 node scripts/pack-graph.mjs             # pack layering, derived from the manifests
 ```
@@ -70,24 +75,15 @@ node scripts/pack-graph.mjs             # pack layering, derived from the manife
 The gates need Node 22.18, or 24.2 on the 24 line; on an older Node `validate.mjs` and
 `pack-graph.mjs` exit 1. The shipped plugins need only Node 22.
 
-`scripts/validate.mjs` checks the frontmatter of every shipped component and of every
-skill and agent under `.claude/` (description present, under the 1024-char packaging cap
-and free of `<` and `>`, skill name kebab-case and matching its directory, agent name
-present and free of `:`, every field one Claude Code actually reads), that every skill
-directory holds a `SKILL.md`, the always-on description budget of the shipped packs
-against the figure and ceiling `README.md` publishes, that every cited `.md` resolves
-from the file citing it, that every blocked `mcp__` tool is documented under the skill
-that blocks it, that every `.mjs` parses and every `hooks.json` arg is a file inside its
-own pack, that every `${CLAUDE_PLUGIN_ROOT}/` path in a pack's skills and agents resolves
-inside that pack, that every pack's `plugin.json` carries one shared valid version, and
-that `CHANGELOG.md` has a dated section for it. It reads the packs `marketplace.json` lists
-through `pack-graph.mjs`; a marketplace entry that cannot be followed, and a `plugins/`
-directory with no entry, are findings. `claude plugin validate --strict` does **not** read component
-frontmatter, which is why that allowlist lives here.
+`scripts/validate.mjs` is the one implementation of every check
+`claude plugin validate --strict` does not perform; CI, the hooks and the release check
+run that same file. `--strict` does **not** read component frontmatter, which is why the
+frontmatter allowlist lives there. What each check catches, and the `devkit.config.json`
+keys the checks read, are in `docs/contributing/validation.md`.
 
-Run both before pushing. The Stop hook runs the first automatically when anything under
-`plugins/`, `scripts/`, `.claude-plugin/` or `.claude/`, or `README.md` or `CHANGELOG.md`,
-has changed.
+The first two are the gate; run both before pushing. `pack-graph.mjs` reports the
+layering and is not a gate. The Stop hook runs `validate.mjs` automatically when a path
+listed under `stopHook.watch` or `docs.roots` in `devkit.config.json` has changed.
 
 ## Claims must be observed, not assumed
 

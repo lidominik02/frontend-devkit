@@ -12,11 +12,11 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | passes | passes | **remove** — the model already knew |
 | fails | fails | rewrite, or accept it is out of reach |
 
-**`core`'s bar is higher than a framework pack's.** `core` carries thirteen listed
-descriptions — eleven skills and two agents — against a framework pack's one, about 5.0k
-characters to 0.6k, and it is enabled in every repository, so that cost is paid in every
-session of every project. A pack at least only loads where its framework is. A `core` skill that passes baseline is
-several times the waste, and `/skill-doctor` will tell you what it actually costs.
+**`core`'s bar is higher than a framework pack's.** `core` carries most of the listed
+descriptions — a framework pack carries one — and it is enabled in every repository, so
+that cost is paid in every session of every project. A pack at least only loads where its
+framework is. A `core` skill that passes baseline is several times the waste, and
+`/skill-doctor` will tell you what it actually costs.
 
 Cases fall into two kinds. **Capability**: the model cannot solve it unaided — a
 distinction it does not draw, an ordering it does not follow, a guardrail it does not
@@ -86,7 +86,7 @@ says which combinations answer which question; run the environments against both
 than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
-that is the whole point of the field, and it applies to four of the twenty-nine cases
+that is the whole point of the field, and it applies to the cases of the typed skills
 here. Enabling the plugin is not enough: type `/core:preparing-a-repo`,
 `/core:designing-architecture` or `/core:optimizing-prompts` — the last covers two cases —
 to start that arm, and keep the baseline arm's prompt identical apart from the invocation.

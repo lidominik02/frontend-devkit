@@ -20,8 +20,9 @@ it is confidently inapplicable.
 
 Run `node scripts/validate.mjs` first and report nothing it already catches.
 Frontmatter fields, the description cap, dead references, literal repo names, the
-budget figure and blocked MCP names are mechanically enforced. Your job starts
-where that stops.
+always-on budget ceiling and blocked MCP names are mechanically enforced. Your job
+starts where that stops — including a description that grows while the total stays
+under the ceiling.
 
 ## What you check
 

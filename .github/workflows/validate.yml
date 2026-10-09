@@ -46,34 +46,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      # Nine static checks, none of which `claude plugin validate` performs:
-      #
-      #   frontmatter  in every shipped component and every skill and agent under
-      #                .claude/: description present, under the 1024-char packaging
-      #                cap and free of `<` and `>`, skill name kebab-case and matching
-      #                its directory, agent name present and free of `:`, and every
-      #                field one Claude Code actually reads — `--strict` flags unknown
-      #                keys in plugin.json but NOT in component frontmatter (verified
-      #                against 2.1.250, 2.1.276, 2.1.278 and 2.1.283), so a misspelled
-      #                `disallowed-tools` silently stops being enforced.
-      #   skill-dirs   every skill directory holds a SKILL.md.
-      #   budget       the always-on description total of the shipped packs still
-      #                matches the figure README.md publishes and stays under its
-      #                ceiling.
-      #   references   every cited .md resolves from the file citing it — a dead
-      #                reference is followed at runtime and nothing else catches it.
-      #   mcp-names    every blocked mcp__ tool is documented under the skill that
-      #                blocks it: when a server renames a tool the block silently
-      #                matches nothing.
-      #   scripts      every .mjs parses, and every hooks.json arg is a file inside
-      #                its own pack.
-      #   plugin-root  every ${CLAUDE_PLUGIN_ROOT}/ path in a .md under a pack's
-      #                skills/ or agents/ resolves inside that pack.
-      #   versions     every pack carries one shared X.Y.Z `version` in its
-      #                plugin.json, no marketplace.json entry declares one, and
-      #                every plugins/ directory has an entry.
-      #   changelog    CHANGELOG.md has a dated section for that version.
-      #
+      # The static checks `claude plugin validate` does not perform; each is described in
+      # docs/contributing/validation.md.
       # The same script the Stop hook runs locally, so CI and the hook cannot drift apart.
       - name: Marketplace checks
         run: node scripts/validate.mjs

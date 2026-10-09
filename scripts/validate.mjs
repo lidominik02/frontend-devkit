@@ -28,6 +28,21 @@ const rel = (root, p) => (path.relative(root, p) || p).split(path.sep).join('/')
 // A CRLF checkout must report exactly what an LF one does, so every text read normalises here.
 const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
+// Every value this tooling reads lives here; a figure in prose is never parsed.
+export const CONFIG = 'devkit.config.json';
+
+/** @returns {{ config: Record<string, any> | null, findings: string[] }} */
+export function loadConfig(root = ROOT) {
+  let text;
+  try { text = fs.readFileSync(r(root, CONFIG), 'utf8'); }
+  catch { return { config: null, findings: [`${CONFIG} is missing`] }; }
+  try {
+    const config = JSON.parse(text);
+    if (config && typeof config === 'object' && !Array.isArray(config)) return { config, findings: [] };
+  } catch { /* reported below */ }
+  return { config: null, findings: [`${CONFIG} is not a JSON object`] };
+}
+
 // --- frontmatter ------------------------------------------------------------
 
 // `claude plugin validate --strict` flags unknown fields in plugin.json but NOT
@@ -171,9 +186,7 @@ export function checkFrontmatter(files, root = ROOT) {
 // --- always-on description budget -------------------------------------------
 
 // Only descriptions are always-on. Every listed one is paid for in every session
-// of every repository that enables the pack, so the total is a managed number
-// and the README publishes it. Nothing recomputed it, so editing any description
-// silently invalidated a documented figure.
+// of every repository that enables the pack, so the total has a ceiling.
 export function budget(root = ROOT) {
   const packs = {};
   let listed = 0, off = 0;
@@ -194,30 +207,23 @@ export function budget(root = ROOT) {
 export function checkBudget(root = ROOT) {
   const { listed, packs } = budget(root);
   const unread = loadPacks(root).findings;
-  // With no pack read, a total of 0 against the published figure is not news.
+  // With no pack read, a total of 0 against the ceiling is not news.
   if (unread.length) return { name: 'budget', findings: unread, ok: false, unread: true, listed, packs };
-  const readme = read(r(root, 'README.md'));
-  const claimed = readme.match(/\*\*([\d.]+)k characters\*\*/);
-  const ceiling = readme.match(/The ceiling is\s+([\d,]+)\s+characters/);
-  const bad = [];
-  if (!claimed) {
-    bad.push('README.md no longer states the always-on listing cost — did the sentence move?');
-  } else {
-    const actual = Math.round(listed / 100) / 10;
-    if (Number(claimed[1]) !== actual) {
-      bad.push(
-        `always-on listing is ${listed} chars (${actual}k), README.md says ${claimed[1]}k. ` +
-        `Per pack: ${Object.entries(packs).map(([k, v]) => `${k} ${v}`).join(', ')}`
-      );
-    }
+  const { config, findings: bad } = loadConfig(root);
+  const ceiling = config?.budget?.ceiling;
+  if (config && !(Number.isInteger(ceiling) && ceiling > 0)) {
+    bad.push(`${CONFIG}: budget.ceiling must be a positive integer`);
   }
-  if (!ceiling) {
-    bad.push('README.md no longer states the always-on ceiling ("The ceiling is N characters") — did the sentence move?');
-  } else {
-    const max = Number(ceiling[1].replace(/,/g, ''));
-    if (listed > max) bad.push(`always-on listing is ${listed} chars, over the ${max}-char ceiling README.md publishes`);
+  // No usable ceiling: the total cannot be judged, and shortening a description fixes nothing.
+  if (bad.length) return { name: 'budget', findings: bad, ok: false, unusableConfig: true, listed, packs };
+  if (listed > ceiling) {
+    bad.push(
+      `always-on listing is ${listed} chars, over the ${ceiling}-char ceiling in ${CONFIG}. ` +
+      `Per pack: ${Object.entries(packs).map(([k, v]) => `${k} ${v}`).join(', ')}`
+    );
   }
-  return { name: 'budget', findings: bad, ok: bad.length === 0, listed, packs };
+  const detail = bad.length ? undefined : `${listed}/${ceiling} chars always-on`;
+  return { name: 'budget', findings: bad, ok: bad.length === 0, listed, packs, detail };
 }
 
 // --- references resolve -----------------------------------------------------
@@ -551,6 +557,112 @@ export function checkPluginRoot(root = ROOT) {
   return { name: 'plugin-root', findings: bad, ok: bad.length === 0 };
 }
 
+// --- documentation links resolve ----------------------------------------------
+
+// Code fences are neither links nor headings, so they are blanked line by line to keep
+// line numbers for the finding; inline code is blanked too unless `keepInline`.
+function proseLines(text, keepInline = false) {
+  let fence = null;
+  return text.split('\n').map((line) => {
+    const open = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fence) {
+      if (open && open[1][0] === fence[0] && open[1].length >= fence.length) fence = null;
+      return '';
+    }
+    if (open) { fence = open[1]; return ''; }
+    return keepInline ? line : line.replace(/(`+)[\s\S]*?\1/g, '');
+  });
+}
+
+// GitHub's heading ids: lowercase, punctuation dropped, spaces to hyphens, a repeat
+// suffixed -1, -2. Explicit `id`/`name` anchors count too.
+export function anchors(text) {
+  const seen = new Map();
+  const out = new Set();
+  const lines = proseLines(text, true);
+  lines.forEach((line, i) => {
+    for (const m of line.matchAll(/<a\s+(?:id|name)="([^"]+)"/g)) out.add(m[1]);
+    const prev = lines[i - 1] ?? '';
+    const setext = /^ {0,3}(=+|-+)\s*$/.test(line) && prev.trim() && !/^\s*([#>|*+-]|\d+\.)/.test(prev);
+    const h = setext ? [line, prev.trim()] : line.match(/^#{1,6}\s+(.*?)\s*#*\s*$/);
+    if (!h) return;
+    const slug = h[1]
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+      .replace(/\s/g, '-');
+    const n = seen.get(slug) ?? 0;
+    seen.set(slug, n + 1);
+    out.add(n ? `${slug}-${n}` : slug);
+  });
+  return out;
+}
+
+// An inline link `](target "title")`, the target optionally in <…> where it may hold
+// spaces, and a reference definition `[label]: target`.
+const LINK = /\]\(\s*(?:<([^>\n]*)>|([^)\s]+))(?:\s+(?:"[^"]*"|'[^']*'))?\s*\)/g;
+// A footnote definition `[^1]: text` is prose, not a link.
+const DEFINITION = /^ {0,3}\[(?!\^)[^\]]+\]:\s*(?:<([^>\n]*)>|(\S+))/;
+
+const linkTargets = (line) => [
+  ...[...line.matchAll(LINK)].map((m) => m[1] ?? m[2]),
+  ...[line.match(DEFINITION)].filter(Boolean).map((m) => m[1] ?? m[2]),
+];
+
+export function checkDocsLinks(root = ROOT) {
+  const { config, findings: bad } = loadConfig(root);
+  const roots = config?.docs?.roots;
+  if (config && !(Array.isArray(roots) && roots.length && roots.every((s) => typeof s === 'string' && s))) {
+    bad.push(`${CONFIG}: docs.roots must be a non-empty list of paths`);
+  }
+  if (bad.length) return { name: 'docs-links', findings: bad, ok: false };
+
+  const files = new Set();
+  for (const entry of roots) {
+    const p = r(root, entry);
+    const stat = fs.statSync(p, { throwIfNoEntry: false });
+    if (!stat) bad.push(`${CONFIG}: docs.roots entry ${entry} does not exist`);
+    else if (stat.isDirectory()) markdownUnder(p).forEach((f) => files.add(f));
+    else files.add(p);
+  }
+  const { list, findings: unread } = loadPacks(root);
+  bad.push(...unread);
+  for (const pack of list) {
+    for (const f of ['README.md', 'evals/README.md']) {
+      const p = r(root, pack.dir, f);
+      if (fs.existsSync(p)) files.add(p);
+    }
+  }
+
+  const anchorCache = new Map();
+  const anchorsOf = (p) => {
+    if (!anchorCache.has(p)) anchorCache.set(p, anchors(read(p)));
+    return anchorCache.get(p);
+  };
+
+  for (const file of [...files].sort()) {
+    proseLines(read(file)).forEach((line, i) => {
+      for (const raw of linkTargets(line)) {
+        if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('//')) continue;
+        const [target, rawAnchor] = raw.split('#', 2);
+        const decode = (s, fn) => { try { return fn(s); } catch { return s; } };
+        const decoded = decode(target.split('?')[0], decodeURI);
+        const anchor = rawAnchor && decode(rawAnchor, decodeURIComponent);
+        const where = `${rel(root, file)}:${i + 1} -> ${raw}`;
+        const dest = !decoded ? file
+          : decoded.startsWith('/') ? r(root, decoded) : path.resolve(path.dirname(file), decoded);
+        // A link that leaves the repository resolves on one machine and nowhere else.
+        if (dest !== root && !dest.startsWith(root + path.sep)) { bad.push(`${where}: resolves outside the repository`); continue; }
+        if (!fs.existsSync(dest)) { bad.push(`${where}: no such file`); continue; }
+        if (anchor && dest.endsWith('.md') && !anchorsOf(dest).has(anchor)) {
+          bad.push(`${where}: no heading with that anchor in ${rel(root, dest)}`);
+        }
+      }
+    });
+  }
+  return { name: 'docs-links', findings: bad, ok: bad.length === 0 };
+}
+
 // --- runner -----------------------------------------------------------------
 
 export const CHECKS = {
@@ -563,6 +675,7 @@ export const CHECKS = {
   'plugin-root': checkPluginRoot,
   versions: checkVersions,
   changelog: checkChangelog,
+  'docs-links': checkDocsLinks,
 };
 
 export function runChecks(names = Object.keys(CHECKS), root = ROOT) {
@@ -582,7 +695,7 @@ function cli() {
   let failed = 0;
   for (const result of runChecks(names)) {
     if (result.ok) {
-      console.log(`  ok    ${result.name}`);
+      console.log(`  ok    ${result.name}${result.detail ? ` (${result.detail})` : ''}`);
     } else {
       failed += result.findings.length;
       console.error(`  FAIL  ${result.name}`);

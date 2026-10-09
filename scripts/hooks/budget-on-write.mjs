@@ -2,17 +2,17 @@
 // PostToolUse: recompute the always-on description budget after a component edit.
 //
 // Descriptions are the only part of this marketplace that is always loaded, in
-// every session of every repository that enables the pack. README.md publishes
-// the total as a managed number. Nothing recomputed it, so editing any listed
-// description silently invalidated a documented figure — and moving a skill to
-// `disable-model-invocation` changed it without touching a description at all.
+// every session of every repository that enables the pack, so their total has a
+// ceiling in devkit.config.json. Moving a skill to `disable-model-invocation`
+// changes the total without touching a description at all.
 //
-// Speaks only when the recomputed total no longer matches what README.md claims.
+// Speaks only when the recomputed total is over the ceiling, the ceiling is unusable, or
+// no pack could be read.
 
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { checkBudget } from '../validate.mjs';
+import { CONFIG, checkBudget } from '../validate.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -27,14 +27,14 @@ const touchesBudget =
   !rel.startsWith('..') &&
   ((rel.startsWith('plugins') &&
     (path.basename(rel) === 'SKILL.md' || rel.includes(`${path.sep}agents${path.sep}`))) ||
-   rel === 'README.md');
+   rel === CONFIG);
 if (!touchesBudget) process.exit(0);
 
-const { ok, unread, findings, listed, packs } = checkBudget();
+const { ok, unread, unusableConfig, findings, listed, packs } = checkBudget();
 if (ok) process.exit(0);
 
-// No pack was read, so the total and the README advice would both be wrong.
-if (unread) {
+// No pack was read, or no ceiling is usable: the total and the advice would both be wrong.
+if (unread || unusableConfig) {
   console.error(findings.join('\n'));
   process.exit(2);
 }
@@ -46,7 +46,7 @@ const breakdown = Object.entries(packs)
 console.error(
   `${findings.join('\n')}\n\n` +
   `Always-on listing now ${listed} chars:\n${breakdown}\n\n` +
-  'Update the figure in README.md, or bring the description back under it. ' +
+  `Bring the description back under the ceiling; raise budget.ceiling in ${CONFIG} only with the user's approval. ` +
   'This is a real cost: every listed description is paid for in every session ' +
   'of every repository that enables the pack.'
 );

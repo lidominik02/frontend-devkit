@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 
 import { REPO_ROOT, hookEvent, runScript, tempDir } from './helpers.mjs';
-import { CHECKS, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
+import { CHECKS, anchors, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
 
 const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const GUIDE = 'plugins/core/skills/demo/references/guide.md';
@@ -17,7 +17,7 @@ const LOCAL_SKILL = '.claude/skills/local/SKILL.md';
 const LOCAL_AGENT = '.claude/agents/local-agent.md';
 const DESCRIPTION = 'Demo skill used as a validate.mjs fixture; it exists only in a temporary tree.';
 const AGENT_DESCRIPTION = 'Demo agent used as a validate.mjs fixture.';
-// Long enough to move the rounded budget figure, were it counted.
+// Long enough to change the listed total, were it counted.
 const LOCAL_DESCRIPTION = `Repo-local fixture component, never shipped. ${'Padding. '.repeat(30)}`.trim();
 const CHANGELOG = '# Changelog\n\n## 1.0.0 - 2026-01-01\n\nFirst release.\n';
 
@@ -49,8 +49,10 @@ function agentText({ name = 'helper', description = AGENT_DESCRIPTION, extraFiel
   ].join('\n');
 }
 
-function readmeText(figure = Math.round((DESCRIPTION.length + AGENT_DESCRIPTION.length) / 100) / 10) {
-  return `Listing cost: **${figure}k characters** in total.\nThe ceiling is 2,000 characters.\n`;
+const README = '# Demo\n\nSee [the changelog](CHANGELOG.md) and [this page](#demo).\n';
+
+function configText({ ceiling = 2000, roots = ['README.md'] } = {}) {
+  return JSON.stringify({ budget: { ceiling }, stopHook: { watch: ['plugins'] }, docs: { roots } });
 }
 
 // A minimal marketplace on which every check passes; `defect` names the one to break, and
@@ -78,7 +80,8 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
     'plugins/core/hooks/hooks.json': JSON.stringify({
       hooks: { PostToolUse: [{ hooks: [{ type: 'command', command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/scripts/ok.mjs'] }] }] },
     }),
-    'README.md': readmeText(defect === 'budget' ? 9.9 : undefined),
+    'README.md': defect === 'docs-links' ? `${README}\nSee [the guide](docs/missing.md).\n` : README,
+    'devkit.config.json': configText({ ceiling: defect === 'budget' ? 100 : 2000 }),
     'CHANGELOG.md': defect === 'changelog' ? CHANGELOG.replace('1.0.0', '0.9.0') : CHANGELOG,
   };
   if (defect === 'scripts') files['plugins/core/scripts/broken.mjs'] = 'export const x = ;\n';
@@ -120,7 +123,7 @@ describe('validate.mjs checks run against the root they are given', () => {
 
   const defects = {
     frontmatter: /plugins\/core\/skills\/demo\/SKILL\.md -> unknown frontmatter field 'disable-model-invokation'/,
-    budget: /README\.md says 9\.9k/,
+    budget: /^always-on listing is \d+ chars, over the 100-char ceiling in devkit\.config\.json/,
     references: /plugins\/core\/skills\/demo\/SKILL\.md -> references\/missing\.md: no such file/,
     'mcp-names': /mcp__srv__tool_b is blocked but "tool_b" is undocumented anywhere under plugins\/core\/skills\/demo$/,
     scripts: /^plugins\/core\/scripts\/broken\.mjs -> SyntaxError/,
@@ -128,6 +131,7 @@ describe('validate.mjs checks run against the root they are given', () => {
     'skill-dirs': /^plugins\/core\/skills\/orphan -> no SKILL\.md$/,
     'plugin-root': /^plugins\/core\/skills\/demo\/SKILL\.md -> \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/missing\.mjs does not resolve inside plugins\/core$/,
     changelog: /^CHANGELOG\.md has no "## 1\.0\.0 - YYYY-MM-DD" section/,
+    'docs-links': /^README\.md:5 -> docs\/missing\.md: no such file$/,
   };
 
   for (const [name, finding] of Object.entries(defects)) {
@@ -436,7 +440,7 @@ describe('the PostToolUse hooks that import validate.mjs', () => {
     'budget-on-write': {
       key: 'budgetHook',
       defect: 'budget',
-      finding: new RegExp(`always-on listing is ${DESCRIPTION.length + AGENT_DESCRIPTION.length} chars .*README\\.md says 9\\.9k`),
+      finding: new RegExp(`always-on listing is ${DESCRIPTION.length + AGENT_DESCRIPTION.length} chars, over the 100-char ceiling in devkit\\.config\\.json`),
     },
   };
 
@@ -457,4 +461,114 @@ describe('the PostToolUse hooks that import validate.mjs', () => {
       assert.deepEqual(run(t, { defect, crlf: true }), broken);
     });
   }
+});
+
+describe('devkit.config.json holds the values the checks read', () => {
+  test('the budget passes under the ceiling whatever any prose says, and reports the total', (t) => {
+    const root = fixture(t, { override: { 'README.md': 'Listing cost: **9.9k characters**. The ceiling is 1 character.\n' } });
+    const { budget: result } = byName(runChecks(['budget'], root));
+    assert.deepEqual(result.findings, []);
+    assert.equal(result.detail, `${DESCRIPTION.length + AGENT_DESCRIPTION.length}/2000 chars always-on`);
+  });
+
+  const broken = {
+    'a missing config': [null, /^devkit\.config\.json is missing$/],
+    'a config that is not JSON': ['{ "budget": ', /^devkit\.config\.json is not a JSON object$/],
+  };
+  for (const [label, [text, finding]] of Object.entries(broken)) {
+    test(`${label} fails budget and docs-links instead of passing them unchecked`, (t) => {
+      const results = byName(runChecks(['budget', 'docs-links'], fixture(t, { override: { 'devkit.config.json': text } })));
+      for (const name of ['budget', 'docs-links']) {
+        assert.ok(results[name].findings.some((f) => finding.test(f)), `${name}: ${results[name].findings.join(' | ')}`);
+      }
+    });
+  }
+
+  test('a ceiling that is not a positive integer, and docs.roots that is not a list, are findings', (t) => {
+    const config = JSON.stringify({ budget: { ceiling: '6,500' }, docs: { roots: 'README.md' } });
+    const results = byName(runChecks(['budget', 'docs-links'], fixture(t, { override: { 'devkit.config.json': config } })));
+    assert.deepEqual(results.budget.findings, ['devkit.config.json: budget.ceiling must be a positive integer']);
+    assert.deepEqual(results['docs-links'].findings, ['devkit.config.json: docs.roots must be a non-empty list of paths']);
+  });
+});
+
+describe('docs-links', () => {
+  const run = (t, files, roots = ['README.md', 'docs']) =>
+    byName(runChecks(['docs-links'], fixture(t, { override: { 'devkit.config.json': configText({ roots }), ...files } })))['docs-links'];
+
+  test('resolves a link from the file citing it, and an anchor against the target headings', (t) => {
+    const result = run(t, {
+      'docs/guide.md': '# Guide\n\n## Run `node` here\n\nBack to [the readme](../README.md#demo) or [this](#run-node-here).\n',
+      'docs/sub/deep.md': '# Deep\n\nSee [the guide](../guide.md#guide) and [the root](/README.md).\n',
+    });
+    assert.deepEqual(result.findings, []);
+  });
+
+  test('a missing file and a missing anchor are findings with file and line', (t) => {
+    const result = run(t, {
+      'docs/guide.md': '# Guide\n\n[gone](missing.md)\n[wrong anchor](../README.md#nope)\n',
+    });
+    assert.deepEqual(result.findings, [
+      'docs/guide.md:3 -> missing.md: no such file',
+      'docs/guide.md:4 -> ../README.md#nope: no heading with that anchor in README.md',
+    ]);
+  });
+
+  test('links in code, external links and a link to a directory are not findings', (t) => {
+    const result = run(t, {
+      'docs/guide.md': [
+        '# Guide', '', '```md', '[fenced](missing.md)', '```', '',
+        'Inline `[code](missing.md)` text.', '[site](https://example.com/x.md) [mail](mailto:a@b.c) [dir](../plugins/core)', '',
+      ].join('\n'),
+    });
+    assert.deepEqual(result.findings, []);
+  });
+
+  test('every listed pack README and evals README is checked without being configured', (t) => {
+    const result = run(t, {
+      'plugins/core/README.md': '# core\n\n[gone](docs/missing.md)\n',
+      'plugins/core/evals/README.md': '# Evals\n\n[gone](missing.md)\n',
+    }, ['README.md']);
+    assert.deepEqual(result.findings, [
+      'plugins/core/README.md:3 -> docs/missing.md: no such file',
+      'plugins/core/evals/README.md:3 -> missing.md: no such file',
+    ]);
+  });
+
+  test('angle-bracket targets, reference definitions, queries, encoded anchors and setext headings are read', (t) => {
+    const result = run(t, {
+      'docs/my guide.md': 'Café\n====\n\nSection\n-------\n',
+      'docs/guide.md': [
+        '# Guide', '',
+        '[spaced](<my guide.md#café>) [query](my%20guide.md?plain=1#section) [encoded](<my guide.md#caf%C3%A9>)',
+        '[gone](<missing file.md>)', '',
+        '[ref]: missing.md',
+        '[ok]: <my guide.md>',
+        '[^1]: See the release notes.', '',
+      ].join('\n'),
+    });
+    assert.deepEqual(result.findings, [
+      'docs/guide.md:4 -> missing file.md: no such file',
+      'docs/guide.md:6 -> missing.md: no such file',
+    ]);
+  });
+
+  test('a link that leaves the repository is a finding even when the target exists', (t) => {
+    const root = fixture(t, { override: { 'devkit.config.json': configText({ roots: ['README.md', 'docs'] }) } });
+    fs.writeFileSync(path.join(path.dirname(root), 'outside.md'), '# Outside\n');
+    fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'docs/guide.md'), `# Guide\n\n[out](../../${path.basename(path.dirname(root))}/outside.md) [root](/../outside.md)\n`);
+    const findings = byName(runChecks(['docs-links'], root))['docs-links'].findings;
+    assert.equal(findings.length, 2, findings.join(' | '));
+    for (const f of findings) assert.match(f, /resolves outside the repository$/);
+  });
+
+  test('a docs.roots entry that does not exist is a finding', (t) => {
+    assert.deepEqual(run(t, {}, ['README.md', 'docs/nowhere']).findings, ['devkit.config.json: docs.roots entry docs/nowhere does not exist']);
+  });
+
+  test('anchors() follows the heading ids GitHub generates', () => {
+    const ids = anchors('# Install\n## Why Vue and Nuxt are separate packs\n## `run-gates.mjs`\n## Install\n<a id="custom"></a>\n```\n# not a heading\n```\n');
+    assert.deepEqual([...ids].sort(), ['custom', 'install', 'install-1', 'run-gatesmjs', 'why-vue-and-nuxt-are-separate-packs']);
+  });
 });
