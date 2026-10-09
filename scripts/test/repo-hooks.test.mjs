@@ -17,9 +17,14 @@ const DESCRIPTION = 'Demo skill used as a repo-local hook fixture; it exists onl
 const skillText = (extra = '') =>
   ['---', 'name: demo', `description: ${DESCRIPTION}`, ...(extra ? [extra] : []), '---', '', 'Demo.', ''].join('\n');
 const WATCH = ['plugins', 'scripts', 'docs', '.claude-plugin', '.claude', 'README.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'CLAUDE.md', 'devkit.config.json'];
+const TEST_WATCH = ['scripts', 'plugins/*/scripts/*', 'plugins/*/hooks/*', '.claude/skills/*/scripts/*'];
 // A ceiling under the one demo description puts the tree over budget.
-const configText = ({ ceiling = 2000, watch = WATCH, roots = ['README.md'], extra = {} } = {}) =>
-  JSON.stringify({ budget: { ceiling }, ...(watch ? { stopHook: { watch } } : {}), docs: { roots }, ...extra });
+const configText = ({ ceiling = 2000, watch = WATCH, testWatch = TEST_WATCH, roots = ['README.md'], extra = {} } = {}) => {
+  const stopHook = { ...(watch ? { watch } : {}), ...(testWatch ? { testWatch } : {}) };
+  return JSON.stringify({ budget: { ceiling }, ...(watch || testWatch ? { stopHook } : {}), docs: { roots }, ...extra });
+};
+const PASSING_TEST = "import { test } from 'node:test';\ntest('passes', () => {});\n";
+const FAILING_TEST = "import { test } from 'node:test';\nimport assert from 'node:assert/strict';\ntest('breaks on purpose', () => assert.equal(1, 2));\n";
 
 // The hooks bind their root from their own location, so copies run against the fixture.
 function copyScript(root, rel) {
@@ -38,6 +43,7 @@ function fixture(root, files = {}) {
     [SKILL]: skillText(),
     'README.md': '# Demo\n',
     'devkit.config.json': configText(),
+    'scripts/test/pass.test.mjs': PASSING_TEST,
     ...files,
   });
   copyScript(root, 'scripts/validate.mjs');
@@ -230,6 +236,75 @@ describe('on-stop.mjs', () => {
       const res = stop(green);
       assert.equal(res.code, 2);
       assert.match(res.stderr, /no usable stopHook\.watch list/);
+    });
+  }
+
+  test('exits 2 with the failing test when a testWatch path changed', (t) => {
+    const fx = committed(t, { ceiling: 2000 }, { ...GREEN, 'scripts/test/fail.test.mjs': FAILING_TEST });
+    write(fx.root, { 'plugins/core/scripts/new.mjs': 'export {};\n' });
+    const res = stop(fx);
+    assert.equal(res.code, 2);
+    assert.match(res.stderr, /The test suite failed/);
+    assert.match(res.stderr, /breaks on purpose/);
+    assert.doesNotMatch(res.stderr, /Marketplace validation failed/);
+  });
+
+  // The suite costs a turn tens of seconds, so a docs edit must not pay for it.
+  test('does not run the test suite when only paths outside testWatch changed', (t) => {
+    const fx = committed(t, { ceiling: 2000 }, { ...GREEN, 'scripts/test/fail.test.mjs': FAILING_TEST });
+    write(fx.root, { 'docs/notes.md': '# Notes\n', 'README.md': '# Demo\n\nChanged.\n' });
+    assert.deepEqual(stop(fx), SILENT);
+  });
+
+  test('reports a validation failure and a test failure in one stop', (t) => {
+    const fx = committed(t, {}, { 'scripts/test/fail.test.mjs': FAILING_TEST });
+    write(fx.root, { 'scripts/new.mjs': 'export {};\n' });
+    const res = stop(fx);
+    assert.equal(res.code, 2);
+    assert.match(res.stderr, /Marketplace validation failed/);
+    assert.match(res.stderr, /breaks on purpose/);
+  });
+
+  // Inherited from a parent test run, it would turn a red suite into a silent pass.
+  test('runs the test suite even when started with NODE_TEST_CONTEXT set', (t) => {
+    const fx = committed(t, { ceiling: 2000 }, { ...GREEN, 'scripts/test/fail.test.mjs': FAILING_TEST });
+    write(fx.root, { 'scripts/new.mjs': 'export {};\n' });
+    const res = runScript(fx.stop, {
+      cwd: fx.root, env: { ...NO_GIT_ENV, NODE_TEST_CONTEXT: 'child-v8' }, input: JSON.stringify({ hook_event_name: 'Stop' }),
+    });
+    assert.equal(res.code, 2);
+    assert.match(res.stderr, /breaks on purpose/);
+  });
+
+  // A hook inherits CLAUDE_PROJECT_DIR, which would point a script under test at this repository.
+  test('runs the test suite without the CLAUDE_* variables the hook inherits', (t) => {
+    const envTest = "import { test } from 'node:test';\nimport assert from 'node:assert/strict';\n" +
+      "test('sees no CLAUDE_ variable', () => assert.deepEqual(Object.keys(process.env).filter((k) => k.startsWith('CLAUDE_')), []));\n";
+    const fx = committed(t, { ceiling: 2000 }, { ...GREEN, 'scripts/test/env.test.mjs': envTest });
+    write(fx.root, { 'scripts/new.mjs': 'export {};\n' });
+    const res = runScript(fx.stop, {
+      cwd: fx.root, env: { ...NO_GIT_ENV, CLAUDE_PROJECT_DIR: REPO_ROOT }, input: JSON.stringify({ hook_event_name: 'Stop' }),
+    });
+    assert.deepEqual(res, SILENT);
+  });
+
+  const unusableTestWatch = {
+    'a missing testWatch list': { testWatch: null },
+    'a testWatch list that is a string': { testWatch: 'scripts' },
+    'a testWatch list holding an empty path': { testWatch: ['scripts', ''] },
+  };
+  // A clean tree, so only the fallback can make the hook run the suite.
+  for (const [label, config] of Object.entries(unusableTestWatch)) {
+    test(`runs the test suite on every stop, and says why, with ${label}`, (t) => {
+      const red = committed(t, { ceiling: 2000, ...config }, { ...GREEN, 'scripts/test/fail.test.mjs': FAILING_TEST });
+      const failed = stop(red);
+      assert.equal(failed.code, 2);
+      assert.match(failed.stderr, /breaks on purpose/);
+
+      const res = stop(committed(t, { ceiling: 2000, ...config }, GREEN));
+      assert.equal(res.code, 2);
+      assert.match(res.stderr, /no usable stopHook\.testWatch list/);
+      assert.doesNotMatch(res.stderr, /stopHook\.watch/);
     });
   }
 

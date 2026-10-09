@@ -73,7 +73,7 @@ reason the shipped hooks are ([ADR 0001](docs/adr/0001-node-hooks-with-version-g
 | --- | --- | --- |
 | `scripts/hooks/frontmatter-on-write.mjs` | PostToolUse on a write | The component just written — a pack's, or one under `.claude/skills/` or `.claude/agents/` — fails the frontmatter rules |
 | `scripts/hooks/budget-on-write.mjs` | PostToolUse on a write | After a component or `devkit.config.json` write, the always-on total is over its ceiling, the ceiling is unusable, or no pack could be read |
-| `scripts/hooks/on-stop.mjs` | Stop | A path under `stopHook.watch` or `docs.roots` changed and `validate.mjs` fails, or the watch list is unusable |
+| `scripts/hooks/on-stop.mjs` | Stop | A path under `stopHook.watch` or `docs.roots` changed and `validate.mjs` fails, a path under `stopHook.testWatch` changed and the test suite fails, or either watch list is unusable |
 
 `.mcp.json` declares a browser MCP server so `verifying-ui`'s eval can actually run its
 browser arm here; without it that half of the case is untestable in this checkout.

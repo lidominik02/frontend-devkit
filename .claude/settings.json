@@ -53,7 +53,7 @@
             "type": "command",
             "command": "node",
             "args": ["${CLAUDE_PROJECT_DIR}/scripts/hooks/on-stop.mjs"],
-            "timeout": 60
+            "timeout": 180
           }
         ]
       }

@@ -68,7 +68,7 @@ Documentation says how to query such a value, and does not restate it. (ADR 0012
 
 ```
 node scripts/validate.mjs               # the static checks; also the Stop hook and CI
-node --test "scripts/test/*.test.mjs"   # script and hook behaviour by exit code
+node --test "scripts/test/*.test.mjs"   # script and hook behaviour by exit code; also the Stop hook and CI
 node scripts/pack-graph.mjs             # pack layering, derived from the manifests
 ```
 
@@ -83,7 +83,8 @@ keys the checks read, are in `docs/contributing/validation.md`.
 
 The first two are the gate; run both before pushing. `pack-graph.mjs` reports the
 layering and is not a gate. The Stop hook runs `validate.mjs` automatically when a path
-listed under `stopHook.watch` or `docs.roots` in `devkit.config.json` has changed.
+listed under `stopHook.watch` or `docs.roots` in `devkit.config.json` has changed, and the
+test suite when a path listed under `stopHook.testWatch` has.
 
 ## Claims must be observed, not assumed
 

@@ -39,11 +39,12 @@ no pack reads it, and it is not shipped.
 | --- | --- | --- |
 | `budget.ceiling` | the `budget` check, `scripts/hooks/budget-on-write.mjs` | The most characters the always-on descriptions of all shipped packs may total. Raise it only as a deliberate decision: every listed description is paid for in every session of every repository that enables the pack |
 | `stopHook.watch` | `scripts/hooks/on-stop.mjs` | The paths whose change makes the `Stop` hook run `validate.mjs`; the `docs.roots` entries are watched too, without being repeated here. Without a usable list, every stop validates, and a green tree still stops once to say the key needs fixing |
+| `stopHook.testWatch` | `scripts/hooks/on-stop.mjs` | The paths whose change makes the `Stop` hook run the test suite, as git pathspecs: `*` crosses `/`, so `plugins/*/scripts/*` matches the files under any `scripts/` directory inside a pack, its skills' included, while `plugins/*/scripts` matches nothing. Without a usable list, every stop runs the suite, and a green tree still stops once to say the key needs fixing |
 | `docs.roots` | the `docs-links` check | The Markdown files and directories whose links are checked; the packs' READMEs are added without being listed |
 
 A missing or malformed config, or a key of the wrong type, is a finding in each check that
-reads it, never a silent pass. The `Stop` hook, which reads `stopHook.watch` itself, falls
-back to validating on every stop and says why.
+reads it, never a silent pass. The `Stop` hook, which reads `stopHook.watch` and
+`stopHook.testWatch` itself, falls back to running that gate on every stop and says why.
 
 ## What `claude plugin validate --strict` does and does not check
 
