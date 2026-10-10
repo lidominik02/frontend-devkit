@@ -4,7 +4,7 @@
   },
   "stopHook": {
     "watch": ["plugins", "scripts", "docs", ".claude-plugin", ".claude", "README.md", "CONTRIBUTING.md", "CHANGELOG.md", "CLAUDE.md", "devkit.config.json"],
-    "testWatch": ["scripts", "plugins/*/scripts/*", "plugins/*/hooks/*", ".claude/skills/*/scripts/*"]
+    "testWatch": ["scripts", "plugins/*/scripts/*", "plugins/*/hooks/*", ".claude/skills"]
   },
   "docs": {
     "roots": ["README.md", "CONTRIBUTING.md", "CLAUDE.md", "CHANGELOG.md", "docs"]

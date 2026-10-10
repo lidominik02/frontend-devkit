@@ -17,7 +17,7 @@ const DESCRIPTION = 'Demo skill used as a repo-local hook fixture; it exists onl
 const skillText = (extra = '') =>
   ['---', 'name: demo', `description: ${DESCRIPTION}`, ...(extra ? [extra] : []), '---', '', 'Demo.', ''].join('\n');
 const WATCH = ['plugins', 'scripts', 'docs', '.claude-plugin', '.claude', 'README.md', 'CONTRIBUTING.md', 'CHANGELOG.md', 'CLAUDE.md', 'devkit.config.json'];
-const TEST_WATCH = ['scripts', 'plugins/*/scripts/*', 'plugins/*/hooks/*', '.claude/skills/*/scripts/*'];
+const TEST_WATCH = ['scripts', 'plugins/*/scripts/*', 'plugins/*/hooks/*', '.claude/skills'];
 // A ceiling under the one demo description puts the tree over budget.
 const configText = ({ ceiling = 2000, watch = WATCH, testWatch = TEST_WATCH, roots = ['README.md'], extra = {} } = {}) => {
   const stopHook = { ...(watch ? { watch } : {}), ...(testWatch ? { testWatch } : {}) };
@@ -248,6 +248,18 @@ describe('on-stop.mjs', () => {
     assert.match(res.stderr, /breaks on purpose/);
     assert.doesNotMatch(res.stderr, /Marketplace validation failed/);
   });
+
+  // The suite reads repo-local skill files beyond scripts — try-unreleased's scenarios and
+  // the SKILL.md files that cite them — so a change there must run it.
+  for (const rel of ['.claude/skills/try-unreleased/scenarios/demo.md', '.claude/skills/local/SKILL.md']) {
+    test(`runs the test suite when ${rel} changed`, (t) => {
+      const fx = committed(t, { ceiling: 2000 }, { ...GREEN, 'scripts/test/fail.test.mjs': FAILING_TEST });
+      write(fx.root, { [rel]: '# Changed\n' });
+      const res = stop(fx);
+      assert.equal(res.code, 2);
+      assert.match(res.stderr, /The test suite failed/);
+    });
+  }
 
   // The suite costs a turn tens of seconds, so a docs edit must not pay for it.
   test('does not run the test suite when only paths outside testWatch changed', (t) => {
