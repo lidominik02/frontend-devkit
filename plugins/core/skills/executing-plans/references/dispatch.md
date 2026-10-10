@@ -208,7 +208,10 @@ hook's order (`${CLAUDE_PLUGIN_ROOT}/scripts/format-on-write.mjs` holds the full
    the project's local binary first. Its own flags stay; any path it names is replaced by
    the touched files.
 2. Otherwise by extension: the project's local prettier with `--write`, for the extensions
-   the hook's `EXT_PRETTIER` lists; `gofmt -w` for `.go`; `ruff format` for `.py`, the
+   the hook's `EXT_PRETTIER` lists, unless the project root holds `biome.json`,
+   `biome.jsonc`, `dprint.json`, `.oxfmtrc` or `.oxfmtrc.json` and no prettier config
+   (`.prettierrc*`, `prettier.config.*`, a `prettier` key in `package.json`) — then another
+   formatter owns the file and prettier is not run; `gofmt -w` for `.go`; `ruff format` for `.py`, the
    local binary first; `rustfmt` for `.rs`.
 
 A `package.json` format script, which project-facts.mjs also reports as `gates.format`, is

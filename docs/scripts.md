@@ -111,6 +111,22 @@ material are left out of both, whether or not `temp/` is gitignored; a second he
 names each credential path that differs from the base, since the diff cannot show it.
 Submodule working-tree changes are not captured.
 
+## `env-names.mjs`
+
+**`env-names.mjs`** lists the variable names a dotenv-style file defines without their
+values: `node env-names.mjs <file>…`. It prints one name per line in file order without
+repeats, skips comments, blank lines and lines without `=`, and drops a leading `export `.
+A value is not written, nor is a continuation line of a quoted (`"`, `'` or backtick)
+multi-line value, which runs to its closing quote or to the end of the file, nor of an
+unquoted value that opens a PEM block with `-----BEGIN `, which runs to the line holding
+`-----END ` or to the end of the file. One limit remains: a continuation line of any other
+unquoted multi-line value that looks like `NAME=…` is read as a definition, so its left
+side is printed as a name; dotenv itself does not allow unquoted multi-line values. With
+several files each list has a `<file>:` header; an unreadable file is named on stderr and
+the exit code is 1. A file whose name is not `.env` or `.env.*` (in any letter case) is
+refused unread the same way, since a line of a key file can look like `NAME=`. It needs
+Node alone.
+
 ## Per-project override
 
 `.claude/project.json` is honoured when a project has one, purely to correct what detection

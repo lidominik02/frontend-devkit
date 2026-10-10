@@ -53,6 +53,8 @@ test('temp/ and credential paths reach neither the tree nor the diff', (t) => {
     '.env': 'TOKEN=changed-secret\n',
     'temp/notes.md': 'temp-marker\n',
     'config/secrets/api.json': '{"key":"untracked-secret"}\n',
+    // A differently cased name is the same credential file on a case-insensitive filesystem.
+    'deploy/.Env.production': 'TOKEN=cased-secret\n',
   });
 
   const take = snapshot(repo, ['take']);
@@ -68,12 +70,12 @@ test('temp/ and credential paths reach neither the tree nor the diff', (t) => {
   const header = text.slice(0, cut);
   const body = text.slice(cut + 2);
   assert.match(body, /src\/c\.txt/);
-  for (const leaked of ['temp/', 'temp-marker', '.env', 'secrets/']) {
+  for (const leaked of ['temp/', 'temp-marker', '.env', 'secrets/', 'deploy/']) {
     assert.equal(body.includes(leaked), false, `the diff body contains ${leaked}`);
   }
   assert.doesNotMatch(text, /-secret/);
   // The header names each changed credential path, since the diff cannot show it.
-  assert.match(header, /\nchanged credential paths left out of this diff: \.env, config\/secrets\/api\.json$/);
+  assert.match(header, /\nchanged credential paths left out of this diff: \.env, config\/secrets\/api\.json, deploy\/\.Env\.production$/);
 });
 
 test('a failing required clean filter exits 1 with nothing on stdout', (t) => {

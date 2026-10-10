@@ -13,7 +13,7 @@
 // not found" and has to re-read. That is why this runs a formatter only, never
 // a fixer that changes semantics.
 
-import { closeSync, existsSync, openSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, existsSync, openSync, readdirSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -106,6 +106,27 @@ function run([bin, ...prefix], args) {
   spawnSync(bin, [...prefix, ...args], { stdio: 'ignore', timeout: 30_000 });
 }
 
+const OTHER_FORMATTER_CONFIGS = ['biome.json', 'biome.jsonc', 'dprint.json', '.oxfmtrc', '.oxfmtrc.json'];
+
+/** Whether the project configures prettier: a config file or a package.json key.
+ * @param {string} dir */
+function hasPrettierConfig(dir) {
+  let names = [];
+  try { names = readdirSync(dir); } catch { return false; }
+  if (names.some((n) => /^\.prettierrc/.test(n) || /^prettier\.config\./.test(n))) return true;
+  try {
+    return 'prettier' in JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'));
+  } catch { return false; }
+}
+
+/** The name of another formatter's config file at the project root, when the project
+ * has no prettier config -- a stray prettier install is then not the project's formatter.
+ * @param {string} dir @returns {string | null} */
+function otherFormatterConfig(dir) {
+  if (hasPrettierConfig(dir)) return null;
+  return OTHER_FORMATTER_CONFIGS.find((n) => existsSync(path.join(dir, n))) ?? null;
+}
+
 /** @param {string} input */
 function main(input) {
   /** @type {any} */
@@ -145,6 +166,7 @@ function main(input) {
   }
 
   if (EXT_PRETTIER.test(file)) {
+    if (otherFormatterConfig(projectDir)) return;
     const prettier = localFormatter(fileDir, projectDir, 'prettier');
     if (prettier) run(prettier, ['--write', file]);
     return;

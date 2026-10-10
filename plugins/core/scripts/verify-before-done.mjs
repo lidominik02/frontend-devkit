@@ -23,7 +23,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -91,6 +91,25 @@ function statePath(sessionId, dir) {
   return path.join(os.tmpdir(), `devkit-verify-before-done-${key}`);
 }
 
+const STATE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Deletes state files in `dir` last modified more than seven days before `now`. Never throws:
+ * a file that cannot be removed is left for the next run.
+ * @param {string} dir @param {number} now
+ */
+function pruneStateFiles(dir, now) {
+  try {
+    for (const name of readdirSync(dir)) {
+      if (!name.startsWith('devkit-verify-before-done-')) continue;
+      try {
+        const file = path.join(dir, name);
+        if (now - statSync(file).mtimeMs > STATE_MAX_AGE_MS) unlinkSync(file);
+      } catch { /* leave it */ }
+    }
+  } catch { /* an unreadable directory has nothing to prune */ }
+}
+
 /**
  * What run-gates printed and how it exited, or null when it did not finish in time or could not start.
  * @param {string} dir @returns {Promise<{ stdout: string, stderr: string, code: number|null }|null>}
@@ -124,6 +143,8 @@ function runGates(dir) {
 
 /** @param {string} input */
 async function main(input) {
+  pruneStateFiles(os.tmpdir(), Date.now());
+
   /** @type {any} */
   let evt = {};
   try { evt = JSON.parse(input); } catch { return; }

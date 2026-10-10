@@ -46,7 +46,7 @@
 // Usage:  node project-facts.mjs [--json]      (defaults to --json)
 // Import: import { detect } from './project-facts.mjs'
 
-import { readFileSync, existsSync, readdirSync, accessSync, constants, realpathSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync, realpathSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

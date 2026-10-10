@@ -66,6 +66,55 @@ function symlinkOrSkip(t, target, link, type) {
   }
 }
 
+describe('format-on-write: prettier is not run on a project that configures another formatter', () => {
+  for (const config of ['biome.json', 'biome.jsonc', 'dprint.json', '.oxfmtrc', '.oxfmtrc.json']) {
+    test(`${config} without a prettier config: the installed prettier does not run`, (t) => {
+      const { proj, run, formatted } = fixture(t);
+      fs.writeFileSync(path.join(proj, config), '{}\n');
+      const file = path.join(proj, 'src', 'a.ts');
+      run(proj, file);
+      assert.ok(!formatted(file));
+    });
+  }
+
+  test('a .prettierrc next to biome.json: prettier runs', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    fs.writeFileSync(path.join(proj, '.prettierrc'), '{}\n');
+    const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(formatted(file));
+  });
+
+  test('a package.json prettier key next to biome.json: prettier runs', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ prettier: {} }));
+    const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(formatted(file));
+  });
+
+  test('a package.json without a prettier key does not count as a prettier config', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'x' }));
+    const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(!formatted(file));
+  });
+
+  test('a declared gates.format still wins over the detection', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    fs.mkdirSync(path.join(proj, '.claude'));
+    fs.writeFileSync(path.join(proj, '.claude', 'project.json'), JSON.stringify({ gates: { format: 'prettier --write .' } }));
+    const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(formatted(file));
+  });
+});
+
 describe('format-on-write: formats inside the project only, judged by resolved path', () => {
   test('a file inside the project is formatted', (t) => {
     const { proj, run, formatted } = fixture(t);

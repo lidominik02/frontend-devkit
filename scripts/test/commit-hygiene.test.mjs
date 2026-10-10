@@ -7,8 +7,9 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
+import { pathToFileURL } from 'node:url';
 
-import { REPO_ROOT, hookEvent, runScript, tempDir } from './helpers.mjs';
+import { REPO_ROOT, gitRepo, hookEvent, runScript, tempDir, write } from './helpers.mjs';
 
 const HOOK = path.join(REPO_ROOT, 'plugins', 'core', 'scripts', 'commit-hygiene.mjs');
 
@@ -363,6 +364,93 @@ describe('commit-hygiene: a message read from a file', () => {
   });
 });
 
+// A message file is often kept beside the plan it belongs to, so its path is never
+// message text; the hook runs in its own directory, so a relative path needs a base.
+describe('commit-hygiene: a relative -F path and an unreadable message file', () => {
+  const MSG = 'temp/feat/planning/msg/01.txt';
+  const repo = (t, text = 'fix: an ordinary message\n') => {
+    const dir = gitRepo(t);
+    write(dir, { [MSG]: text, 'sub/.keep': '' });
+    return dir;
+  };
+  // The hook's own cwd is outside the repository, and the base comes from the event or the env.
+  const run = (t, command, { cwd, projectDir = '' }) =>
+    runScript(HOOK, { input: hookEvent('Bash', { command }, cwd ? { cwd } : {}), cwd: tempDir(t), env: { CLAUDE_PROJECT_DIR: projectDir } });
+  const expectRun = (res, code, stderr) => {
+    assert.equal(res.code, code, `stderr: ${res.stderr.trim()}`);
+    if (stderr) assert.match(res.stderr, stderr);
+  };
+
+  test('a clean relative -F file under a planning path passes, resolved against the event cwd', (t) =>
+    expectRun(run(t, `git commit -F ${MSG}`, { cwd: repo(t) }), ALLOW));
+  test('a clean relative -F file passes, resolved against CLAUDE_PROJECT_DIR', (t) =>
+    expectRun(run(t, `git commit --file=${MSG}`, { projectDir: repo(t) }), ALLOW));
+  test('CLAUDE_PROJECT_DIR wins over the event cwd', (t) =>
+    expectRun(run(t, `git commit -F ${MSG}`, { projectDir: repo(t), cwd: tempDir(t) }), ALLOW));
+  test('a relative -F file is read, so a trailer in it is caught', (t) =>
+    expectRun(run(t, `git commit -aF ${MSG}`, { cwd: repo(t, `fix: x\n\n${TRAILER}\n`) }), DENY));
+  test('a bundled -aF path is left out of the scan when the file cannot be read', (t) =>
+    expectRun(run(t, 'git commit -aF temp/x/planning/gone.txt', { cwd: repo(t) }), ALLOW, /gone\.txt/));
+  test('an abbreviated --fi path is left out of the scan when the file cannot be read', (t) =>
+    expectRun(run(t, 'git commit --fi temp/x/planning/gone.txt', { cwd: repo(t) }), ALLOW, /gone\.txt/));
+  // The hook does not follow `cd`, so the path resolves outside the base and is unreadable.
+  test('cd sub && git commit -F ../<planning path> passes, naming the unread file', (t) =>
+    expectRun(run(t, `cd sub && git commit -F ../${MSG}`, { cwd: repo(t) }), ALLOW, /not judged/));
+
+  test('a planning path written in a heredoc body of the same command is denied', (t) =>
+    expectRun(run(t, "cat > m.txt <<'EOF'\nfeat: x\n\nsee temp/x/planning/a\nEOF\ngit commit -F m.txt", { cwd: repo(t) }), DENY));
+  test('a clean message written by a heredoc to a planning path, then committed with -F, passes', (t) =>
+    expectRun(run(t, "cat > temp/x/planning/m.txt <<'EOF'\nfix: ok\nEOF\ngit commit -F temp/x/planning/m.txt", { cwd: repo(t) }), ALLOW));
+  test('a clean message printf writes to a planning path, then committed with -F, passes', (t) =>
+    expectRun(run(t, "printf 'fix: ok\\n' > 'temp/x/planning/m.txt' && git commit --file=temp/x/planning/m.txt", { cwd: repo(t) }), ALLOW));
+  test('a heredoc written to a planning path still denies a planning path in its body', (t) =>
+    expectRun(run(t, "cat > temp/x/planning/m.txt <<'EOF'\nfix: see temp/y/planning/notes\nEOF\ngit commit -F temp/x/planning/m.txt", { cwd: repo(t) }), DENY));
+  test('a heredoc written to a planning path still denies a trailer in its body', (t) =>
+    expectRun(run(t, `cat > temp/x/planning/m.txt <<'EOF'\nfix: ok\n\n${TRAILER}\nEOF\ngit commit -F temp/x/planning/m.txt`, { cwd: repo(t) }), DENY));
+  test('a one-letter -F path does not cut that letter out of a -m value', (t) =>
+    expectRun(run(t, 'git commit -F n -m "see temp/x/planning/a"', { cwd: repo(t) }), DENY));
+  test('a planning path in a heredoc read by -F - is denied', (t) =>
+    expectRun(run(t, "git commit -F - <<'EOF'\nfeat: x\n\nsee temp/x/planning/a\nEOF", { cwd: repo(t) }), DENY));
+  test('a planning path in a heredoc-built -m is denied', (t) =>
+    expectRun(run(t, "git commit -m \"$(cat <<'EOF'\nfeat: x\n\nsee temp/x/planning/a\nEOF\n)\"", { cwd: repo(t) }), DENY));
+
+  test('an unreadable -F file is named in the deny reason', (t) => {
+    const res = run(t, `git commit -F gone.txt -m "fix: x, ${TRAILER}"`, { cwd: repo(t) });
+    expectRun(res, DENY, /Blocked by devkit: .*Co-Authored-By.* The message file 'gone\.txt' could not be read, so its content was not judged\./);
+  });
+  test('an unreadable -F file is named on stderr when the command passes', (t) =>
+    expectRun(run(t, 'git commit -F gone.txt', { cwd: repo(t) }), ALLOW,
+      /devkit commit-hygiene: The message file 'gone\.txt' could not be read, so its content was not judged\./));
+  test('stdin given as -F - is not reported as an unreadable file', (t) => {
+    const res = run(t, "git commit -F - <<'EOF'\nfix: x\nEOF", { cwd: repo(t) });
+    expectRun(res, ALLOW);
+    assert.doesNotMatch(res.stderr, /could not be read/);
+  });
+});
+
+// The win32 branch is a pure function of its platform argument, so it runs on every OS.
+describe('commit-hygiene: the -F path on each platform', () => {
+  // Imported in a child, which exits before the hook's stdin handler could run.
+  const resolve = (p, cwd, platform) => {
+    const script = `import { messageFilePath } from ${JSON.stringify(pathToFileURL(HOOK).href)};
+process.stdout.write(JSON.stringify(messageFilePath(${JSON.stringify(p)}, ${JSON.stringify(cwd)}, ${JSON.stringify(platform)})));
+process.exit(0);`;
+    const res = spawnSync(process.execPath, ['--input-type=module', '-e', script], { encoding: 'utf8' });
+    assert.equal(res.status, 0, res.stderr);
+    return JSON.parse(res.stdout);
+  };
+
+  test('win32 reads a Git Bash drive path as a drive path', () =>
+    assert.equal(resolve('/c/Users/me/msg.txt', 'C:/repo', 'win32'), 'C:/Users/me/msg.txt'));
+  test('win32 upper-cases the drive letter of a bare drive', () => assert.equal(resolve('/d', 'C:/repo', 'win32'), 'D:/'));
+  test('win32 cannot read another POSIX-absolute path', () => assert.equal(resolve('/tmp/msg.txt', 'C:/repo', 'win32'), null));
+  test('win32 resolves a relative path against the base', () =>
+    assert.equal(resolve('temp/msg.txt', 'C:\\repo', 'win32'), 'C:\\repo\\temp\\msg.txt'));
+  test('elsewhere a /c/ path stays as written', () => assert.equal(resolve('/c/msg.txt', '/repo', 'linux'), '/c/msg.txt'));
+  test('elsewhere a relative path resolves against the base', () =>
+    assert.equal(resolve('../m.txt', '/repo/sub', 'darwin'), '/repo/m.txt'));
+});
+
 // The user pushes and merges: every form the parser follows must deny a push, a
 // merge and a pull that merges, whatever wraps or nests it.
 describe('commit-hygiene: push, merge and a merging pull are denied', () => {
@@ -430,6 +518,8 @@ describe('commit-hygiene: push, merge and a merging pull are denied', () => {
     'git $(echo push)',
     'git `echo push`',
     'env -S "git push"',
+    "env -S 'git push'",
+    "env -S 'git -c a.b=c;d push'",
     "env -S'git push'",
     'env --split-string="GIT_TRACE=1 git push"',
     'env -i -S "git merge feat"',
@@ -546,8 +636,38 @@ describe('commit-hygiene: out of reach, and let through', () => {
   ]);
 });
 
+// On Windows the command name arrives with an extension, in any case, or as a
+// backslash path, and the script may go to pwsh, powershell or cmd.
+describe('commit-hygiene: Windows spellings of git and of a shell', () => {
+  table('deny', DENY, [
+    'git.exe push',
+    'GIT.EXE push',
+    '/c/Program\\ Files/Git/cmd/git.exe push',
+    'C:\\Progra~1\\Git\\cmd\\git push',
+    'bash.exe -c "git push"',
+    'pwsh -Command "git push"',
+    'powershell -Command "git push"',
+    'cmd /c git push',
+    'cmd /cgit push',
+    'cmd /c"git push"',
+    'powershell git push',
+    'pwsh git push',
+    'powershell -NoProfile git push',
+    'powershell -ExecutionPolicy Bypass git push',
+  ]);
+  table('allow', ALLOW, ['git help push']);
+});
+
 // Garbage stdin must fail open, never take the tool call down with it.
 describe('commit-hygiene: fails open, and inspects Bash only', () => {
+  test('a missing lib/ fails open with the designed message, not a raw trace', (t) => {
+    const dir = tempDir(t);
+    const copy = path.join(dir, 'commit-hygiene.mjs');
+    fs.copyFileSync(HOOK, copy);
+    const res = runScript(copy, { input: hookEvent('Bash', { command: 'git push' }), cwd: dir });
+    assert.equal(res.code, ALLOW, `stderr: ${res.stderr.trim()}`);
+    assert.match(res.stderr, /could not evaluate, allowing through/);
+  });
   test('fails open on unparseable stdin', () => expectExit('not json at all', ALLOW));
   test('passes an empty payload through', () => expectExit('{}', ALLOW));
 

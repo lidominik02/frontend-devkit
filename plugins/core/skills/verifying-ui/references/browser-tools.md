@@ -216,8 +216,9 @@ a tool named in both lists is withdrawn, so the wildcard silently wins over the 
 
 ## Caveats worth knowing before trusting a result
 
-- **The profile persists.** By default Chrome DevTools MCP keeps a profile under
-  `$HOME/.cache/chrome-devtools-mcp/`, so a login in one session is still there in the
+- **The profile persists.** By default Chrome DevTools MCP keeps a profile in the
+  server's default profile directory under the user's home (on POSIX, observed as
+  `$HOME/.cache/chrome-devtools-mcp/`), so a login in one session is still there in the
   next — convenient, and a way to be looking at authenticated state you forgot you
   established. `--isolated` gives a temporary profile discarded on close; the config
   above uses it.

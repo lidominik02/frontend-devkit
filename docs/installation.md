@@ -45,6 +45,17 @@ session. That holds from Node 14.8, the first that parses `run.mjs`; on an older
 hook, `block-secrets` included, fails open without the message. Without `node` on the
 `PATH` no hook runs at all, and the error the shell reports is not the devkit's.
 
+## Platforms
+
+The hooks and scripts run on Linux, Windows and macOS, on the Node version above. Windows
+is observed: Windows 10 Pro 10.0.19045 with Node 22.23.3 and Claude Code 2.1.292 (see
+[Known update behaviour](#known-update-behaviour) and
+[scripts](scripts.md#run-gatesmjs)). Linux is observed: Ubuntu 24.04.5 LTS (kernel 6.8.0)
+with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10; the hooks and the test suite run
+there. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
+every push; it is not observed in a Claude Code session. [scripts](scripts.md) describes
+the process-group handling `run-gates.mjs` applies on macOS and Linux.
+
 ## Updating
 
 Set `autoUpdate`. Auto-update is off by default for third-party marketplaces, so without

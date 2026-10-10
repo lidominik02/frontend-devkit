@@ -288,6 +288,53 @@ describe('verify-before-done: run-gates stops its gates inside the hook budget',
   });
 });
 
+describe('verify-before-done: stale state files are pruned', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const aged = (file, days) => {
+    const when = new Date(Date.now() - days * DAY);
+    fs.utimesSync(file, when, when);
+  };
+  const seed = (state) => {
+    const old = path.join(state, 'devkit-verify-before-done-old');
+    const fresh = path.join(state, 'devkit-verify-before-done-fresh');
+    const other = path.join(state, 'unrelated-old');
+    for (const f of [old, fresh, other]) fs.writeFileSync(f, 'x');
+    aged(old, 8);
+    aged(fresh, 1);
+    aged(other, 8);
+    return { old, fresh, other };
+  };
+  const stopIn = (state, dir) => runScript(HOOK, {
+    input: JSON.stringify(session()),
+    env: { ...isolatedEnv(state), npm_config_update_notifier: 'false', CLAUDE_PROJECT_DIR: dir },
+  });
+
+  test('an 8-day-old state file goes, a 1-day-old one and an unrelated file stay', (t) => {
+    const state = tempDir(t);
+    const { old, fresh, other } = seed(state);
+    assert.equal(stopIn(state, gitRepo(t)).code, 0);
+    assert.equal(fs.existsSync(old), false);
+    assert.equal(fs.existsSync(fresh), true);
+    assert.equal(fs.existsSync(other), true);
+  });
+
+  test('a file that cannot be deleted does not change the hook output', (t) => {
+    const dir = gitRepo(t);
+    writeLint(dir, FAIL);
+    const clean = stopIn(tempDir(t), dir);
+    const state = tempDir(t);
+    // A directory cannot be unlinked, so the deletion fails.
+    const stuck = path.join(state, 'devkit-verify-before-done-stuck');
+    fs.mkdirSync(stuck);
+    aged(stuck, 8);
+    const res = stopIn(state, dir);
+    assert.equal(res.code, 0);
+    assert.equal(res.stdout, clean.stdout);
+    assert.equal(res.stderr, clean.stderr);
+    assert.equal(fs.existsSync(stuck), true);
+  });
+});
+
 describe('verify-before-done: repositories without a plain HEAD at the project root', () => {
   // A repository with no commit yet has no HEAD to diff against, and must still skip.
   test('an unchanged tree on an unborn branch skips the second Stop', (t) => {

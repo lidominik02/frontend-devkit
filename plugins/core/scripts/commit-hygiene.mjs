@@ -25,14 +25,22 @@
 // composes itself, and that is exactly what this inspects.
 //
 // The command is tokenised the way a shell reads it -- quotes, escapes,
-// separators, heredoc bodies -- so only a real invocation of one of those git
-// subcommands is judged. Unless the command is led by one that
-// never runs its arguments (echo, grep, cat, ...), a git or shell invocation
-// among its arguments counts too, which covers sudo, xargs, timeout and the
-// like, and `env -S` has its string split into words. A shell's script is followed two levels deep, whether it comes from
-// `-c`, a heredoc or a here-string, and so are `$(...)`, backtick and `<(...)`
-// substitutions. When a shell reads its script from a pipe or a `<` redirect,
-// the whole command gets a plain-text scan instead.
+// separators, heredoc bodies -- by lib/shell-parse.mjs, so only a real
+// invocation of one of those git subcommands is judged. Unless the command is
+// led by one that never runs its arguments (echo, grep, cat, ...), a git or
+// shell invocation among its arguments counts too, which covers sudo, xargs,
+// timeout and the like, and `env -S` has its string split into words. A
+// command word is compared by its basename at `/` or `\`, without a trailing
+// `.exe`, `.cmd` or `.bat`, in any case, so `git.exe`, `GIT.EXE`,
+// `/c/Program\ Files/Git/cmd/git.exe` and `C:\Progra~1\Git\cmd\git` are git.
+// The shells followed are sh, bash, zsh, dash, ksh, pwsh, powershell and cmd. A
+// shell's script is followed two levels deep, whether it comes from `-c`, a
+// pwsh or powershell `-Command` (`-c`) or first word that is not an option, a
+// cmd `/c` or `/k` (with the command glued on or not), a heredoc or a
+// here-string, and so are `$(...)`, backtick and `<(...)` substitutions; a
+// pwsh, powershell or cmd script is read with the same POSIX tokeniser. When a
+// shell reads its script from a pipe or a `<` redirect, the whole command gets
+// a plain-text scan instead.
 //
 // A commit is judged on its message alone: each -m/--message and --trailer
 // value and each -F/--file text, bundled (-am, -aF) and abbreviated (--mess)
@@ -40,9 +48,13 @@
 // or a process substitution, or from a file this hook cannot read or that
 // the same command also names, may be written anywhere in the command, so
 // the whole command is scanned instead, each `--trailer key=value` in it
-// (git interpret-trailers' too) read as the `key: value` git 2.43.0 writes.
-// A -F path resolves against this hook's own working directory, which need
-// not match the Bash tool's.
+// (git interpret-trailers' too) read as the `key: value` git 2.43.0 writes,
+// and every occurrence of a -F/--file path left out of it, the redirect that
+// writes the file included; a heredoc body and a -m value stay in. A relative -F path resolves against CLAUDE_PROJECT_DIR, else the event's
+// cwd, else this hook's own, and a `cd` earlier in the command is not
+// followed. On Windows a Git Bash drive path (`/c/...`) reads as `C:/...` and
+// any other POSIX-absolute path is unreadable. A file that cannot be read is
+// named in the reason when the command is denied, and on stderr when it passes.
 //
 // Out of reach, and let through: git aliases, a quoted `eval` string, deeper
 // nesting, a git command name produced by an expansion (`$g`, `$(command -v
@@ -60,18 +72,33 @@
 // another commit (-t, -c, -C), a trailer key that `trailer.<name>.key` config
 // renames (git 2.43.0), and a stale -F file the command rewrites under another
 // name. `pull.rebase` config is not read, so a `git pull` passes only with
-// `--rebase` or `-r` on the command line. A command that does not tokenise
-// falls back to a plain-text scan of the whole string.
+// `--rebase` or `-r` on the command line. Deliberately denied, at the cost of a
+// false alarm: `git pull -qr` (a bundled `-r`) and `git pull --reb` (too short
+// to read as a rebase), `git merge --abo` (only a bare `--abort` passes), and
+// `git push -h` or `--help`; `git help push` passes. A command that does not
+// tokenise falls back to a plain-text scan of the whole string, so `echo don't
+// git push` is denied.
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
+/** @typedef {import('./lib/shell-parse.mjs').SimpleCommand} SimpleCommand */
+
+/** @type {typeof import('./lib/shell-parse.mjs')} */
+let shell;
 
 let raw = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (d) => { raw += d; });
-process.stdin.on('end', () => {
+process.stdin.on('end', async () => {
   try {
+    // Imported here rather than statically, so a missing lib reaches the catch
+    // below instead of failing module linking with a raw trace.
+    shell = await import('./lib/shell-parse.mjs');
     main(raw);
   } catch (err) {
+    // A hook that cannot evaluate its own policy must not take the session down
+    // with it: a permanently blocked session is worse and likelier than the commit it would catch.
     process.stderr.write(`devkit commit-hygiene: could not evaluate, allowing through: ${String(err)}\n`);
     process.exit(0);
   }
@@ -175,17 +202,79 @@ function messageReason(text) {
   return null;
 }
 
+// The directory a relative -F path resolves against, set from the event in main().
+let baseDir = process.cwd();
+
 /**
- * A message file's text, or null when this hook cannot read it: stdin (`-`),
- * a device, a process substitution, or a path that does not resolve from here.
- * A /dev/ or /proc/ path names a stream of the Bash call, never read here.
- * @param {string} p
+ * The path a -F value names, resolved against `cwd`, or null when it cannot be
+ * read on this platform. On win32 a Git Bash drive path (`/c/x`) is `C:/x`, and
+ * any other POSIX-absolute path has no Windows equivalent.
+ * @param {string} p @param {string} cwd @param {string} [platform]
  */
-function readMessageFile(p) {
-  if (p === '-' || /^\/(?:dev|proc)\//.test(p) || /^[<>]\(/.test(p)) return null;
+export function messageFilePath(p, cwd, platform = process.platform) {
+  if (platform !== 'win32') return path.posix.resolve(cwd, p);
+  const drive = /^\/([a-z])(?:\/|$)/i.exec(p);
+  if (drive) return `${drive[1].toUpperCase()}:/${p.slice(drive[0].length)}`;
+  if (p.startsWith('/')) return null;
+  return path.win32.resolve(cwd, p);
+}
+
+/**
+ * A message file's text, or null when this hook does not read it: stdin (`-`),
+ * a device or a process substitution, all streams of the Bash call, or a file
+ * that cannot be read, which alone counts as `unreadable`.
+ * @param {string} p @param {string} cwd
+ * @returns {{ text: string|null, unreadable: boolean }}
+ */
+function readMessageFile(p, cwd) {
+  if (isStream(p)) return { text: null, unreadable: false };
+  const file = messageFilePath(p, cwd);
+  if (file === null) return { text: null, unreadable: true };
   try {
-    return existsSync(p) ? readFileSync(p, 'utf8') : null;
-  } catch { return null; }
+    return { text: readFileSync(file, 'utf8'), unreadable: false };
+  } catch {
+    return { text: null, unreadable: true };
+  }
+}
+
+// A -F/--file option and its path, bundled (`-aF`, not after a flag that takes a
+// value) and abbreviated (`--fi`) too: a path is never message text.
+const FILE_ARGS = new RegExp(String.raw`(^|[\s;&|(])(?:-(?:(?![mFcCtSu])[a-zA-Z0-9])*F\s*|--f(?:i(?:le?)?)?(?:=|\s+))${OPT_VALUE}`, 'g');
+
+/** @param {string} p */
+function isStream(p) {
+  return p === '-' || /^\/(?:dev|proc)\//.test(p) || /^[<>]\(/.test(p);
+}
+
+/**
+ * `text` without every whole-word occurrence of a -F path, so a redirect that
+ * writes the message file is not read as message text. A stream such as `-` or
+ * `<(...)` is no path, and its text stays.
+ * @param {string} text @param {string[]} files
+ */
+function withoutFilePaths(text, files) {
+  let out = text.replace(FILE_ARGS, '$1');
+  for (const file of files) {
+    if (!file || isStream(file)) continue;
+    const literal = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp(String.raw`(^|[\s"'=<>;&|(])${literal}(?=$|[\s"';&|)])`, 'g'), '$1');
+  }
+  return out;
+}
+
+/**
+ * messageReason over a whole command without its -F paths, plus `extra`. A
+ * message file that could not be read is named in the reason, or on stderr
+ * when the command passes, since its content was never judged.
+ * @param {string} text @param {string[]} files @param {string} extra @param {string|null} unreadableFile
+ */
+function wholeCommandReason(text, files, extra, unreadableFile) {
+  const reason = messageReason(`${trailerOptionsText(withoutFilePaths(text, files))}\n${extra}`);
+  if (unreadableFile === null) return reason;
+  const note = `The message file '${unreadableFile}' could not be read, so its content was not judged.`;
+  if (reason) return `${reason} ${note}`;
+  process.stderr.write(`devkit commit-hygiene: ${note} The rest of the command passed, allowing through.\n`);
+  return null;
 }
 
 /** @param {string} text */
@@ -198,359 +287,18 @@ function plainTextScan(text) {
   if (!GIT_COMMIT.test(text)) return null;
   const m = text.match(/(?:^|[;&|]|\s)-F\s*([^\s;&|]+)|--file[=\s]+([^\s;&|]+)/);
   const file = m?.[1] ?? m?.[2];
-  return messageReason(trailerOptionsText(text) + '\n' + ((file && readMessageFile(file)) ?? ''));
-}
-
-// --- shell tokeniser --------------------------------------------------------
-
-/**
- * `subs` holds the text of each substitution in the command, `stdin` each
- * heredoc body and here-string fed to it, and `piped` marks a command whose
- * stdin is a pipe or a `<` redirect.
- * @typedef {{ words: string[], start: number, end: number, subs: string[], stdin: string[], piped: boolean }} SimpleCommand
- */
-/** @typedef {{ delim: string, strip: boolean, into: string[] | null }} Heredoc */
-
-const META = new Set([' ', '\t', '\n', ';', '&', '|', '<', '>', '(', ')']);
-
-class Unparsable extends Error {}
-
-/**
- * Splits `src` into simple commands, each word with its quoting removed, and
- * collects the text of every `$(...)`, backtick or `<(...)` substitution met
- * on the way. Throws Unparsable on an unterminated quote or substitution.
- * @param {string} src
- * @returns {SimpleCommand[]}
- */
-function parseShell(src) {
-  const n = src.length;
-  /** @type {SimpleCommand[]} */
-  const cmds = [];
-  /** @type {Heredoc[]} */
-  const heredocs = [];
-  // Heredocs in a substitution with no delimiter line past the scan position;
-  // the scan only moves forward, so an entry never goes stale.
-  /** @type {Set<string>} */
-  const absent = new Set();
-  /** @returns {SimpleCommand} */
-  const blank = () => ({ words: [], start: -1, end: -1, subs: [], stdin: [], piped: false });
-  let cur = blank();
-  let i = 0;
-  let redirectTarget = false;
-  let hereString = false;
-  let lastWordEnd = -1;
-
-  /** @returns {never} */
-  const fail = () => { throw new Unparsable(); };
-
-  const endCommand = () => {
-    cur.end = i;
-    cmds.push(cur);
-    cur = blank();
-    redirectTarget = false;
-    hereString = false;
-  };
-
-  /** @param {number} j */
-  const processSubstitutionAt = (j) => (src[j] === '<' || src[j] === '>') && src[j + 1] === '(';
-
-  /**
-   * Reads a heredoc operator's delimiter, with `i` just past its `<<`, or
-   * returns null when no word follows it.
-   * @param {string[] | null} into @returns {Heredoc | null}
-   */
-  const heredoc = (into) => {
-    const strip = src[i] === '-';
-    if (strip) i++;
-    while (src[i] === ' ' || src[i] === '\t') i++;
-    if (i >= n || META.has(src[i])) return null;
-    return { delim: word(), strip, into };
-  };
-
-  /**
-   * Reads the heredoc body that starts at `i`: its text and the offset where
-   * shell text resumes, or null when no delimiter line comes. Inside a
-   * substitution, a line that starts with the delimiter and a `)` also ends
-   * the body, and the `)` stays syntax, as bash 5.2.21 reads it.
-   * @param {Heredoc} h @param {boolean} inSub
-   * @returns {{ body: string, next: number, paren: boolean } | null}
-   */
-  const heredocBody = ({ delim, strip }, inSub) => {
-    let body = '';
-    for (let at = i; at < n;) {
-      let eol = src.indexOf('\n', at);
-      if (eol < 0) eol = n;
-      const line = src.slice(at, eol);
-      const text = strip ? line.replace(/^\t+/, '') : line;
-      if (text === delim) return { body, next: eol + 1, paren: false };
-      if (inSub && text.startsWith(`${delim})`)) return { body, next: eol - text.length + delim.length, paren: true };
-      body += `${line}\n`;
-      at = eol + 1;
-    }
-    return null;
-  };
-
-  /** Consumes each pending heredoc body; one whose delimiter never comes takes the rest. @param {Heredoc[]} pending */
-  const heredocBodies = (pending) => {
-    for (const h of pending) {
-      const read = heredocBody(h, false);
-      h.into?.push(read?.body ?? src.slice(i));
-      i = read?.next ?? n;
-    }
-    pending.length = 0;
-  };
-
-  /**
-   * Consumes the heredoc bodies pending inside a substitution. One whose
-   * delimiter line never comes was a shift (`$((1<<2))`), not an operator, so it
-   * takes no body and the word read as its delimiter stands as text. A body
-   * that ends at `delim)` leaves the heredocs after it for the next line.
-   * @param {Heredoc[]} pending
-   */
-  const substitutionBodies = (pending) => {
-    let k = 0;
-    while (k < pending.length) {
-      const h = pending[k++];
-      const key = `${+h.strip}${h.delim}`;
-      const read = absent.has(key) ? null : heredocBody(h, true);
-      if (!read) { absent.add(key); continue; }
-      i = read.next;
-      if (read.paren) break;
-    }
-    pending.splice(0, k);
-  };
-
-  const single = () => {
-    const close = src.indexOf("'", i + 1);
-    if (close < 0) fail();
-    const s = src.slice(i + 1, close);
-    i = close + 1;
-    return s;
-  };
-
-  const ansiC = () => {
-    let out = '';
-    for (i += 2; i < n; i++) {
-      if (src[i] === '\\') { out += src[++i] ?? ''; continue; }
-      if (src[i] === "'") { i++; return out; }
-      out += src[i];
-    }
-    return fail();
-  };
-
-  const backtick = () => {
-    let out = '';
-    for (i++; i < n; i++) {
-      if (src[i] === '\\') { out += src[++i] ?? ''; continue; }
-      if (src[i] === '`') { i++; return out; }
-      out += src[i];
-    }
-    return fail();
-  };
-
-  // Returns the text between `$(` (or `<(`, `>(`) and its matching `)`. A
-  // heredoc body inside is skipped, since its quotes and parens are not syntax.
-  const substitution = () => {
-    i += 2;
-    const from = i;
-    let depth = 1;
-    /** @type {Heredoc[]} */
-    const pending = [];
-    while (i < n) {
-      const c = src[i];
-      if (c === '\\') { i += 2; continue; }
-      if (c === "'") { single(); continue; }
-      if (c === '"') { double(false); continue; }
-      if (c === '`') { backtick(); continue; }
-      if (src.startsWith('<<<', i)) { i += 3; continue; }
-      if (src.startsWith('<<', i)) {
-        i += 2;
-        const h = heredoc(null);
-        if (h) pending.push(h);
-        continue;
-      }
-      if (c === '\n') { i++; substitutionBodies(pending); continue; }
-      if (c === '(') depth++;
-      else if (c === ')' && --depth === 0) { i++; return src.slice(from, i - 1); }
-      i++;
-    }
-    return fail();
-  };
-
-  /** @param {boolean} collect whether substitutions found here belong to this command */
-  const double = (collect) => {
-    let out = '';
-    i++;
-    while (i < n) {
-      const c = src[i];
-      if (c === '"') { i++; return out; }
-      if (c === '\\' && '"\\$`\n'.includes(src[i + 1] ?? 'x')) {
-        if (src[i + 1] !== '\n') out += src[i + 1];
-        i += 2;
-        continue;
-      }
-      if ((c === '$' && src[i + 1] === '(') || c === '`') {
-        const at = i;
-        const inner = c === '`' ? backtick() : substitution();
-        if (collect) cur.subs.push(inner);
-        out += src.slice(at, i);
-        continue;
-      }
-      out += c;
-      i++;
-    }
-    return fail();
-  };
-
-  const word = () => {
-    let out = '';
-    while (i < n && (!META.has(src[i]) || processSubstitutionAt(i))) {
-      const c = src[i];
-      if (c === "'") out += single();
-      else if (c === '"') out += double(true);
-      else if (c === '\\') { if (src[i + 1] !== '\n') out += src[i + 1] ?? ''; i += 2; }
-      else if (c === '$' && src[i + 1] === "'") out += ansiC();
-      else if ((c === '$' && src[i + 1] === '(') || c === '`' || processSubstitutionAt(i)) {
-        const at = i;
-        cur.subs.push(c === '`' ? backtick() : substitution());
-        out += src.slice(at, i);
-      } else { out += c; i++; }
-    }
-    return out;
-  };
-
-  const redirection = () => {
-    // A descriptor glued to the operator (2>&1) belongs to it, not to the arguments.
-    if (lastWordEnd === i && /^\d+$/.test(cur.words[cur.words.length - 1] ?? '')) cur.words.pop();
-    if (src.startsWith('<<<', i)) { i += 3; redirectTarget = true; hereString = true; return; }
-    if (src.startsWith('<<', i)) { i += 2; heredocs.push(heredoc(cur.stdin) ?? fail()); return; }
-    if (src[i] === '&') i++; // &> and &>>
-    else if (src[i] === '<') cur.piped = true; // stdin from a file or a process substitution
-    i++;
-    if (i < n && '>&|'.includes(src[i])) i++;
-    redirectTarget = true;
-  };
-
-  while (i < n) {
-    const c = src[i];
-    if (c === ' ' || c === '\t') { i++; continue; }
-    if (c === '\\' && src[i + 1] === '\n') { i += 2; continue; }
-    if (c === '\n') { endCommand(); i++; heredocBodies(heredocs); continue; }
-    if (c === '#') { while (i < n && src[i] !== '\n') i++; continue; }
-    if (c === ';' || c === '(' || c === ')') { endCommand(); i++; continue; }
-    if (c === '|') {
-      const or = src[i + 1] === '|';
-      endCommand();
-      cur.piped = !or;
-      i += or || src[i + 1] === '&' ? 2 : 1;
-      continue;
-    }
-    if (c === '&' && src[i + 1] !== '>') { endCommand(); i += src[i + 1] === '&' ? 2 : 1; continue; }
-    if ((c === '<' || c === '>' || c === '&') && !processSubstitutionAt(i)) { redirection(); continue; }
-    const at = i;
-    const w = word();
-    if (redirectTarget) {
-      if (hereString) cur.stdin.push(w);
-      redirectTarget = false;
-      hereString = false;
-    } else {
-      if (cur.start < 0) cur.start = at;
-      cur.words.push(w);
-    }
-    lastWordEnd = i;
-  }
-  endCommand();
-  return cmds;
+  const { text: fileText, unreadable } = file ? readMessageFile(unquote(file), baseDir) : { text: null, unreadable: false };
+  return wholeCommandReason(text, file ? [unquote(file)] : [], fileText ?? '', unreadable && file ? unquote(file) : null);
 }
 
 // --- judging -----------------------------------------------------------------
 
 const MAX_DEPTH = 2;
-const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*\+?=/;
-const RESERVED = new Set(['!', '{', 'if', 'then', 'else', 'elif', 'do', 'while', 'until']);
-const WRAPPERS = new Set(['command', 'exec', 'nohup', 'time']);
 // Commands that never execute their arguments, so `echo git commit-tree` is text.
 const NON_EXECUTING = new Set([
   'echo', 'printf', 'grep', 'egrep', 'fgrep', 'rg', 'ag', 'cat', 'less', 'man',
   'which', 'type', 'command', 'test', '[', 'true', 'false', ':',
 ]);
-const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh']);
-
-/** The words from the command name on, past assignments and wrappers. @param {string[]} input */
-function commandWords(input) {
-  let words = input;
-  let k = 0;
-  while (k < words.length) {
-    const w = words[k];
-    if (ASSIGNMENT.test(w) || RESERVED.has(w)) { k++; continue; }
-    if (w === 'env') {
-      k++;
-      while (k < words.length && (ASSIGNMENT.test(words[k]) || words[k].startsWith('-'))) {
-        const split = envSplitString(words, k);
-        if (split) {
-          words = [...words.slice(0, k), ...split.words, ...words.slice(k + split.width)];
-          continue;
-        }
-        k += ['-u', '-C', '--unset', '--chdir'].includes(words[k]) ? 2 : 1;
-      }
-      continue;
-    }
-    if (WRAPPERS.has(w)) {
-      if (w === 'command' && /^-[A-Za-z]*[vV]/.test(words[k + 1] ?? '')) break; // looks up, never runs
-      k++;
-      while (k < words.length && words[k].startsWith('-')) k += w === 'exec' && words[k] === '-a' ? 2 : 1;
-      continue;
-    }
-    break;
-  }
-  return words.slice(k);
-}
-
-/**
- * The words of an `env -S` / `--split-string` string at `words[k]`, and how
- * many words the option spans, or null when `words[k]` is another option.
- * @param {string[]} words @param {number} k
- * @returns {{ words: string[], width: number } | null}
- */
-function envSplitString(words, k) {
-  const w = words[k];
-  let text;
-  let width = 1;
-  if (w === '-S' || w === '--split-string') { text = words[k + 1] ?? ''; width = 2; }
-  else if (/^-S./.test(w)) text = w.slice(2);
-  else if (w.startsWith('--split-string=')) text = w.slice('--split-string='.length);
-  else return null;
-  try {
-    return { words: parseShell(text)[0]?.words ?? [], width };
-  } catch {
-    return { words: text.split(/\s+/).filter(Boolean), width };
-  }
-}
-
-/**
- * Where a shell invocation reads its script: the `-c` string, or stdin when
- * there is no `-c` and no script-file operand (or `-s` is given).
- * @param {string[]} words
- */
-function shellInput(words) {
-  let k = 1;
-  let hasC = false;
-  let hasS = false;
-  while (k < words.length) {
-    const w = words[k];
-    if (w === '--') { k++; break; }
-    if (/^[-+][oO]$/.test(w)) { k += 2; continue; }
-    if (/^-[A-Za-z]+$/.test(w)) {
-      if (w.includes('c')) hasC = true;
-      if (w.includes('s')) hasS = true;
-      k++;
-      continue;
-    }
-    if (w.startsWith('-') || w.startsWith('+')) { k++; continue; }
-    break;
-  }
-  return { script: hasC ? words[k] ?? null : null, stdin: !hasC && (hasS || k >= words.length) };
-}
 
 /** @param {string[]} words */
 function gitSubcommand(words) {
@@ -638,7 +386,7 @@ function messageSources(args) {
 /** @param {string} src @param {number} depth @returns {string | null} */
 function analyse(src, depth) {
   let cmds;
-  try { cmds = parseShell(src); } catch { return plainTextScan(src); }
+  try { cmds = shell.parseShell(src); } catch { return plainTextScan(src); }
   for (const cmd of cmds) {
     const reason = judge(cmd, src, depth);
     if (reason) return reason;
@@ -654,25 +402,25 @@ function judge(cmd, src, depth) {
       if (reason) return reason;
     }
   }
-  const words = commandWords(cmd.words);
+  const words = shell.commandWords(cmd.words);
   if (words.length === 0) return null;
-  const head = basename(words[0]);
+  const head = shell.commandName(words[0]);
   if (NON_EXECUTING.has(head)) return null;
-  if (SHELLS.has(head) || head === 'git') return invocation(words, cmd, src, depth);
+  if (shell.SHELLS.has(head) || head === 'git') return invocation(words, cmd, src, depth);
   // Any other head may run its arguments (sudo, xargs, timeout, ...), so a git
   // or shell invocation among them is judged as though it led the command.
   for (let k = 1; k < words.length; k++) {
-    const name = basename(words[k]);
-    if (!SHELLS.has(name) && name !== 'git') continue;
+    const name = shell.commandName(words[k]);
+    if (!shell.SHELLS.has(name) && name !== 'git') continue;
     const reason = invocation(words.slice(k), cmd, src, depth);
     if (reason) return reason;
   }
   return null;
 }
 
-/** @param {string} word */
-function basename(word) {
-  return word.slice(word.lastIndexOf('/') + 1);
+/** @param {string} file */
+function basename(file) {
+  return file.slice(file.lastIndexOf('/') + 1);
 }
 
 /**
@@ -681,9 +429,9 @@ function basename(word) {
  * @returns {string | null}
  */
 function invocation(words, cmd, src, depth) {
-  if (SHELLS.has(basename(words[0]))) {
+  if (shell.SHELLS.has(shell.commandName(words[0]))) {
     if (depth >= MAX_DEPTH) return null;
-    const { script, stdin } = shellInput(words);
+    const { script, stdin } = shell.shellInput(words);
     if (script !== null) return analyse(script, depth + 1);
     if (!stdin) return null;
     for (const body of cmd.stdin) {
@@ -702,11 +450,11 @@ function invocation(words, cmd, src, depth) {
   let message = texts.join('\n');
   const elsewhere = src.slice(0, cmd.start) + src.slice(cmd.end);
   for (const file of files) {
-    const text = readMessageFile(file);
+    const { text, unreadable } = readMessageFile(file, baseDir);
     // Text git reads from stdin, or from a file this call may write first, can
     // come from anywhere in the command, so the whole command is scanned.
     if (text === null || elsewhere.includes(basename(file))) {
-      return messageReason(`${trailerOptionsText(src)}\n${message}\n${text ?? ''}`);
+      return wholeCommandReason(src, files, `${message}\n${text ?? ''}`, unreadable ? file : null);
     }
     message += `\n${text}`;
   }
@@ -724,6 +472,8 @@ function main(input) {
 
   const command = String(evt.tool_input?.command ?? '');
   if (!command) process.exit(0);
+
+  baseDir = process.env.CLAUDE_PROJECT_DIR || evt.cwd || process.cwd();
 
   const reason = analyse(command, 0);
   if (reason) deny(reason);

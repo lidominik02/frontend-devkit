@@ -24,9 +24,44 @@ Exits 2 on credential material, regardless of permission mode.
 - Blocks exfiltration (upload flags, piping into a network client), interpreter one-liners,
   `source`, environment dumps and a download piped into a shell.
 - Refuses hand-edits to lockfiles and `.git/`.
+- Matches paths with backslashes as well as forward slashes, and ignores letter case on
+  every platform: Windows sends backslash paths, and a case-insensitive filesystem opens
+  `.env` for `.ENV`.
+- Blocks a `Grep` whose `glob` targets a credential file by name or directory (`.env*`,
+  `**/.env`, `*.pem`, `secrets/*`, `a/b/.ssh/*`), even when its `path` is a directory.
+  Each `{a,b}` alternative, with `*`, `?` and `[...]` removed, is judged as a path by the
+  same rules as a file path, so `*`, `**/*`, `src/*`, `*.json` and `*.ts` pass. A glob
+  starting with `!` excludes and passes. Known limit: a deliberately shortened glob
+  (`.e*`, `*.p*`) gets through; the hook is not a sandbox.
 - Exempts `.example` / `.sample` / `.template`.
+- Judges a `Bash` read by operand position. The command is parsed into simple commands,
+  and a credential path blocks as a file operand of a reading command (`cat`, `grep`,
+  `cp`, `source`, `.`, …), and as the target of an input redirect (`<`, `<>`, `N<`) of any
+  command. Commands inside `$(…)`, backticks, an `eval`, a `bash -c` / `sh -c` script and
+  a script fed to a shell on stdin (a here-string or heredoc) are judged the same way,
+  down to two levels of nesting; a script piped into a shell is judged by its text, quotes
+  included (`echo 'cat .env' | sh` blocks). An excluding pattern always passes: the value
+  of `--exclude` and `--exclude-dir` (`grep`, `rg`, and `--exclude` for `rsync` and
+  `tar`), an `rg` `-g` / `--glob` / `--iglob` value starting with `!`, the pattern operand
+  of `grep` and `rg` when no `-e` or `-f` is given, and an excluding pathspec (`:!…`,
+  `:^…`, `:(exclude)…`). A selecting pattern — the value of `--include`, and of `rg`'s
+  `-g` / `--glob` / `--iglob` without `!` — opens the files it names, so it is judged by
+  the same rule as a `Grep` glob: `--include='*.md'` passes, `--include=.env` and
+  `rg -g .env` block. A reading command word counts only as a command, so
+  `find . -name ".env*"` and `ls . .env` pass; `grep -c FOO .env` and `sort -g .env`
+  still block.
+- Falls back to matching the command text for a reading command followed by a credential
+  path when the command cannot be parsed (an unbalanced quote, or any parser error) or
+  nests deeper than two levels. The upload, interpreter, environment-dump and download
+  rules always match the text.
+- The dotenv block message names the file and the names helper, as an absolute, quoted
+  path: `node "<plugin>/scripts/env-names.mjs" "<file>"` prints the variable names a
+  dotenv file defines, never their values, and `test -n "$NAME"` checks the environment.
+  The hook lets that exact command through when its first argument resolves to the helper
+  beside the hook and every other argument is a `.env` or `.env.*` file; every other
+  command on the line is judged as usual. The helper itself refuses any other file.
 - A dotenv match requires a path context before it (start, whitespace, a quote, `=`, `/`,
-  `~`), so it does not match inside `process.env` or `import.meta.env`.
+  `\`, `~`), so it does not match inside `process.env` or `import.meta.env`.
 - A heredoc body is stripped from the scan by locating its real closing line, not by
   truncating everything after the opening marker — truncating there would let anything
   typed after the heredoc closes through unscanned.
@@ -51,7 +86,17 @@ What counts as the message:
   (`git add HANDOFF.md && git commit …`) are not its message.
 - When the message comes from stdin, a process substitution, a `/dev/` or `/proc/` path, a
   file this hook cannot read, or a file the same command also names, the whole command is
-  scanned instead, since the message may be written anywhere in it.
+  scanned instead, since the message may be written anywhere in it. Every occurrence
+  of a `-F`/`--file` path is left out of that scan, the redirect that writes the file
+  included, so a message file kept under `temp/<feature>/planning/` is not itself a leak; a
+  heredoc body and a `-m` value stay in.
+- A relative `-F` path resolves against `CLAUDE_PROJECT_DIR`, else the event's `cwd`, else
+  the hook's own working directory; a `cd` earlier in the command is not followed. On
+  Windows a Git Bash drive path (`/c/…`) is read as `C:/…`, and any other POSIX-absolute
+  path counts as unreadable.
+- A `-F` file the hook cannot read is named in the decision: in the reason when the
+  command is denied, and in a stderr line when it passes, both saying its content was not
+  judged.
 
 `git commit-tree` is denied outright, since a plumbing commit bypasses both the
 repository's own hooks and these checks.
@@ -70,12 +115,33 @@ the step back:
 `git fetch`, `git rebase`, `git pull --rebase`, `git merge-base` and the other `merge-*`
 subcommands pass.
 
+The matching is deliberately strict, and a false alarm is the price:
+
+- `git pull -qr` (a bundled `-r`), `git pull --reb` (too short to read as a rebase) and
+  `git merge --abo` (only a bare `--abort` passes) are denied.
+- `git push -h` and `git push --help` are denied; `git help push` passes.
+- A command that does not tokenise gets a plain-text scan, so `echo don't git push` is
+  denied.
+- A command outside the list that never runs its arguments has its arguments examined: in
+  `ls git merge`, the `git merge` counts.
+
 The command is read the way a shell reads it, so quoting, a leading assignment, a wrapper
 (`sudo`, `xargs`, `timeout`, …), an `env -S` string, a global option that takes a value
 (`-C <path>`, `-c <k=v>`, `--git-dir`, `--config-env`, …), a `bash -c` string, a heredoc,
 here-string or pipe into a shell, and a `$(…)`, backtick or `<(…)` substitution, two levels
 deep, do not hide the subcommand. A message that merely names one, or a command that never
 runs its arguments (`echo`, `grep`, …), is not a call to it.
+
+The Windows spellings are the same call. A command word is compared by its basename at `/`
+or `\`, without a trailing `.exe`, `.cmd` or `.bat`, in any case, so `git.exe push`,
+`GIT.EXE push`, `/c/Program\ Files/Git/cmd/git.exe push` and
+`C:\Progra~1\Git\cmd\git push` are judged as `git push`; an unquoted word that starts with
+a drive path keeps its backslashes. The shells followed are `sh`, `bash`, `zsh`, `dash`,
+`ksh`, `pwsh`, `powershell` and `cmd`: the script of `bash.exe -c`, of `pwsh` or
+`powershell -Command` (`-c`) or their words from the first one that is not an option
+(`powershell git push`), and of `cmd /c` or `/k` (`//c` as Git Bash spells it), the
+command glued to the switch or not (`cmd /cgit push`), is judged like a `bash -c`
+string, read with the same tokeniser.
 
 Some forms stay out of reach, and the file's header lists every one: a git alias, a quoted
 `eval` string, deeper nesting, a git command name produced by an expansion (`$g`,
@@ -92,6 +158,11 @@ the file so workspace installs are found.
   the working directory) is left as written — a file in the user's auto-memory or in an
   `--add-dir` directory elsewhere, or the target of a symlink that points out of the
   project — since the walk would otherwise fall back to the project's formatter.
+- A project root that holds `biome.json`, `biome.jsonc`, `dprint.json`, `.oxfmtrc` or
+  `.oxfmtrc.json` and no prettier config (`.prettierrc*`, `prettier.config.*`, a `prettier`
+  key in `package.json`) is not formatted with prettier, even when prettier is installed.
+  A declared `gates.format` is checked first and keeps precedence; the detection needs no
+  `.claude/project.json`.
 - Never blocks — the edit has already happened, and PostToolUse cannot block.
 
 ## `verify-before-done.mjs`
@@ -116,7 +187,8 @@ same session — a change only to ignored files, such as generated types, is not
 and a failing run is never remembered, so an unchanged red tree still blocks. It exits
 silently while a background subagent is running; a background shell such as a dev server
 never skips the gates. Its git calls and the gates share a 190-second budget inside the
-hook's 200-second timeout.
+hook's 200-second timeout. Each run deletes its session state files in the temp directory
+(`devkit-verify-before-done-*`) that were last modified more than seven days ago.
 
 ## What no hook covers
 
