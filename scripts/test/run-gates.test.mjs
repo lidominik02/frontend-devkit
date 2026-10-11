@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
 
-import { REPO_ROOT, gitRepo, isolatedEnv, runScript, runScriptAsync, tempDir } from './helpers.mjs';
+import { REPO_ROOT, RM_RETRY, gitRepo, isolatedEnv, runScript, runScriptAsync, tempDir } from './helpers.mjs';
 
 const RUN_GATES = path.join(REPO_ROOT, 'plugins', 'core', 'scripts', 'run-gates.mjs');
 
@@ -135,19 +135,22 @@ describe('run-gates: what does not fail the run, and what never runs', () => {
   // the shell left running in the gate's cwd.
   test('a hanging gate times out as not-run, with its whole process tree stopped', async (t) => {
     const dir = project(t, { scripts: { test: HANG_WITH_GRANDCHILD } });
-    const [r] = gatesJson(t, dir, '--gate', 'test', '--timeout', '3000').results;
+    // Long enough for the package manager chain to start the grandchild on a loaded machine,
+    // well short of HANG's 30 seconds.
+    const [r] = gatesJson(t, dir, '--gate', 'test', '--timeout', '10000').results;
     assert.equal(r.status, 'not-run');
     assert.match(r.reason, /timed out/);
     const pidFile = path.join(dir, 'grandchild.pid');
     assert.ok(fs.existsSync(pidFile), 'the gate did not start its grandchild before the timeout');
     const pid = Number(fs.readFileSync(pidFile, 'utf8'));
     assert.equal(await exited(pid), true, `grandchild ${pid} is still running`);
-    fs.rmSync(dir, { recursive: true });
+    fs.rmSync(dir, { recursive: true, ...RM_RETRY });
   });
 
+  // The budget covers run-gates' own start-up too, so it must outlast that under load.
   test('a budget stops the run, and the gates after it are not-run', (t) => {
     const dir = project(t, { scripts: { lint: HANG, test: HANG } });
-    const [first, second] = gatesJson(t, dir, '--stage', 'full', '--timeout', '60000', '--budget', '2500').results
+    const [first, second] = gatesJson(t, dir, '--stage', 'full', '--timeout', '60000', '--budget', '10000').results
       .filter((r) => r.name !== 'typecheck');
     assert.equal(first.status, 'not-run');
     assert.match(first.reason, /timed out/);

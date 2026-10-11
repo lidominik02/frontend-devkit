@@ -65,10 +65,14 @@ export function hookEvent(toolName, toolInput, extra = {}) {
   return JSON.stringify({ tool_name: toolName, tool_input: toolInput, ...extra });
 }
 
+// On Windows a process stopped by taskkill releases its handle on its cwd a moment
+// later, so a removal straight after it can fail with EBUSY; rmSync retries that.
+export const RM_RETRY = { maxRetries: 10, retryDelay: 200 };
+
 // realpath: on macOS the tmpdir is a symlink, and two spellings of a path compare unequal.
 export function tempDir(t) {
   const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'devkit-test-')));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true, ...RM_RETRY }));
   return dir;
 }
 

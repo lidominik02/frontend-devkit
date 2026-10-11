@@ -10,7 +10,9 @@
 // `--rebase`, which merges; `git subtree push|pull|merge|add`; `git svn
 // dcommit|set-tree|commit-diff`; and `git p4 submit`. A git subcommand word
 // that is an expansion (`git $X push`, `git "$@"`) may be any of them, so it
-// is denied too, at the cost of denying a harmless one such as `git $X status`.
+// is denied too, at the cost of denying a harmless one such as `git $X status`;
+// so is a `Start-Process git` argument list held in a variable or a group
+// (`-ArgumentList $a`, `Start-Process git $a`, `-ArgumentList @('status')`).
 //
 // Node rather than bash, for the reason block-secrets.mjs states: bash exits
 // 2 on a syntax error and 2 is also the hook protocol's block signal, so a
@@ -19,10 +21,20 @@
 // fails open. Fail closed on a policy decision; fail open on a broken
 // interpreter -- the same split every hook in this plugin makes.
 //
-// This checks Bash commands only, matching the plugin's own convention:
-// there is no `allowed-tools` grant for `git commit` anywhere in this
-// plugin, so the only way a commit happens is through a Bash call the model
-// composes itself, and that is exactly what this inspects.
+// This checks Bash and PowerShell commands: there is no `allowed-tools` grant
+// for `git commit` anywhere in this plugin, so the only way a commit happens is
+// through a shell call the model composes itself, and that is exactly what this
+// inspects. A PowerShell command is read with the same POSIX tokeniser, its
+// backslashes literal as PowerShell reads them, its backtick escapes rewritten
+// into the tokeniser's own (`` `n `` a newline inside double quotes, any other
+// escaped character itself) and a `<#...#>` comment dropped, so `&`,
+// PowerShell's call operator, separates like a POSIX `&` and the word after it
+// is the command name: `& git push`, `& 'C:\Program Files\Git\cmd\git.exe'
+// push` and `git pu`sh` are `git push`. An assignment or a script block glued
+// to the command does not hide it: `$r=git push`, `& {git push}` and `if
+// ($true) {git push}` are `git push`. A `Start-Process` (`saps`) is judged
+// as the command its `-FilePath` and `-ArgumentList` (or its two positional
+// words) name, the list split at commas and blanks.
 //
 // The command is tokenised the way a shell reads it -- quotes, escapes,
 // separators, heredoc bodies -- by lib/shell-parse.mjs, so only a real
@@ -35,12 +47,19 @@
 // `/c/Program\ Files/Git/cmd/git.exe` and `C:\Progra~1\Git\cmd\git` are git.
 // The shells followed are sh, bash, zsh, dash, ksh, pwsh, powershell and cmd. A
 // shell's script is followed two levels deep, whether it comes from `-c`, a
-// pwsh or powershell `-Command` (`-c`) or first word that is not an option, a
-// cmd `/c` or `/k` (with the command glued on or not), a heredoc or a
-// here-string, and so are `$(...)`, backtick and `<(...)` substitutions; a
-// pwsh, powershell or cmd script is read with the same POSIX tokeniser. When a
-// shell reads its script from a pipe or a `<` redirect, the whole command gets
-// a plain-text scan instead.
+// pwsh or powershell `-Command` (`-c`, the script glued on with `:` or not),
+// `-EncodedCommand` (`-e`, `-ec`, decoded) or first word that is not an option,
+// a cmd `/c` or `/k` (with the command glued on or not, other switches run
+// together before it: `/d/c`), a heredoc or a
+// here-string, and so are `$(...)`, backtick and `<(...)` substitutions. A
+// script is read in the language of the shell that runs it, whichever tool
+// started that shell: a pwsh or powershell script rewritten as a PowerShell
+// command is (so `pwsh -c '& {git push}'` is `git push`), a cmd script with its
+// `^` escapes resolved and its `'`, `$` and backtick literal. When a
+// shell reads its script from a pipe, what the commands before it in the
+// pipeline print and the heredocs fed to them are read as its script, in its
+// language (`echo "& {git push}" | pwsh -`); from a pipe or a `<` redirect,
+// the whole command also gets a plain-text scan.
 //
 // A commit is judged on its message alone: each -m/--message and --trailer
 // value and each -F/--file text, bundled (-am, -aF) and abbreviated (--mess)
@@ -49,15 +68,29 @@
 // the same command also names, may be written anywhere in the command, so
 // the whole command is scanned instead, each `--trailer key=value` in it
 // (git interpret-trailers' too) read as the `key: value` git 2.43.0 writes,
-// and every occurrence of a -F/--file path left out of it, the redirect that
-// writes the file included; a heredoc body and a -m value stay in. A relative -F path resolves against CLAUDE_PROJECT_DIR, else the event's
-// cwd, else this hook's own, and a `cd` earlier in the command is not
-// followed. On Windows a Git Bash drive path (`/c/...`) reads as `C:/...` and
+// and every shell word that names a -F/--file path left out of it, cut at the
+// tokeniser's offsets: the -F value, a `>`/`>>` target that writes the file,
+// any other word naming the same file, however spelled (`./m.txt` is `m.txt`,
+// in any case on Windows). The path's text inside another word, a heredoc body
+// or a -m value stays in. Text that does not tokenise is read roughly: each
+// `git commit` in it has every -F path read, and only those -F values and the
+// `>`/`>>` targets naming the same files are left out. A relative
+// -F path resolves against the event's cwd, else CLAUDE_PROJECT_DIR, else this
+// hook's own, moved by each `cd`, `chdir`, `pushd`, `Set-Location` (`sl`) or
+// `Push-Location` before it, except one inside `( )` or before a `|`, and
+// then by git's own `-C` options, each relative to the one before (git
+// 2.47.0.windows.1). A `cd` that runs only on a condition (after `&&`, `||`,
+// `then`, `else`, `elif`, `do`) may not move it, so the commands after it are
+// judged both ways, up to MAX_FORKS such `cd`s. A target
+// that cannot be known without running the command (no operand, `-`, `~`, a
+// variable, a glob, `popd`) leaves a relative path naming an unknown file:
+// unreadable, and kept in the whole-command scan; so does any such command in
+// text that does not tokenise. On Windows a Git Bash drive path (`/c/...`) reads as `C:/...` and
 // any other POSIX-absolute path is unreadable. A file that cannot be read is
 // named in the reason when the command is denied, and on stderr when it passes.
 //
-// Out of reach, and let through: git aliases, a quoted `eval` string, deeper
-// nesting, a git command name produced by an expansion (`$g`, `$(command -v
+// Out of reach, and let through: git aliases, a quoted `eval` or PowerShell
+// `Invoke-Expression` (`iex`) string, deeper nesting, a git command name produced by an expansion (`$g`, `$(command -v
 // git)`), a script or stdin message read from a file (`bash f`, `sh ./f.sh`,
 // `source f`, `. f`, `bash < f`, `-F - < f`), a command another interpreter or
 // a task runner runs (`python3 -c`, `node -e`, `make`, `npm run` and every
@@ -77,32 +110,53 @@
 // to read as a rebase), `git merge --abo` (only a bare `--abort` passes), and
 // `git push -h` or `--help`; `git help push` passes. A command that does not
 // tokenise falls back to a plain-text scan of the whole string, so `echo don't
-// git push` is denied.
+// git push` is denied; that scan reads `git` and `git.exe` in any case, a path
+// ending in either included.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** @typedef {import('./lib/shell-parse.mjs').SimpleCommand} SimpleCommand */
 
 /** @type {typeof import('./lib/shell-parse.mjs')} */
 let shell;
 
-let raw = '';
-process.stdin.setEncoding('utf8');
-process.stdin.on('data', (d) => { raw += d; });
-process.stdin.on('end', async () => {
+/**
+ * Whether this file is the process's entry point, directly or through run.mjs,
+ * which puts the hook's path in argv[1]. A module importing messageFilePath
+ * must not get a stdin reader that keeps it alive. When the comparison itself
+ * fails, the hook runs.
+ */
+function isEntryPoint() {
+  if (!process.argv[1]) return false;
   try {
-    // Imported here rather than statically, so a missing lib reaches the catch
-    // below instead of failing module linking with a raw trace.
-    shell = await import('./lib/shell-parse.mjs');
-    main(raw);
-  } catch (err) {
-    // A hook that cannot evaluate its own policy must not take the session down
-    // with it: a permanently blocked session is worse and likelier than the commit it would catch.
-    process.stderr.write(`devkit commit-hygiene: could not evaluate, allowing through: ${String(err)}\n`);
-    process.exit(0);
+    const self = realpathSync.native(fileURLToPath(import.meta.url));
+    const entry = realpathSync.native(process.argv[1]);
+    return process.platform === 'win32' ? self.toLowerCase() === entry.toLowerCase() : self === entry;
+  } catch {
+    return true;
   }
-});
+}
+
+if (isEntryPoint()) {
+  let raw = '';
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', (d) => { raw += d; });
+  process.stdin.on('end', async () => {
+    try {
+      // Imported here rather than statically, so a missing lib reaches the catch
+      // below instead of failing module linking with a raw trace.
+      shell = await import('./lib/shell-parse.mjs');
+      main(raw);
+    } catch (err) {
+      // A hook that cannot evaluate its own policy must not take the session down
+      // with it: a permanently blocked session is worse and likelier than the commit it would catch.
+      process.stderr.write(`devkit commit-hygiene: could not evaluate, allowing through: ${String(err)}\n`);
+      process.exit(0);
+    }
+  });
+}
 
 /** @param {string} reason */
 function deny(reason) {
@@ -133,10 +187,12 @@ const GIT_VALUE_OPTIONS = ['-C', '-c', '--git-dir', '--work-tree', '--namespace'
 const VALUE_OPTS = `(?:${GIT_VALUE_OPTIONS.join('|')})`;
 const OPT_VALUE = String.raw`(?:"[^"]*"|'[^']*'|[^\s"']\S*)`;
 const GLOBAL_OPTS = String.raw`(?:${VALUE_OPTS}\s+${OPT_VALUE}\s+|(?!${VALUE_OPTS}\s)-\S+\s+)*`;
-const GIT_COMMIT = new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}commit(?:\s|$)`);
-const GIT_COMMIT_TREE = new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}commit-tree(?:\s|$)`);
+// `git` or `git.exe` in any case, closing quote included (`& 'C:\...\git.exe' push`).
+const GIT_WORD = String.raw`\b[Gg][Ii][Tt](?:\.[Ee][Xx][Ee])?["']?\s+`;
+const GIT_COMMIT = new RegExp(String.raw`${GIT_WORD}${GLOBAL_OPTS}commit(?:\s|$)`);
+const GIT_COMMIT_TREE = new RegExp(String.raw`${GIT_WORD}${GLOBAL_OPTS}commit-tree(?:\s|$)`);
 // The subcommand and the rest of its simple command, split into words below.
-const GIT_HAND_BACK = new RegExp(String.raw`\bgit\s+${GLOBAL_OPTS}([^\s;&|)]+)([^;&|\n)]*)`, 'g');
+const GIT_HAND_BACK = new RegExp(String.raw`${GIT_WORD}${GLOBAL_OPTS}([^\s;&|)]+)([^;&|\n)]*)`, 'g');
 
 // A generic-word denylist, deliberately: naming a private project would make
 // this list itself a disclosure of it, which is the rule every check in this
@@ -220,15 +276,90 @@ export function messageFilePath(p, cwd, platform = process.platform) {
 }
 
 /**
+ * Whether `p` names the same file from any directory.
+ * @param {string} p @param {string} [platform]
+ */
+function isAbsolutePath(p, platform = process.platform) {
+  return platform === 'win32' ? /^(?:[/\\]|[A-Za-z]:[/\\])/.test(p) : p.startsWith('/');
+}
+
+// Commands that change the shell's directory: POSIX cd, chdir, pushd and popd,
+// and PowerShell's Set-Location (sl), Push-Location and Pop-Location.
+const DIR_COMMANDS = new Set(['cd', 'chdir', 'pushd', 'popd', 'set-location', 'sl', 'push-location', 'pop-location']);
+const DIR_WORD = /(?:^|[\s;&|(){}])(?:cd|chdir|pushd|popd|set-location|sl|push-location|pop-location)(?=$|[\s;&|)])/i;
+
+/**
+ * The directory a `cd`-like command leaves the shell in, from `dir`, or null
+ * when it cannot be known without running it: no operand (home), `-`, a stack
+ * entry (`+1`), `~`, an expansion, a glob, popd, or an unknown `dir`. PowerShell's
+ * -Path and -LiteralPath name the operand; -PassThru and -StackName are skipped.
+ * @param {string[]} words @param {string | null} dir
+ * @returns {string | null}
+ */
+function changedDir(words, dir) {
+  const head = shell.commandName(words[0]);
+  if (dir === null || head === 'popd' || head === 'pop-location') return null;
+  /** @type {string[]} */
+  const operands = [];
+  for (let k = 1; k < words.length; k++) {
+    const w = words[k];
+    if (w === '--' || /^-[LPe@]+$/.test(w)) continue;
+    if (!/^-[A-Za-z]/.test(w)) { operands.push(w); continue; }
+    const colon = w.indexOf(':');
+    const name = (colon < 0 ? w.slice(1) : w.slice(1, colon)).toLowerCase();
+    const glued = colon < 0 ? null : w.slice(colon + 1);
+    if ('passthru'.startsWith(name) && name.length >= 2) continue;
+    if (name.length >= 2 && ('path'.startsWith(name) || 'literalpath'.startsWith(name))) {
+      operands.push(glued ?? words[++k] ?? '');
+      continue;
+    }
+    if (name.length >= 2 && 'stackname'.startsWith(name)) { if (glued === null) k++; continue; }
+    return null;
+  }
+  if (operands.length !== 1) return null;
+  const target = operands[0];
+  if (!target || /^[-+~]|[$`*?[]/.test(target)) return null;
+  return messageFilePath(target, dir);
+}
+
+/**
+ * The directory git runs in after its global `-C` options, `words[0]` being
+ * git and `dir` the shell's: each `-C <path>` resolves against the one before,
+ * as git chains them, and an empty one changes nothing (git 2.47.0.windows.1).
+ * Null when a value cannot be known without running the command (`~`, an
+ * expansion, a glob) or is relative to an unknown `dir`.
+ * @param {string[]} words @param {string | null} dir
+ * @returns {string | null}
+ */
+function gitDir(words, dir) {
+  for (let k = 1; k < words.length; k++) {
+    const w = words[k];
+    if (w === '-C') {
+      const target = words[++k] ?? '';
+      if (!target) continue;
+      if (/^~|[$`*?[]/.test(target)) dir = null;
+      else if (isAbsolutePath(target)) dir = messageFilePath(target, '/');
+      else if (dir !== null) dir = messageFilePath(target, dir);
+      continue;
+    }
+    if (GIT_VALUE_OPTIONS.includes(w)) { k++; continue; }
+    if (!w.startsWith('-')) break;
+  }
+  return dir;
+}
+
+/**
  * A message file's text, or null when this hook does not read it: stdin (`-`),
  * a device or a process substitution, all streams of the Bash call, or a file
- * that cannot be read, which alone counts as `unreadable`.
- * @param {string} p @param {string} cwd
+ * that cannot be read, which alone counts as `unreadable`. A null `cwd` is a
+ * directory a `cd` moved to that the hook cannot know, so only an absolute path
+ * is read.
+ * @param {string} p @param {string | null} cwd
  * @returns {{ text: string|null, unreadable: boolean }}
  */
 function readMessageFile(p, cwd) {
   if (isStream(p)) return { text: null, unreadable: false };
-  const file = messageFilePath(p, cwd);
+  const file = cwd === null ? (isAbsolutePath(p) ? messageFilePath(p, '/') : null) : messageFilePath(p, cwd);
   if (file === null) return { text: null, unreadable: true };
   try {
     return { text: readFileSync(file, 'utf8'), unreadable: false };
@@ -237,39 +368,117 @@ function readMessageFile(p, cwd) {
   }
 }
 
-// A -F/--file option and its path, bundled (`-aF`, not after a flag that takes a
-// value) and abbreviated (`--fi`) too: a path is never message text.
-const FILE_ARGS = new RegExp(String.raw`(^|[\s;&|(])(?:-(?:(?![mFcCtSu])[a-zA-Z0-9])*F\s*|--f(?:i(?:le?)?)?(?:=|\s+))${OPT_VALUE}`, 'g');
-
 /** @param {string} p */
 function isStream(p) {
   return p === '-' || /^\/(?:dev|proc)\//.test(p) || /^[<>]\(/.test(p);
 }
 
+// The option text a -F path is glued to: `-F`, `-aF`, `--file=`, `--fi=`.
+const GLUED_FILE_OPTION = /^(?:-[A-Za-z0-9]*F|--f(?:i(?:le?)?)?=)/;
+
 /**
- * `text` without every whole-word occurrence of a -F path, so a redirect that
- * writes the message file is not read as message text. A stream such as `-` or
- * `<(...)` is no path, and its text stays.
- * @param {string} text @param {string[]} files
+ * The file `p` names from `dir`, as it is compared with another spelling of it:
+ * resolved (`./m.txt` is `m.txt`), and on Windows with `/` separators in lower
+ * case, its filesystem ignoring case. `p` itself when it cannot be resolved.
+ * @param {string} p @param {string | null} dir
  */
-function withoutFilePaths(text, files) {
-  let out = text.replace(FILE_ARGS, '$1');
-  for (const file of files) {
-    if (!file || isStream(file)) continue;
-    const literal = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    out = out.replace(new RegExp(String.raw`(^|[\s"'=<>;&|(])${literal}(?=$|[\s"';&|)])`, 'g'), '$1');
-  }
-  return out;
+function pathKey(p, dir) {
+  const file = isAbsolutePath(p) ? messageFilePath(p, '/') : dir === null ? null : messageFilePath(p, dir);
+  if (file === null) return p;
+  return process.platform === 'win32' ? file.replaceAll('\\', '/').toLowerCase() : file;
 }
 
 /**
- * messageReason over a whole command without its -F paths, plus `extra`. A
- * message file that could not be read is named in the reason, or on stderr
- * when the command passes, since its content was never judged.
- * @param {string} text @param {string[]} files @param {string} extra @param {string|null} unreadableFile
+ * `src`, which tokenises, without each shell word that names a -F path, cut
+ * at the tokeniser's offsets: the -F/--file value, glued to its option or not,
+ * a `>` or `>>` target, or any other whole word naming the same file (the file
+ * a `Set-Content` writes), however it is spelled. A word of the commit `cmd`
+ * resolves against `fileDir`, where git reads its -F paths, any other against
+ * `dir`. The same text inside another word or a heredoc body stays, since it
+ * is message text the file may receive. A stream such as `-` or `<(...)` is no
+ * path.
+ * @param {string} src @param {string[]} files @param {SimpleCommand} cmd
+ * @param {string | null} fileDir @param {string | null} dir
  */
-function wholeCommandReason(text, files, extra, unreadableFile) {
-  const reason = messageReason(`${trailerOptionsText(withoutFilePaths(text, files))}\n${extra}`);
+function withoutPathWords(src, files, cmd, fileDir, dir) {
+  const keys = files.filter((f) => f && !isStream(f)).map((f) => pathKey(f, fileDir));
+  if (keys.length === 0) return src;
+  const names = (/** @type {import('./lib/shell-parse.mjs').Span} */ s) => {
+    const base = s.start >= cmd.start && s.end <= cmd.end ? fileDir : dir;
+    const glued = GLUED_FILE_OPTION.exec(s.value);
+    return [s.value, glued ? s.value.slice(glued[0].length) : '']
+      .some((v) => v && keys.includes(pathKey(v, base)));
+  };
+  const spans = shell.parseShell(src).flatMap((c) => c.spans).filter(names);
+  let out = src;
+  for (const { start, end } of spans.sort((a, b) => b.start - a.start)) out = `${out.slice(0, start)} ${out.slice(end)}`;
+  return out;
+}
+
+/** @typedef {{ value: string, start: number, end: number, target: boolean }} RoughWord */
+
+/**
+ * The commands of text that does not tokenise, each a list of its words, read
+ * roughly: a blank ends a word, a quote runs to its match or to the end of the
+ * text, a backslash keeps the character after it in the word, and `;`, `&`,
+ * `|`, `(`, `)` and a line end end a command. `target` marks a word after
+ * `>` or `>>`, a file the command writes.
+ * @param {string} text
+ * @returns {RoughWord[][]}
+ */
+function roughCommands(text) {
+  /** @type {RoughWord[][]} */
+  const cmds = [[]];
+  let target = false;
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if (' \t\r'.includes(c)) { i++; continue; }
+    if (';&|()\n'.includes(c)) {
+      if (cmds[cmds.length - 1].length) cmds.push([]);
+      target = false;
+      i++;
+      continue;
+    }
+    if (c === '>' || c === '<') {
+      target = c === '>';
+      for (i++; i < text.length && '>&|'.includes(text[i]); i++);
+      continue;
+    }
+    const start = i;
+    let value = '';
+    while (i < text.length && !' \t\r;&|()\n<>'.includes(text[i])) {
+      const q = text[i];
+      if (q === "'" || q === '"') {
+        const close = text.indexOf(q, i + 1);
+        const stop = close < 0 ? text.length : close;
+        value += text.slice(i + 1, stop);
+        i = stop + 1;
+      } else if (q === '\\' && i + 1 < text.length) {
+        value += text.slice(i, i + 2);
+        i += 2;
+      } else {
+        value += q;
+        i++;
+      }
+    }
+    i = Math.min(i, text.length);
+    cmds[cmds.length - 1].push({ value, start, end: i, target });
+    target = false;
+  }
+  return cmds;
+}
+
+/**
+ * messageReason over a whole command, its -F paths already left out, plus
+ * `extra`. A message file that could not be read is named in the reason, or on
+ * stderr when the command passes, since its content was never judged. A path
+ * whose directory a `cd` made unknown is not left out: that file may be
+ * anywhere, the path included.
+ * @param {string} text @param {string} extra @param {string|null} unreadableFile
+ */
+function wholeCommandReason(text, extra, unreadableFile) {
+  const reason = messageReason(`${trailerOptionsText(text)}\n${extra}`);
   if (unreadableFile === null) return reason;
   const note = `The message file '${unreadableFile}' could not be read, so its content was not judged.`;
   if (reason) return `${reason} ${note}`;
@@ -277,28 +486,111 @@ function wholeCommandReason(text, files, extra, unreadableFile) {
   return null;
 }
 
-/** @param {string} text */
-function plainTextScan(text) {
+/**
+ * The scan of a command that does not tokenise. Each `git commit` in it, its
+ * words read by roughCommands, has every -F path read, from the directory its
+ * `-C` options lead to; the whole text is scanned without the words that name
+ * those paths: each -F value and each `>`/`>>` target naming the same file.
+ * A `cd` anywhere in it makes the base of a relative -F path unknown, so then
+ * no path is left out.
+ * @param {string} text @param {string | null} dir
+ */
+function plainTextScan(text, dir) {
   if (GIT_COMMIT_TREE.test(text)) return COMMIT_TREE_REASON;
   const unquote = (/** @type {string} */ w) => w.replace(/^["']+|["']+$/g, '');
   for (const [, name, rest] of text.matchAll(GIT_HAND_BACK)) {
     if (pushesOrMerges(unquote(name), rest.split(/\s+/).filter(Boolean).map(unquote))) return HAND_BACK_REASON;
   }
   if (!GIT_COMMIT.test(text)) return null;
-  const m = text.match(/(?:^|[;&|]|\s)-F\s*([^\s;&|]+)|--file[=\s]+([^\s;&|]+)/);
-  const file = m?.[1] ?? m?.[2];
-  const { text: fileText, unreadable } = file ? readMessageFile(unquote(file), baseDir) : { text: null, unreadable: false };
-  return wholeCommandReason(text, file ? [unquote(file)] : [], fileText ?? '', unreadable && file ? unquote(file) : null);
+  const base = DIR_WORD.test(text) ? null : dir;
+  const cmds = roughCommands(text);
+  /** @type {string[]} */
+  const keys = [];
+  /** @type {RoughWord[]} */
+  const cut = [];
+  let message = '';
+  /** @type {string | null} */
+  let unreadableFile = null;
+  let located = true;
+  for (const words of cmds) {
+    const values = words.map((w) => w.value);
+    const g = values.findIndex((v) => shell.commandName(v) === 'git');
+    const sub = g < 0 ? null : gitSubcommand(values.slice(g));
+    if (!sub || sub.name !== 'commit') continue;
+    const fileDir = gitDir(values.slice(g), base);
+    const { files, fileAt } = messageSources(sub.args);
+    const first = values.length - sub.args.length;
+    files.forEach((file, n) => {
+      if (isStream(file)) return;
+      cut.push(words[first + fileAt[n]]);
+      keys.push(pathKey(file, fileDir));
+      if (fileDir === null && !isAbsolutePath(file)) located = false;
+      const { text: fileText, unreadable } = readMessageFile(file, fileDir);
+      message += `\n${fileText ?? ''}`;
+      if (unreadable && unreadableFile === null) unreadableFile = file;
+    });
+  }
+  cut.push(...cmds.flat().filter((w) => w.target && keys.includes(pathKey(w.value, base))));
+  let scanned = text;
+  if (located) {
+    for (const { start, end } of [...new Set(cut)].sort((a, b) => b.start - a.start)) scanned = `${scanned.slice(0, start)} ${scanned.slice(end)}`;
+  }
+  return wholeCommandReason(scanned, message, unreadableFile);
 }
 
 // --- judging -----------------------------------------------------------------
 
 const MAX_DEPTH = 2;
-// Commands that never execute their arguments, so `echo git commit-tree` is text.
+// How many conditional `cd`s a command is judged both ways for, and the
+// reserved words after which a command runs only on a condition.
+const MAX_FORKS = 3;
+const CONDITIONAL_WORDS = new Set(['then', 'else', 'elif', 'do']);
+// Commands that never execute their arguments, so `echo git commit-tree` is
+// text, and `... | tee cmd` writes a file named `cmd` rather than feeding it a script.
 const NON_EXECUTING = new Set([
   'echo', 'printf', 'grep', 'egrep', 'fgrep', 'rg', 'ag', 'cat', 'less', 'man',
-  'which', 'type', 'command', 'test', '[', 'true', 'false', ':',
+  'which', 'type', 'command', 'test', '[', 'true', 'false', ':', 'tee',
 ]);
+// Start-Process's parameters by full name, those that take a value first.
+const START_PROCESS_VALUES = [
+  'filepath', 'argumentlist', 'credential', 'workingdirectory', 'redirectstandarderror',
+  'redirectstandardinput', 'redirectstandardoutput', 'windowstyle', 'verb', 'environment',
+];
+const START_PROCESS_SWITCHES = ['loaduserprofile', 'nonewwindow', 'passthru', 'wait', 'usenewenvironment'];
+
+/**
+ * The command a PowerShell `Start-Process` runs, as words, `words[0]` being
+ * Start-Process: its `-FilePath` (`-Path`), else its first positional word,
+ * then its `-ArgumentList` (`-Args`) and later positional words, each split at
+ * commas and blanks as PowerShell passes a list or a string. A parameter name
+ * counts under any prefix, in any case. Null when it names no file.
+ * @param {string[]} words
+ * @returns {string[] | null}
+ */
+function startProcessWords(words) {
+  /** @type {string | null} */
+  let file = null;
+  /** @type {string[]} */
+  const args = [];
+  for (let k = 1; k < words.length; k++) {
+    const w = words[k];
+    if (!/^-[A-Za-z]/.test(w)) {
+      if (file === null) file = w;
+      else args.push(w);
+      continue;
+    }
+    const colon = w.indexOf(':');
+    const name = (colon < 0 ? w.slice(1) : w.slice(1, colon)).toLowerCase();
+    const full = name === 'args' ? 'argumentlist'
+      : name === 'path' || name === 'pspath' ? 'filepath'
+        : [...START_PROCESS_VALUES, ...START_PROCESS_SWITCHES].find((p) => p.startsWith(name));
+    if (!full || START_PROCESS_SWITCHES.includes(full)) continue;
+    const value = colon < 0 ? words[++k] ?? '' : w.slice(colon + 1);
+    if (full === 'filepath') file = value;
+    else if (full === 'argumentlist') args.push(value);
+  }
+  return file === null ? null : [file, ...args.flatMap((a) => a.split(/[\s,]+/).filter(Boolean))];
+}
 
 /** @param {string[]} words */
 function gitSubcommand(words) {
@@ -355,6 +647,8 @@ function messageSources(args) {
   const texts = [];
   /** @type {string[]} */
   const files = [];
+  /** @type {number[]} */
+  const fileAt = [];
   for (let k = 0; k < args.length; k++) {
     const a = args[k];
     if (a === '--') break;
@@ -365,7 +659,7 @@ function messageSources(args) {
       if (!option) continue;
       const value = eq < 0 ? args[++k] : a.slice(eq + 1);
       if (value === undefined) continue;
-      if (option === 'file') files.push(value);
+      if (option === 'file') { files.push(value); fileAt.push(k); }
       else texts.push(option === 'trailer' ? trailerText(value) : value);
       continue;
     }
@@ -376,29 +670,74 @@ function messageSources(args) {
       if (!COMMIT_VALUE_FLAGS.includes(flag)) continue;
       const value = j + 1 < a.length ? a.slice(j + 1) : args[++k];
       if (value !== undefined && flag === 'm') texts.push(value);
-      if (value !== undefined && flag === 'F') files.push(value);
+      if (value !== undefined && flag === 'F') { files.push(value); fileAt.push(k); }
       break;
     }
   }
-  return { texts, files };
+  return { texts, files, fileAt };
 }
 
-/** @param {string} src @param {number} depth @returns {string | null} */
-function analyse(src, depth) {
+/**
+ * Judges each command of `src`, which runs in `dir` (null: unknown). Text that
+ * does not tokenise gets the plain-text scan of `fallback`, the text as written
+ * when `src` was rewritten for the tokeniser. A `cd`-like command moves `dir`
+ * for the commands after it; one inside `( )` or before a `|` runs in a
+ * subshell, so its move ends at the `)` or with that command. A `)` with no
+ * `(` before it, which a heredoc body's text can supply, makes `dir` unknown.
+ * A `cd` that runs only on a condition -- after `&&`, `||`, `then`, `else`,
+ * `elif` or `do` -- may leave `dir` as it was, so `src` is judged once with it
+ * taken and once without, `taken` holding that choice for each such `cd` so
+ * far; when one after `&&` is not taken, the commands chained to it by `&&` do
+ * not run either. Past MAX_FORKS of them, `dir` becomes unknown.
+ * @param {string} src @param {number} depth @param {string} [fallback] @param {string | null} [dir]
+ * @param {boolean[]} [taken]
+ * @returns {string | null}
+ */
+function analyse(src, depth, fallback = src, dir = baseDir, taken = []) {
   let cmds;
-  try { cmds = shell.parseShell(src); } catch { return plainTextScan(src); }
+  try { cmds = shell.parseShell(src); } catch { return plainTextScan(fallback, dir); }
+  const start = dir;
+  /** @type {(string | null)[]} */
+  const outer = [];
+  let prevEnd = 0;
+  let before = dir;
+  let forks = 0;
+  let skipping = false;
   for (const cmd of cmds) {
-    const reason = judge(cmd, src, depth);
+    if (cmd.start < 0) continue;
+    const between = src.slice(prevEnd, cmd.start);
+    if (skipping && /^\s*&&\s*$/.test(between)) { prevEnd = cmd.end; continue; }
+    skipping = false;
+    if (/(?<!\|)\|(?!\|)/.test(between)) dir = before;
+    for (const c of between) {
+      if (c === '(') outer.push(dir);
+      else if (c === ')') dir = outer.length ? /** @type {string | null} */ (outer.pop()) : null;
+    }
+    prevEnd = cmd.end;
+    const reason = judge(cmd, src, depth, dir);
     if (reason) return reason;
+    before = dir;
+    const words = shell.commandWords(cmd.words);
+    if (!words.length || !DIR_COMMANDS.has(shell.commandName(words[0]))) continue;
+    const lead = cmd.words.slice(0, cmd.words.length - words.length);
+    if (/&&|\|\|/.test(between) || lead.some((w) => CONDITIONAL_WORDS.has(w))) {
+      const k = forks++;
+      if (k >= MAX_FORKS) { dir = null; continue; }
+      if (k === taken.length) {
+        return analyse(src, depth, fallback, start, [...taken, true]) ?? analyse(src, depth, fallback, start, [...taken, false]);
+      }
+      if (!taken[k]) { skipping = /&&\s*$/.test(between); continue; }
+    }
+    dir = changedDir(words, dir);
   }
   return null;
 }
 
-/** @param {SimpleCommand} cmd @param {string} src @param {number} depth @returns {string | null} */
-function judge(cmd, src, depth) {
+/** @param {SimpleCommand} cmd @param {string} src @param {number} depth @param {string | null} dir @returns {string | null} */
+function judge(cmd, src, depth, dir) {
   if (depth < MAX_DEPTH) {
     for (const sub of cmd.subs) {
-      const reason = analyse(sub, depth + 1);
+      const reason = analyse(sub, depth + 1, sub, dir);
       if (reason) return reason;
     }
   }
@@ -406,40 +745,70 @@ function judge(cmd, src, depth) {
   if (words.length === 0) return null;
   const head = shell.commandName(words[0]);
   if (NON_EXECUTING.has(head)) return null;
-  if (shell.SHELLS.has(head) || head === 'git') return invocation(words, cmd, src, depth);
+  if (shell.SHELLS.has(head) || head === 'git') return invocation(words, cmd, src, depth, dir);
+  if (head === 'start-process' || head === 'saps') {
+    const started = startProcessWords(words);
+    const name = started ? shell.commandName(started[0]) : '';
+    if (started && (shell.SHELLS.has(name) || name === 'git')) return invocation(started, cmd, src, depth, dir);
+  }
   // Any other head may run its arguments (sudo, xargs, timeout, ...), so a git
   // or shell invocation among them is judged as though it led the command.
   for (let k = 1; k < words.length; k++) {
     const name = shell.commandName(words[k]);
     if (!shell.SHELLS.has(name) && name !== 'git') continue;
-    const reason = invocation(words.slice(k), cmd, src, depth);
+    const reason = invocation(words.slice(k), cmd, src, depth, dir);
     if (reason) return reason;
   }
   return null;
 }
 
+/**
+ * The candidate scripts of a shell `cmd` of `src` reads from a pipe: for each
+ * command before it in the pipeline, its arguments as one line (a `\n` in them
+ * a line end, as printf and `echo -e` print it) and each heredoc or
+ * here-string fed to it: `echo "& {git push}" | pwsh -`.
+ * @param {SimpleCommand} cmd @param {string} src
+ * @returns {string[]}
+ */
+function pipedScripts(cmd, src) {
+  const cmds = shell.parseShell(src).filter((c) => c.start >= 0);
+  /** @type {string[]} */
+  const scripts = [];
+  for (let j = cmds.findIndex((c) => c.start === cmd.start); j > 0; j--) {
+    if (!/(?<!\|)\|(?!\|)/.test(src.slice(cmds[j - 1].end, cmds[j].start))) break;
+    const words = shell.commandWords(cmds[j - 1].words);
+    if (words.length > 1) scripts.push(words.slice(1).join(' ').replace(/\\n/g, '\n'));
+    scripts.push(...cmds[j - 1].stdin);
+  }
+  return scripts;
+}
+
 /** @param {string} file */
 function basename(file) {
-  return file.slice(file.lastIndexOf('/') + 1);
+  return file.slice(Math.max(file.lastIndexOf('/'), file.lastIndexOf('\\')) + 1);
 }
 
 /**
  * Judges `words`, which start with a shell or with git.
  * @param {string[]} words @param {SimpleCommand} cmd @param {string} src @param {number} depth
+ * @param {string | null} dir
  * @returns {string | null}
  */
-function invocation(words, cmd, src, depth) {
-  if (shell.SHELLS.has(shell.commandName(words[0]))) {
+function invocation(words, cmd, src, depth, dir) {
+  const name = shell.commandName(words[0]);
+  if (shell.SHELLS.has(name)) {
     if (depth >= MAX_DEPTH) return null;
-    const { script, stdin } = shell.shellInput(words);
-    if (script !== null) return analyse(script, depth + 1);
-    if (!stdin) return null;
-    for (const body of cmd.stdin) {
-      const reason = analyse(body, depth + 1);
+    const { scripts, piped } = shell.shellScripts(words, cmd);
+    // Each script is read in the language of the shell that runs it, a piped one
+    // as what the commands before it in the pipeline print or are fed.
+    for (const script of piped ? [...scripts, ...pipedScripts(cmd, src)] : scripts) {
+      const reason = name === 'pwsh' || name === 'powershell' ? analyse(shell.psForPosix(script), depth + 1, shell.psUnescape(script), dir)
+        : name === 'cmd' ? analyse(shell.cmdForPosix(script), depth + 1, script, dir)
+          : analyse(script, depth + 1, script, dir);
       if (reason) return reason;
     }
     // A script piped or redirected in can be written anywhere upstream.
-    return cmd.piped ? plainTextScan(src) : null;
+    return piped ? plainTextScan(src, dir) : null;
   }
   const sub = gitSubcommand(words);
   if (!sub) return null;
@@ -449,12 +818,16 @@ function invocation(words, cmd, src, depth) {
   const { texts, files } = messageSources(sub.args);
   let message = texts.join('\n');
   const elsewhere = src.slice(0, cmd.start) + src.slice(cmd.end);
+  // git reads a relative path from the directory its -C options lead to.
+  const fileDir = gitDir(words, dir);
+  // A relative path after a `cd` or `-C` the hook cannot follow names an unknown file.
+  const located = fileDir !== null || files.every((f) => isStream(f) || isAbsolutePath(f));
   for (const file of files) {
-    const { text, unreadable } = readMessageFile(file, baseDir);
+    const { text, unreadable } = readMessageFile(file, fileDir);
     // Text git reads from stdin, or from a file this call may write first, can
     // come from anywhere in the command, so the whole command is scanned.
     if (text === null || elsewhere.includes(basename(file))) {
-      return wholeCommandReason(src, files, `${message}\n${text ?? ''}`, unreadable ? file : null);
+      return wholeCommandReason(located ? withoutPathWords(src, files, cmd, fileDir, dir) : src, `${message}\n${text ?? ''}`, unreadable ? file : null);
     }
     message += `\n${text}`;
   }
@@ -468,14 +841,18 @@ function main(input) {
   try { evt = JSON.parse(input); } catch { process.exit(0); }
 
   const tool = String(evt.tool_name ?? '');
-  if (tool !== 'Bash') process.exit(0);
+  if (tool !== 'Bash' && tool !== 'PowerShell') process.exit(0);
 
   const command = String(evt.tool_input?.command ?? '');
   if (!command) process.exit(0);
 
-  baseDir = process.env.CLAUDE_PROJECT_DIR || evt.cwd || process.cwd();
+  // The event's cwd is where a relative -F path was written: a commit run from a
+  // subdirectory names its file relative to that directory.
+  baseDir = evt.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
-  const reason = analyse(command, 0);
+  const reason = tool === 'Bash'
+    ? analyse(command, 0)
+    : analyse(shell.psForPosix(command), 0, shell.psUnescape(command));
   if (reason) deny(reason);
   process.exit(0);
 }

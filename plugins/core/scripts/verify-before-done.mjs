@@ -23,7 +23,7 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,23 +85,27 @@ function fingerprint(dir, status) {
   return createHash('sha256').update([head ?? 'unborn', status, diff, untracked, hashes].join('\0')).digest('hex');
 }
 
+// Names every state file, so pruning finds exactly what statePath writes.
+const STATE_PREFIX = 'devkit-verify-before-done-';
+
 /** @param {string} sessionId @param {string} dir */
 function statePath(sessionId, dir) {
   const key = createHash('sha256').update(`${sessionId}\0${path.resolve(dir)}`).digest('hex').slice(0, 32);
-  return path.join(os.tmpdir(), `devkit-verify-before-done-${key}`);
+  return path.join(os.tmpdir(), `${STATE_PREFIX}${key}`);
 }
 
 const STATE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Deletes state files in `dir` last modified more than seven days before `now`. Never throws:
- * a file that cannot be removed is left for the next run.
+ * Deletes state files in `dir` last modified more than seven days before `now`; a skipped
+ * run touches its file, so the age counts from the last use. Never throws: a file that
+ * cannot be removed is left for the next run.
  * @param {string} dir @param {number} now
  */
 function pruneStateFiles(dir, now) {
   try {
     for (const name of readdirSync(dir)) {
-      if (!name.startsWith('devkit-verify-before-done-')) continue;
+      if (!name.startsWith(STATE_PREFIX)) continue;
       try {
         const file = path.join(dir, name);
         if (now - statSync(file).mtimeMs > STATE_MAX_AGE_MS) unlinkSync(file);
@@ -143,8 +147,6 @@ function runGates(dir) {
 
 /** @param {string} input */
 async function main(input) {
-  pruneStateFiles(os.tmpdir(), Date.now());
-
   /** @type {any} */
   let evt = {};
   try { evt = JSON.parse(input); } catch { return; }
@@ -183,10 +185,17 @@ async function main(input) {
     if (fp) {
       stateFile = statePath(evt.session_id, dir);
       try {
-        if (readFileSync(stateFile, 'utf8') === fp) return;
+        if (readFileSync(stateFile, 'utf8') === fp) {
+          // Age counts from the last use, so a long green session keeps its state.
+          try { utimesSync(stateFile, new Date(), new Date()); } catch { /* pruned a run early, at worst */ }
+          return;
+        }
       } catch { /* no state yet, or unreadable */ }
     }
   }
+
+  // Only a run that goes on to the gates spends time on the temp directory.
+  pruneStateFiles(os.tmpdir(), Date.now());
 
   const run = await runGates(dir);
   if (run === null) return;

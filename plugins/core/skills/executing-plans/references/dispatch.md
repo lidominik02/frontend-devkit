@@ -197,22 +197,24 @@ its start, so a comparison with it decides nothing.
 A brief with no `Baseline:` line: every failure is reported with its location, saying no
 baseline was given.
 
-## The format pass after a Bash edit
+## The format pass after a shell edit
 
-Inline, a scripted Bash edit is followed by a pass over each file it touched, and no other,
-with the formatter the format-on-write hook would pick for that file after an Edit, in the
-hook's order (`${CLAUDE_PLUGIN_ROOT}/scripts/format-on-write.mjs` holds the full lists):
+Inline, a scripted Bash or PowerShell edit is followed by a pass over each file it touched,
+and no other, with the formatter the format-on-write hook would pick for that file after an
+Edit, in the hook's order (`${CLAUDE_PLUGIN_ROOT}/scripts/format-on-write.mjs` holds the
+lists, by the constant names below):
 
 1. The formatter `gates.format` in `.claude/project.json` names, when its first word is a
    recognised one — prettier, biome, oxfmt, dprint, eslint, gofmt, ruff, rustfmt, black —
    the project's local binary first. Its own flags stay; any path it names is replaced by
    the touched files.
 2. Otherwise by extension: the project's local prettier with `--write`, for the extensions
-   the hook's `EXT_PRETTIER` lists, unless the project root holds `biome.json`,
-   `biome.jsonc`, `dprint.json`, `.oxfmtrc` or `.oxfmtrc.json` and no prettier config
-   (`.prettierrc*`, `prettier.config.*`, a `prettier` key in `package.json`) — then another
-   formatter owns the file and prettier is not run; `gofmt -w` for `.go`; `ruff format` for `.py`, the
-   local binary first; `rustfmt` for `.rs`.
+   the hook's `EXT_PRETTIER` lists, unless the nearest directory from the file up to the
+   project root that holds a config of either kind holds one the hook's
+   `OTHER_FORMATTER_CONFIGS` names rather than a prettier config (a `PRETTIER_CONFIGS` name,
+   or a `prettier` key in its `package.json`) — then another formatter owns the file and
+   prettier is not run; `gofmt -w` for `.go`; `ruff format` for `.py`, the local binary
+   first; `rustfmt` for `.rs`.
 
 A `package.json` format script, which project-facts.mjs also reports as `gates.format`, is
 not the pass: it can name the whole repository (`prettier --write .`), and what it reformats

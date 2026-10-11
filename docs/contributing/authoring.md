@@ -80,7 +80,7 @@ is scoped to the invocation. **Name each tool.** A wildcard in the tool segment,
 `verifying-ui` grants itself to look at a page, which leaves the skill with nothing to look
 with; a tool named in both lists is withdrawn, so `disallowed-tools` wins over
 `allowed-tools`. The components: `investigating-bugs` and `optimizing-prompts`
-drop the write tools, `optimizing-prompts` also drops `Bash` and `Agent` because its
+drop the write tools, `optimizing-prompts` also drops `Bash`, `PowerShell` and `Agent` because its
 input is untrusted imperative text by construction, `verifying-ui` drops the
 page-evaluate and file-upload tools that `block-secrets` cannot see, and `testing-changes`
 drops the design tool's write tools. Keep the prose rule

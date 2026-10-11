@@ -159,9 +159,9 @@ A stop is one replayed commit whose changes conflict.
    regenerate, trivial, semantic, or rename (a rename or file-location conflict).
 3. **Resolve** in the working tree only — with Edit and Write, a side taken whole with
    `git checkout --ours | --theirs <path>`, which writes only the working tree, or the
-   regeneration command. Nothing writes the index yet. A side taken whole with Bash is then
-   formatted, since no format-on-write hook follows a Bash write: "The format pass after a
-   Bash edit" in `../executing-plans/references/dispatch.md` over that file alone, and its
+   regeneration command. Nothing writes the index yet. A side taken whole with Bash or PowerShell
+   is then formatted, since no format-on-write hook follows a shell write: "The format pass
+   after a shell edit" in `../executing-plans/references/dispatch.md` over that file alone, and its
    command goes into the entry's Evidence; when nothing resolves, the entry says so. A regenerated file stays as its tool
    wrote it. A lockfile or a generated file is regenerated, never merged by hand. A
    semantic conflict keeps both intents wherever both can hold; only where they truly

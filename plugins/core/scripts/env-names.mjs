@@ -2,19 +2,20 @@
 // Lists the variable names a dotenv-style file defines, never their values:
 // `node env-names.mjs <file>...`. A value is not written to stdout or stderr, nor is a
 // continuation line of a quoted value or of an unquoted PEM block (`-----BEGIN ` to
-// `-----END `). Limit: a continuation line of any other unquoted multi-line value that
-// looks like `NAME=...` is read as a definition, and its left side printed as a name;
-// dotenv itself does not allow unquoted multi-line values. A file whose name is not
-// `.env` or `.env.*` is refused unread.
+// `-----END `). Any other unquoted value ends at its line, as dotenv reads it (the `LINE`
+// pattern of the dotenv package, 17.4.1), so a following line that looks like `NAME=...`
+// is a definition there too and its name is printed. A file whose name is not `.env` or
+// `.env.*` (isDotenvFile, the rule block-secrets.mjs points here by) is refused unread.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isDotenvFile } from './lib/credential-paths.mjs';
+
 const NAME = /^[A-Za-z_][A-Za-z0-9_.-]*$/;
 const PEM_BEGIN = '-----BEGIN ';
 const PEM_END = '-----END ';
-const DOTENV_FILE = /(^|[\\/])\.env(\.[^\\/]*)?$/i;
 
 /**
  * Variable names defined by dotenv-style text, in order, without repeats.
@@ -66,7 +67,7 @@ function main(files) {
   let status = 0;
   for (const file of files) {
     // A key or certificate is not dotenv text, and a line of it could print as a name.
-    if (!DOTENV_FILE.test(file)) {
+    if (!isDotenvFile(file)) {
       process.stderr.write(`env-names: refusing ${file}: not a dotenv file name (.env or .env.*)\n`);
       status = 1;
       continue;

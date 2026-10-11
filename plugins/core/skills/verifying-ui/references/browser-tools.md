@@ -179,7 +179,7 @@ tools are withdrawn and the rest of the server is untouched.
   to read a value they are a debugging tool; they are also the shortest path from a
   page to anywhere else.
 - **`upload_file` / `browser_file_upload`** push a local file into a page, which then
-  sends it. `block-secrets` matches file tools and `Bash`, not MCP tools, so a credential
+  sends it. `block-secrets` matches file tools, `Bash` and `PowerShell`, not MCP tools, so a credential
   file taking that route fires no hook at all — removing the tool is what closes that
   path, because nothing else here can. Never upload a real file to verify an upload
   control; make a throwaway.
@@ -217,8 +217,10 @@ a tool named in both lists is withdrawn, so the wildcard silently wins over the 
 ## Caveats worth knowing before trusting a result
 
 - **The profile persists.** By default Chrome DevTools MCP keeps a profile in the
-  server's default profile directory under the user's home (on POSIX, observed as
-  `$HOME/.cache/chrome-devtools-mcp/`), so a login in one session is still there in the
+  server's default profile directory under the user's home, `.cache/chrome-devtools-mcp/`
+  there on every OS (chrome-devtools-mcp 1.10.1 builds it from the home directory;
+  observed as `%USERPROFILE%\.cache\chrome-devtools-mcp\chrome-profile` on Windows 10 Pro
+  10.0.19045 on 2026-10-10), so a login in one session is still there in the
   next — convenient, and a way to be looking at authenticated state you forgot you
   established. `--isolated` gives a temporary profile discarded on close; the config
   above uses it.

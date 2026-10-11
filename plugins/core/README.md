@@ -47,7 +47,7 @@ repository has its own agent of the same name.
 
 | Hook | Event | What it does |
 | --- | --- | --- |
-| `block-secrets.mjs` | PreToolUse | Blocks reading or sending credential material through file tools and `Bash` |
+| `block-secrets.mjs` | PreToolUse | Blocks reading or sending credential material through file tools, `Bash` and `PowerShell` |
 | `commit-hygiene.mjs` | PreToolUse | Blocks a commit message with an attribution trailer or a private reference, and the `git` push and merge forms it can parse |
 | `format-on-write.mjs` | PostToolUse | Formats what was just written with the project's own formatter |
 | `verify-before-done.mjs` | Stop | Blocks the end of a turn when a `fast` gate fails |

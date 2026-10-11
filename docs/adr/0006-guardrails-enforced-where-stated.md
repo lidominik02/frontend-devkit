@@ -23,9 +23,10 @@ that nothing enforces is worse than an honest advisory rule.
 - A prohibition that is absolute goes in `disallowed-tools`, naming each tool; an MCP tool
   is written `mcp__*__<tool>` so the removal holds under any server key.
 - Deterministic hooks sit underneath, on the tool calls their matchers select:
-  `block-secrets` blocks credential reads and exfiltration through file tools and `Bash`,
-  and `commit-hygiene` denies a commit message with an attribution trailer or a private
-  reference, and the push and merge forms it can parse. The user pushes and merges.
+  `block-secrets` blocks credential reads and exfiltration through file tools, `Bash` and
+  `PowerShell`, and `commit-hygiene` denies, in a `Bash` or `PowerShell` command, a commit
+  message with an attribution trailer or a private reference, and the push and merge forms
+  it can parse. The user pushes and merges.
 - `scripts/validate.mjs` checks every frontmatter key against the fields Claude Code reads,
   and that every blocked MCP tool is documented under the skill that blocks it.
 

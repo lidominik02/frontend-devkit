@@ -261,7 +261,7 @@ in one of the shapes above. They are grouped by the skill that writes them: exec
 down to `ruling · <id> · not ours`, then planning-features, reviewing-changes,
 testing-changes, syncing-branches, fixing-bugs and finishing-features. The last shape is for
 an event no other shape covers, such as work the user did outside a session. When an Inline
-task's scripted Bash edit left a file with no formatter, the task's entry gains the sub-item
+task's scripted Bash or PowerShell edit left a file with no formatter, the task's entry gains the sub-item
 `No format pass: <each such file>`.
 
 **The final review's base.** The final review diffs from the commit named by

@@ -160,7 +160,7 @@ section 4 in place of steps 2 and 3:
    its `## Task:` heading as read. The run's first task also sets `HANDOFF.md`'s stage,
    `execute (task N/M, Inline) — owner: executing-plans`, and its Next action to itself.
 2. **Implement** with Edit and Write, since the format-on-write hook runs after those tools
-   and never after a Bash write. A scripted Bash edit is allowed only for conflict hunks and
+   and never after a Bash or PowerShell write. A scripted Bash or PowerShell edit is allowed only for conflict hunks and
    mechanical renames, and the format pass in `references/dispatch.md` follows it, over the
    files it touched and no others.
 3. **Gates.** `node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json`, its

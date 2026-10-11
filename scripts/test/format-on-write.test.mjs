@@ -104,6 +104,49 @@ describe('format-on-write: prettier is not run on a project that configures anot
     assert.ok(!formatted(file));
   });
 
+  // Only a name prettier reads is its config: a backup beside the real one is not.
+  test('a .prettierrc.bak next to biome.json: prettier does not run', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    fs.writeFileSync(path.join(proj, '.prettierrc.bak'), '{}\n');
+    const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(!formatted(file));
+  });
+
+  test('a .prettierrc.yaml next to biome.json: prettier runs', (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    fs.writeFileSync(path.join(proj, '.prettierrc.yaml'), 'semi: false\n');
+    const file = path.join(proj, 'src', 'a.ts');
+    run(proj, file);
+    assert.ok(formatted(file));
+  });
+
+  // In a workspace, the config nearest the file decides, as the formatter lookup already walks up.
+  test("a workspace package's own biome.json: prettier does not run on its files", (t) => {
+    const { proj, run, formatted } = fixture(t);
+    const pkg = path.join(proj, 'packages', 'a');
+    fs.mkdirSync(path.join(pkg, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(pkg, 'biome.json'), '{}\n');
+    const file = path.join(pkg, 'src', 'x.ts');
+    fs.writeFileSync(file, 'x\n');
+    run(proj, file);
+    assert.ok(!formatted(file));
+  });
+
+  test("a workspace package's own .prettierrc under a root biome.json: prettier runs", (t) => {
+    const { proj, run, formatted } = fixture(t);
+    fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');
+    const pkg = path.join(proj, 'packages', 'a');
+    fs.mkdirSync(path.join(pkg, 'src'), { recursive: true });
+    fs.writeFileSync(path.join(pkg, '.prettierrc'), '{}\n');
+    const file = path.join(pkg, 'src', 'x.ts');
+    fs.writeFileSync(file, 'x\n');
+    run(proj, file);
+    assert.ok(formatted(file));
+  });
+
   test('a declared gates.format still wins over the detection', (t) => {
     const { proj, run, formatted } = fixture(t);
     fs.writeFileSync(path.join(proj, 'biome.json'), '{}\n');

@@ -63,10 +63,13 @@ On Windows, where cmd.exe exits 1, a stderr line that starts with `'<x>' is not 
 as an internal or external command` marks it too (observed on Windows 10 Pro 10.0.19045,
 Node 22.23.3, npm); the same text in the middle of a line, or on stdout, is a `fail`.
 PowerShell's wording, `The term '<x>' is not recognized` after an optional `<x> :` prefix,
-is matched on stderr as well, but neither it nor the exit code Yarn Berry gives on Windows
-has been observed yet. Probing `node_modules/.bin` is not a workaround — in a pnpm workspace
-a binary such as `vue-tsc` lives in the workspace package and never at the root, so a root
-probe reports every workspace binary missing.
+is matched on stderr as well. With Windows PowerShell 5.1.19041.6456 or PowerShell 7.6.6 as
+npm's script shell, a missing binary was classified `not-run` as not installed (observed on
+Windows 10 Pro 10.0.19045.6466, Claude Code 2.1.292, Node 22.23.3, on 2026-10-10). Neither
+the exit code Yarn Berry gives on Windows nor pnpm on Windows has been observed yet.
+Probing `node_modules/.bin` is not a workaround — in a pnpm workspace a binary such as
+`vue-tsc` lives in the workspace package and never at the root, so a root probe reports
+every workspace binary missing.
 
 Under `--json` every gate that ran and did not pass — a `fail`, or a `not-run` that timed
 out, whose command is not installed or whose script does not exist — carries an `output`
@@ -119,13 +122,15 @@ repeats, skips comments, blank lines and lines without `=`, and drops a leading 
 A value is not written, nor is a continuation line of a quoted (`"`, `'` or backtick)
 multi-line value, which runs to its closing quote or to the end of the file, nor of an
 unquoted value that opens a PEM block with `-----BEGIN `, which runs to the line holding
-`-----END ` or to the end of the file. One limit remains: a continuation line of any other
-unquoted multi-line value that looks like `NAME=…` is read as a definition, so its left
-side is printed as a name; dotenv itself does not allow unquoted multi-line values. With
+`-----END ` or to the end of the file. Any other unquoted value ends at its line, as
+dotenv reads it (the `LINE` pattern of the dotenv package, 17.4.1), so a following line
+that looks like `NAME=…` is a definition there too, and its left side is printed as a
+name. With
 several files each list has a `<file>:` header; an unreadable file is named on stderr and
 the exit code is 1. A file whose name is not `.env` or `.env.*` (in any letter case) is
-refused unread the same way, since a line of a key file can look like `NAME=`. It needs
-Node alone.
+refused unread the same way, since a line of a key file can look like `NAME=`; the rule is
+`isDotenvFile` in `lib/credential-paths.mjs`, the one `block-secrets.mjs` points at the
+helper by. It needs Node alone.
 
 ## Per-project override
 

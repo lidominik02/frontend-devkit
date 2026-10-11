@@ -304,15 +304,21 @@ describe('verify-before-done: stale state files are pruned', () => {
     aged(other, 8);
     return { old, fresh, other };
   };
-  const stopIn = (state, dir) => runScript(HOOK, {
-    input: JSON.stringify(session()),
+  const stopIn = (state, dir, payload = session()) => runScript(HOOK, {
+    input: JSON.stringify(payload),
     env: { ...isolatedEnv(state), npm_config_update_notifier: 'false', CLAUDE_PROJECT_DIR: dir },
   });
+  // A changed tree, so the hook gets past its early exits.
+  const dirtyRepo = (t) => {
+    const dir = gitRepo(t);
+    fs.writeFileSync(path.join(dir, 'work.txt'), 'a');
+    return dir;
+  };
 
   test('an 8-day-old state file goes, a 1-day-old one and an unrelated file stay', (t) => {
     const state = tempDir(t);
     const { old, fresh, other } = seed(state);
-    assert.equal(stopIn(state, gitRepo(t)).code, 0);
+    assert.equal(stopIn(state, dirtyRepo(t)).code, 0);
     assert.equal(fs.existsSync(old), false);
     assert.equal(fs.existsSync(fresh), true);
     assert.equal(fs.existsSync(other), true);
@@ -332,6 +338,31 @@ describe('verify-before-done: stale state files are pruned', () => {
     assert.equal(res.stdout, clean.stdout);
     assert.equal(res.stderr, clean.stderr);
     assert.equal(fs.existsSync(stuck), true);
+  });
+
+  // An early exit, such as a Stop inside a block, does no work at all.
+  test('a Stop that exits early leaves an old state file alone', (t) => {
+    const state = tempDir(t);
+    const { old } = seed(state);
+    assert.equal(stopIn(state, dirtyRepo(t), session({ stop_hook_active: true })).code, 0);
+    assert.equal(fs.existsSync(old), true);
+  });
+
+  // Age counts from the last use, so a session green on an unchanged tree keeps its state.
+  test('skipping an unchanged green tree refreshes its state file', (t) => {
+    const state = tempDir(t);
+    const dir = gitRepo(t);
+    writeLint(dir, PASS);
+    fs.writeFileSync(path.join(dir, 'work.txt'), 'a');
+    const s = session();
+    assert.equal(stopIn(state, dir, s).code, 0);
+    const [name] = fs.readdirSync(state).filter((f) => f.startsWith('devkit-verify-before-done-'));
+    assert.ok(name, 'no state file was written');
+    const file = path.join(state, name);
+    aged(file, 3);
+    const before = fs.statSync(file).mtimeMs;
+    assert.equal(stopIn(state, dir, s).code, 0);
+    assert.ok(fs.statSync(file).mtimeMs > before + DAY, 'the state file was not touched');
   });
 });
 

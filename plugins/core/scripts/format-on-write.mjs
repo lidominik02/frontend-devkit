@@ -107,24 +107,41 @@ function run([bin, ...prefix], args) {
 }
 
 const OTHER_FORMATTER_CONFIGS = ['biome.json', 'biome.jsonc', 'dprint.json', '.oxfmtrc', '.oxfmtrc.json'];
+// The config file names prettier documents, besides a `prettier` key in package.json.
+const PRETTIER_CONFIGS = [
+  '.prettierrc', '.prettierrc.json', '.prettierrc.yaml', '.prettierrc.yml', '.prettierrc.json5',
+  '.prettierrc.js', '.prettierrc.cjs', '.prettierrc.mjs', '.prettierrc.ts', '.prettierrc.cts', '.prettierrc.mts',
+  '.prettierrc.toml', 'prettier.config.js', 'prettier.config.cjs', 'prettier.config.mjs', 'prettier.config.ts',
+  'prettier.config.cts', 'prettier.config.mts',
+];
 
-/** Whether the project configures prettier: a config file or a package.json key.
+/** Whether `dir` configures prettier: a config file or a package.json key.
  * @param {string} dir */
 function hasPrettierConfig(dir) {
   let names = [];
   try { names = readdirSync(dir); } catch { return false; }
-  if (names.some((n) => /^\.prettierrc/.test(n) || /^prettier\.config\./.test(n))) return true;
+  if (names.some((n) => PRETTIER_CONFIGS.includes(n))) return true;
   try {
     return 'prettier' in JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'));
   } catch { return false; }
 }
 
-/** The name of another formatter's config file at the project root, when the project
- * has no prettier config -- a stray prettier install is then not the project's formatter.
- * @param {string} dir @returns {string | null} */
-function otherFormatterConfig(dir) {
-  if (hasPrettierConfig(dir)) return null;
-  return OTHER_FORMATTER_CONFIGS.find((n) => existsSync(path.join(dir, n))) ?? null;
+/** The name of another formatter's config file that governs a file in `fromDir`, or null.
+ * The nearest directory from `fromDir` up to `stopDir` holding either kind of config decides,
+ * as the formatter lookup walks up: a prettier config there means prettier formats the file,
+ * another formatter's means a stray prettier install is not the project's formatter.
+ * @param {string} fromDir @param {string} stopDir @returns {string | null} */
+function otherFormatterConfig(fromDir, stopDir) {
+  let dir = fromDir;
+  for (let i = 0; i < 12; i++) {
+    if (hasPrettierConfig(dir)) return null;
+    const other = OTHER_FORMATTER_CONFIGS.find((n) => existsSync(path.join(dir, n)));
+    if (other) return other;
+    // path.relative compares as the platform does, so a drive letter's case does not matter.
+    if (path.relative(stopDir, dir) === '' || dir === path.dirname(dir)) break;
+    dir = path.dirname(dir);
+  }
+  return null;
 }
 
 /** @param {string} input */
@@ -166,7 +183,7 @@ function main(input) {
   }
 
   if (EXT_PRETTIER.test(file)) {
-    if (otherFormatterConfig(projectDir)) return;
+    if (otherFormatterConfig(fileDir, projectDir)) return;
     const prettier = localFormatter(fileDir, projectDir, 'prettier');
     if (prettier) run(prettier, ['--write', file]);
     return;
