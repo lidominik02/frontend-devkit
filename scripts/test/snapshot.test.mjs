@@ -113,3 +113,32 @@ test('a relative --out from a subdirectory resolves from the root and is refused
   assert.match(res.stderr, /--out names an existing file/);
   assert.equal(fs.readFileSync(path.join(repo, 'temp/reviews/01-review.diff'), 'utf8'), 'earlier review\n');
 });
+
+// A textconv driver renders a blob for display; the review diff must show the source, and
+// must not run a program the project configures.
+test('the diff shows the source, not a textconv rendering', (t) => {
+  const repo = workingRepo(t);
+  const marker = path.join(tempDir(t), 'ran').replace(/\\/g, '/');
+  const conv = path.join(repo, 'conv.cjs').replace(/\\/g, '/');
+  write(repo, {
+    'conv.cjs': `require('fs').writeFileSync(${JSON.stringify(marker)}, 'ran'); process.stdout.write('normalized\\n');\n`,
+    '.gitattributes': '*.txt diff=audit\n',
+  });
+  git(repo, ['config', 'diff.audit.textconv', `node "${conv}"`]);
+  const out = path.join(tempDir(t), 'snapshot.diff');
+  const res = snapshot(repo, ['diff', 'HEAD', '--out', out]);
+  assert.equal(res.code, 0, res.stderr);
+  assert.equal(fs.existsSync(marker), false);
+  assert.match(fs.readFileSync(out, 'utf8'), /^-a\n\+a changed$/m);
+});
+
+test('a file marked assume-unchanged reaches the tree as it is on disk, the mark untouched', (t) => {
+  const repo = workingRepo(t);
+  git(repo, ['update-index', '--assume-unchanged', 'src/a.txt']);
+  const before = indexBytes(repo);
+  const take = snapshot(repo, ['take']);
+  assert.equal(take.code, 0, take.stderr);
+  assert.equal(git(repo, ['show', `${take.stdout.trim()}:src/a.txt`]), 'a changed\n');
+  assert.deepEqual(indexBytes(repo), before);
+  assert.match(git(repo, ['ls-files', '-v', 'src/a.txt']), /^h /);
+});

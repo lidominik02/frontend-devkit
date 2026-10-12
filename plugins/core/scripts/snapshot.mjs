@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // A review base, not a backup: the tree is reachable from no ref, so `git gc` can prune it;
-// it leaves out credential paths, `temp/`, ignored files and submodule work trees; staged and
+// it leaves out credential paths, `temp/`, untracked ignored files and submodule work trees; staged and
 // unstaged versions of one file are not told apart. Recovery of committed work is a backup
 // ref's job; uncommitted work is the user's to commit. The tree is built in a temporary copy
 // of the index, so the user's index stays byte-identical (git 2.43.0).
@@ -106,6 +106,11 @@ function buildTree(top, base) {
   const env = { ...process.env, GIT_INDEX_FILE: index };
   try {
     if (existsSync(real)) copyFileSync(real, index);
+    // `add -u` skips an entry marked assume-unchanged; the mark is cleared in the copy only,
+    // so the tree holds the file as it is on disk. skip-worktree stays: its file may be absent
+    // on purpose (a sparse checkout), and `add -u` would then record a deletion.
+    const assumed = paths(git(top, ['ls-files', '-z', '-v'], { env })).filter((l) => l.startsWith('h ')).map((l) => l.slice(2));
+    if (assumed.length) git(top, ['update-index', '-z', '--no-assume-unchanged', '--stdin'], { env, input: assumed.join('\0') });
 
     const tracked = [...new Set(paths(git(top, ['ls-files', '-z'], { env })))];
     const untracked = paths(git(top, ['ls-files', '-z', '--others', '--exclude-standard'], { env }));
@@ -176,9 +181,9 @@ function writeDiff(top, base, out) {
   try {
     writeSync(fd, header);
     // Off a terminal --stat truncates long paths to `.../` at 80 columns (git 2.43.0).
-    git(top, ['diff', '--no-color', '--no-ext-diff', '--stat=200', baseTree, tree, ...pathspec], { stdout: fd });
+    git(top, ['diff', '--no-color', '--no-ext-diff', '--no-textconv', '--stat=200', baseTree, tree, ...pathspec], { stdout: fd });
     writeSync(fd, '\n');
-    git(top, ['diff', '--no-color', '--no-ext-diff', '-U10', baseTree, tree, ...pathspec], { stdout: fd });
+    git(top, ['diff', '--no-color', '--no-ext-diff', '--no-textconv', '-U10', baseTree, tree, ...pathspec], { stdout: fd });
   } catch (err) {
     closeSync(fd);
     rmSync(file, { force: true });
