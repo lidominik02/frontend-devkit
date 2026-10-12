@@ -125,6 +125,11 @@ Packs do not always update together. Observed cases:
   skill loaded from the updated `core` folder.
 - On 2.1.292 on Windows 10, after `claude plugin update`, the CLI asks for a restart, but
   the next skill launch in the running session already loaded the updated pack.
+- On 2.1.292 on Windows 10, from 0.1.2 to 0.2.0 on 2026-10-12,
+  `claude plugin marketplace update frontend-devkit` followed by
+  `claude plugin update <pack>@frontend-devkit` for each pack moved all three packs to the
+  release together. The running session kept running the previous version's hooks until
+  it was restarted.
 
 Whether a new session with `autoUpdate` on brings a release by itself has not been
 observed. Other CLI versions and platforms may behave differently.
