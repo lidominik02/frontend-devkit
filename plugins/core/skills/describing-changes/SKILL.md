@@ -7,7 +7,7 @@ description: >-
   commit", "MR description", "PR description", "describe these changes", or asks for a
   changelog entry — even without naming the convention, on GitLab or GitHub. For
   "review this" or "is this safe to merge", use reviewing-changes.
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs --stage fast *) Bash(git log *) Bash(git diff *) Bash(git status *) Read Grep Glob
+allowed-tools: Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git remote *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob
 ---
 
 You turn a diff into the two artifacts a reviewer reads: a commit message and a merge
@@ -15,49 +15,43 @@ request description. Both are written to *this* repository's convention, which i
 you look up — never a house style you assume.
 
 **Both are written for another developer, not for the person who asked for them.** Never
-name anything that exists only between the two of you — a session, a handoff file, a
-roadmap artifact, a phase, a decision id. A colleague reading `git log` or the merge
-request has no access to any of that, so it reads as noise at best and as a private
-detail leaked at worst. Every name in either one resolves from the repository alone, and
-a decision's reason is stated in its own words rather than by pointing at the note that
-recorded it. Say what the change does and why; that is the whole job.
+name anything that exists only between the two of you — a session, a feature file, a
+phase, a decision id. A colleague reading `git log` or the merge request has no access to
+any of that. Every name in either one resolves from the repository alone, and a decision's
+reason is stated in its own words rather than by pointing at the note that recorded it.
+Say what the change does and why; that is the whole job.
 
-## Step 1 — The facts, already loaded
+## Step 1 — Read the repository's convention
 
-!`node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"`
+- **Commit convention**: Glob for `commitlint.config.*` and `.commitlintrc*`, and read
+  `package.json` for a `commitlint` key. A config that exists *is* the convention: read it
+  — it defines the allowed types and scopes, the subject case and the length limit. A
+  summary of it would be a second copy that can drift; the config cannot.
+- **Git host**: `git remote -v` — GitLab or GitHub, which names the MR or PR.
+- **Templates**: Glob for `.gitlab/merge_request_templates/*.md`,
+  `.github/PULL_REQUEST_TEMPLATE*` and `.github/pull_request_template*`.
+- **Base branch**: by "Base branch" in `../planning-features/references/project.md`.
 
-That is this repository, read from its own files — do not run it again. It gives
-`commit` (whether a commitlint config enforces the convention, and where it lives),
-`git` (host, whether self-hosted, and whether `glab`/`gh` is on PATH),
-`changeTemplates`, and `baseBranch`.
-
-**If `commit.enforced` is true, read the config file it points at.** That file is the
-convention — it defines the exact allowed types and scopes, the subject case, and the
-length limit, and CI rejects anything else. A summary of it would be a second copy
-that can drift; the config cannot.
-
-If no commitlint config exists, **derive the convention instead of assuming it**:
+With no commitlint config, **derive the convention instead of assuming it**:
 
 ```
 git log --no-merges -n 30 --pretty=format:%s
 ```
 
-Then say what you inferred and what you based it on — "the last 30 subjects are all
-`type(scope): subject`, so I'm following Conventional Commits" — so a wrong inference
-is visible rather than silent. Default only as a last resort: Conventional Commits
-with a short but informative body.
+Then say what you inferred and from what — "the last 30 subjects are all
+`type(scope): subject`, so I'm following Conventional Commits" — so a wrong inference is
+visible. Default only as a last resort: Conventional Commits with a short body.
 
 ## Step 2 — Read the actual change
 
 ```
-git diff <baseBranch>...HEAD          # or: git diff --staged / git diff HEAD
-git diff <baseBranch>...HEAD --stat
+git diff <base>...HEAD          # or: git diff --staged / git diff HEAD
+git diff <base>...HEAD --stat
 ```
 
-Describe what the diff *does*, not what the branch is called. A branch named
-`fix/login` whose diff also adds a rate limiter needs both facts in the message. Where
-the diff and the stated intent or plan disagree, report the discrepancy alongside the
-message — that gap is usually a real bug or forgotten work in progress.
+Describe what the diff *does*, not what the branch is called: a `fix/login` branch whose
+diff also adds a rate limiter needs both facts. Where the diff and the stated intent or plan
+disagree, report it alongside the message — usually a real bug or forgotten work.
 
 ## Step 3 — Write the commit message
 
@@ -68,16 +62,12 @@ type(scope): imperative subject under ~72 chars
 
 Body: what changed and WHY, wrapped at ~72. Short but informative —
 enough that someone reading `git log` in six months understands the
-reason without opening the diff. Skip the body only for genuinely
-trivial commits.
+reason without opening the diff.
 ```
 
-- Subject in the imperative — "add", not "added" or "adds".
-- The body explains the *why*. The diff already shows the what.
-- **Omit the body for a genuinely trivial commit.** Short but informative means the body
-  earns its place; a body that restates the subject is worse than no body.
-- Note breaking changes explicitly (`!` after the scope, or a `BREAKING CHANGE:`
-  footer).
+- Subject in the imperative — "add", not "added". The body explains the *why*.
+- **Omit the body for a genuinely trivial commit**; one restating the subject is worse.
+- Note breaking changes explicitly (`!` after the scope, or a `BREAKING CHANGE:` footer).
 - Match the repository's real types. If its history only ever uses
   `feat|fix|chore|refactor`, do not introduce `perf` because the spec allows it.
 
@@ -87,9 +77,9 @@ for alternatives and the questions that settle the split.
 
 ## Step 4 — Write the MR/PR description
 
-If `changeTemplates` is non-empty, **read the template and fill its actual sections.**
-Do not substitute your own structure — the template is what reviewers expect, and its
-checklist often names the exact commands the project wants run. Otherwise:
+If a template exists, **read it and fill its actual sections.** Do not substitute your
+own structure — the template is what reviewers expect, and its checklist often names the
+exact commands the project wants run. Otherwise:
 
 ```
 ## What changed
@@ -101,27 +91,13 @@ checklist often names the exact commands the project wants run. Otherwise:
 **The verification section is where honesty is load-bearing.** Write only what you
 actually ran. When the skill that called this one supplies gate results, they are the
 truth: use them as given, run no gate, and report a gate they leave out as NOT RUN.
-Otherwise get the truth from the fast gates, unless the user has released more:
+Otherwise run the gates as "Gates" in `../planning-features/references/project.md`
+describes: the fast gates, and `test` or `build` only once the user has released it.
 
-```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json
-```
-
-The `test` and `build` gates are not in that run. Run each one the user has released on
-its own:
-
-```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate test --json
-node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate build --json
-```
-
-When the project has one of them and the user has not released it, list it as NOT RUN
-in the verification section, with the reason "held until the user releases it". Never
-write it as passed. A gate the project does not have is covered by the last bullet below.
-
-- `status: "pass"` → say it passed.
-- `status: "fail"` → say it failed. Do not soften it.
-- `status: "not-run"` → say NOT RUN, with the reason. Never upgrade this to a pass.
+- `pass` → say it passed.
+- `FAIL` → say it failed. Do not soften it.
+- `NOT RUN (<reason>)` → say NOT RUN, with the reason — a held `test` or `build` reads
+  "held until the user releases it". Never upgrade this to a pass.
 - The project has no such gate → "no test suite in this repo; verified manually by
   <steps>". Never omit the gap, and never tick a template checkbox that claims a
   suite which does not exist.
@@ -132,24 +108,12 @@ false claim there propagates further than anywhere else.
 
 ## Step 5 — Hand it over
 
-Produce the message, then stop. **Commit only once this exact message has been
-accepted** — not a paraphrase of it, not "looks fine" applied to an earlier draft.
-If the user asks for a change, apply it and show the result again before committing.
+Print the message and the description in copyable blocks, then stop. **Commit only once
+this exact message has been accepted** — not a paraphrase of it, not "looks fine" applied
+to an earlier draft. If the user asks for a change, apply it and show the result again.
 
-When the skill that called this one asks for the text only, print the message and body
-in copyable blocks and stop: the offer below and every command in it are skipped.
-
-- `git.cliAvailable: true` → offer to create the MR with `glab mr create` (or
-  `gh pr create`), and **wait for explicit approval before running it**. When
-  `git.selfHosted` is true, `glab` needs that host configured (`GITLAB_HOST`, or
-  `glab auth login --hostname <host>`) — if it is not, say so rather than letting the
-  command fail confusingly.
-- `git.cliAvailable: false` → print the message and body in copyable blocks and say the
-  CLI is not installed. This is the normal path, not a failure.
-
-Never run `git commit`, `git push`, `glab mr create`, or `gh pr create` unless the
-user asks for that specific action in the current turn. Producing the text is the job;
-publishing it is their decision.
+Never run `git commit` or `git push`, or open the MR or PR, unless the user asks for that
+action in the current turn. Producing the text is the job; publishing it is theirs.
 
 ## What this must NOT do
 

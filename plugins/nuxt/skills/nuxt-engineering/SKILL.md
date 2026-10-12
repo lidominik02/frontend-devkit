@@ -33,11 +33,10 @@ files first, reuse existing composables and server utilities before writing new 
 ## Before applying any version-gated rule, check what is installed
 
 The Nuxt 3 → 4 boundary moved the source directory and changed data-fetching semantics,
-and Nuxt 5 changes the server layer. One command:
-
-```
-node -p "Object.entries({...require('./package.json').dependencies,...require('./package.json').devDependencies}).filter(([k])=>/^(nuxt|nitro|@nuxt\/|vue|pinia|typescript|vue-tsc|@pinia\/nuxt)/.test(k)).map(e=>e.join('@')).join('\n')"
-```
+and Nuxt 5 changes the server layer. Read the workspace's `package.json`
+(`dependencies` and `devDependencies`) with the Read tool and note the majors of `nuxt`,
+`nitro`, any `@nuxt/*` package, `vue`, `pinia`, `@pinia/nuxt`, `typescript` and
+`vue-tsc`.
 
 Also read `compatibilityDate` and any `future.compatibilityVersion` in `nuxt.config` —
 they change runtime behaviour without changing the installed version.
@@ -168,21 +167,15 @@ Read the one file that matches what you are touching, not all of them.
 
 ## Before reporting done
 
-Run this project's own gates. The `core` plugin — a hard dependency — ships
-`run-gates.mjs`, which discovers them from `package.json` and reports anything absent as
-NOT RUN. The script belongs to `core`, so its path is never guessed: core's `implementer`
-agent and its `reviewing-changes` and `describing-changes` skills run it at their own
-steps.
-**A gate reported `not-run` with `blocking: true` did not run — the tool is missing or
-the script hangs. That is a setup defect, not a passing gate.**
+Run the project's own gates as `core`'s `project.md` describes; a gate you did not run is
+NOT RUN.
 
 Type-checking has a Nuxt-specific trap worth naming: the generated types live in
 `.nuxt/`, so a checkout that has only run `install` has nothing to check against, and a
 root `tsconfig.json` that is a solution file (`files: []` plus `references`) makes a bare
 `vue-tsc --noEmit` exit 0 having checked **nothing**. `nuxt typecheck` is the gate. If
 the project's typecheck script is a bare `vue-tsc`, say that the gate is not verifying
-templates rather than reporting it as a pass. `run-gates.mjs` flags this as
-`typecheckVacuous`.
+templates rather than reporting it as a pass.
 
 If the repo has no type-check, no lint and no tests, say so explicitly rather than
 implying the change is verified. Name the manual steps you relied on instead — and for
@@ -210,4 +203,4 @@ Do not claim a gate passed that you did not run.
   and a different pack's problem; say so rather than improvising.
 - **Bulk-convert files the task did not ask about** — no drive-by migrations to `app/`,
   no rewriting working `$fetch` calls outside the change.
-- **Invent a gate command.** Ask `run-gates.mjs --list` what this project has.
+- **Invent a gate command.** Read `package.json`'s scripts instead.

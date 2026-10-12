@@ -253,10 +253,9 @@ did — a pair that mixes the two is void — and whether line 1 reached the bas
 ## Scripted answers
 
 1. A question about which feature the work belongs to: "none".
-2. A form that ranks hypotheses: the option marked "(recommended)".
-3. A form offering a frontend guard or workaround: the option that stops with the report
+2. A form offering a frontend guard or workaround: the option that stops with the report
    and adds none.
-4. Anything else: the option marked "(recommended)", else the first option.
+3. Anything else: the option marked "(recommended)", else the first option.
 
 ## Arm A
 

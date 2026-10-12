@@ -46,10 +46,9 @@ present and which of those rules they state.
 A fresh directory per run. `git init -b main work`; in `work`, write the four files below
 at their base versions and commit everything as "Initial reports app". Then add the
 working-tree lines to `src/reports/FilterPresets.vue` and leave that change uncommitted.
-Then, outside git, write `temp/saved-filters/planning/PLAN.md`. Nothing in the case runs
-the project, so no `npm install` is needed. Write no `SPEC.md`, no `requirements/`
-directory and no `.claude/project.json`, so no written requirement exists anywhere and
-`project-facts` reports no `userStoryPath`.
+Then, outside git, write `temp/saved-filters/PLAN.md`. Nothing in the case runs
+the project, so no `npm install` is needed. Give the plan no spec sections and
+write no `requirements/` directory, so no written requirement exists anywhere.
 
 `.gitignore`:
 
@@ -114,14 +113,13 @@ function deletePreset(id: string) {
 }
 ```
 
-`temp/saved-filters/planning/PLAN.md`:
+`temp/saved-filters/PLAN.md`:
 
 ```markdown
 # Plan: saved-filters
 
-Goal: Filter combinations on the reports page can be saved as named presets and applied again.
-
-## Task: Save and apply filter presets
+## Tasks
+### Task: Save and apply filter presets
 
 Files: modify src/reports/FilterPresets.vue
 Acceptance criteria:
@@ -132,7 +130,7 @@ Acceptance criteria:
 
 Rig check in `work`, before each run: `git status --short` prints only
 ` M src/reports/FilterPresets.vue`; `git diff` shows exactly the working-tree lines above;
-`ls -R temp/saved-filters` lists only `planning` and the `PLAN.md` in it; no `.claude/`
+`ls -R temp/saved-filters` lists only `PLAN.md`; no `.claude/`
 directory exists. Record the isolation that applied, as above.
 
 ## Criteria

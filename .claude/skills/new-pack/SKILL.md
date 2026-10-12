@@ -3,7 +3,7 @@ name: new-pack
 description: >-
   Scaffold a new framework pack in this marketplace and wire it into every place
   that must know about it — plugin.json with its dependencies, marketplace.json, the
-  pack README and the root README's packs table, project-facts.mjs stack mapping,
+  pack README and the root README's packs table, the pack rule in core's project.md,
   and a first eval case. Use when adding support for a framework the devkit does not
   cover yet, such as React or Next, or when splitting an existing pack. Establishes
   first whether the new guidance inverts an existing pack's rules, because a pack
@@ -15,8 +15,8 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash(node scripts/validate.mjs:*),
 
 # Add a framework pack
 
-`project-facts.mjs` already returns `react-spa` and `next` as stacks with empty
-pack arrays: detected stacks with nothing behind them. That is the slot this fills.
+A new pack is recognised by one line in the "Framework packs" rule of
+`plugins/core/skills/planning-features/references/project.md`.
 
 ## First, establish that it should be a pack
 
@@ -48,7 +48,7 @@ Miss one of these and the pack loads wrong, or silently not at all.
 | `plugins/<name>/skills/<name>-engineering/SKILL.md` | The pack's one skill, plus `references/` |
 | `plugins/<name>/README.md` | What the pack covers, what it depends on, why it is a separate pack, and its skill table — modelled on `plugins/nuxt/README.md` |
 | `plugins/<name>/evals/` | A README pointing back at `plugins/core/evals/README.md`, and at least one case |
-| `plugins/core/scripts/project-facts.mjs` | The `packsFor` mapping — the stack must resolve to its packs, general first |
+| `plugins/core/skills/planning-features/references/project.md` | One line in "Framework packs": the dependency that names the framework, and its packs, general first |
 | *(nothing)* | The layering itself. `scripts/pack-graph.mjs` derives it from `dependencies`, and `/pack-parity` reads it from there — declare the dependency correctly and both follow |
 | `README.md` | The packs table and the install block |
 | `docs/installation.md` | The install block and "Choosing packs" |

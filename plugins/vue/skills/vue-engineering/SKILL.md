@@ -33,11 +33,10 @@ changes surgical.
 ## Before applying any version-gated rule, check what is installed
 
 Vue's ecosystem broke several defaults across recent majors, and the wrong half of a
-version-gated rule is worse than no rule. One command:
-
-```
-node -p "Object.entries({...require('./package.json').dependencies,...require('./package.json').devDependencies}).filter(([k])=>/^(vue|vue-router|pinia|vite|typescript|tailwindcss|vue-tsc|@tanstack\/vue-)/.test(k)).map(e=>e.join('@')).join('\n')"
-```
+version-gated rule is worse than no rule. Read the workspace's `package.json`
+(`dependencies` and `devDependencies`) with the Read tool and note the majors of `vue`,
+`vue-router`, `pinia`, `vite`, `typescript`, `tailwindcss`, `vue-tsc` and any
+`@tanstack/vue-*` package.
 
 In a monorepo the framework lives in a workspace package, not the root — read that
 package's `package.json` instead. `references/versions.md` has the table of what changes
@@ -130,13 +129,8 @@ Route by what is actually happening, not by which API you suspect.
 
 ## Before reporting done
 
-Run this project's own gates. The `core` plugin — a hard dependency of this one — ships
-`run-gates.mjs`, which discovers them from `package.json` and reports anything absent as
-NOT RUN. The script belongs to `core`, so its path is never guessed: core's `implementer`
-agent and its `reviewing-changes` and `describing-changes` skills run it at their own
-steps. Failing that, read the `scripts` block yourself and run what is actually there.
-**A gate reported `not-run` with `blocking: true` did not run — the tool is missing or
-the script hangs. That is a setup defect, not a passing gate.**
+Run the project's own gates as `core`'s `project.md` describes; a gate you did not run is
+NOT RUN.
 
 If the repo has no type-check, no lint and no tests, say so explicitly rather than
 implying the change is verified. A Vue codebase without `vue-tsc` has no compiler
@@ -162,4 +156,4 @@ Do not claim a gate passed that you did not run.
 - **State a version-gated API as fact** without checking what is installed.
 - **Bulk-convert files the task did not ask about** — no drive-by TypeScript migrations
   or refactors of adjacent code.
-- **Invent a gate command.** Ask `run-gates.mjs --list` what this project has.
+- **Invent a gate command.** Read `package.json`'s scripts instead.

@@ -21,9 +21,7 @@ model's view of the skill: it can then only run when someone types it.
   the `budget` check and a write hook.
 - A skill is typed-only (`disable-model-invocation: true`) when firing on its own would do
   harm or collide with another component: `preparing-a-repo` changes a host repository's
-  configuration; `optimizing-prompts` must never act on the text it is handed, and a
-  repository with its own prompt-rewriting skill would otherwise have two matching the same
-  wording; `designing-architecture` would drive unasked redesigns — noticing a candidate
+  configuration; `designing-architecture` would drive unasked redesigns — noticing a candidate
   during ordinary work belongs to its `codebase-design.md` reference, which flags and never
   restructures. Otherwise it is listed, and its description earns its share of the ceiling.
 

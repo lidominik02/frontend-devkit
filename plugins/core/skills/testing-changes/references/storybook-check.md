@@ -1,7 +1,7 @@
 # The Storybook check
 
 Read this while running the Storybook cases in `run` mode. Skip this whole category, by
-name, when `project-facts`'s `storybook.declared` is false — a repository with no
+name, when package.json's `storybook` script is absent — a repository with no
 Storybook script gets "skipped: no Storybook script" and nothing here is attempted.
 
 ## What to check
@@ -12,7 +12,7 @@ not every component the page happens to render. A page-specific component with n
 intent does not need one just because this check exists.
 
 **It renders in both themes**, if the repository has a dark/light distinction at all —
-check `project-facts`'s stack facts or the repository's own theme convention before
+check the repository's own theme convention before
 treating "both themes" as applicable. A component that throws or renders visibly broken
 in one theme is a finding regardless of whether the feature's own page happens to use
 that theme.
@@ -31,7 +31,7 @@ names depend on which addon a project has installed and are not fixed here.
 
 **Otherwise, call the Skill tool with "core:verifying-ui"**, pointed at the Storybook dev server's URL
 instead of the application's — the same observe-fix-observe loop, the same honesty
-rules, a different URL. `project-facts`'s `storybook` fact gives the command to serve
+rules, a different URL. package.json's `storybook` script, run as `<pm> run storybook`, serves
 it; find the URL it actually printed, exactly as `verifying-ui`'s own Step 2 requires,
 never a guessed or default port.
 

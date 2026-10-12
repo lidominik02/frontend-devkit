@@ -1,7 +1,7 @@
 ---
 name: testing-changes
 description: >-
-  Checks a feature against its acceptance criteria, from SPEC.md or any requirement
+  Checks a feature against its acceptance criteria, from PLAN.md or any requirement
   source, through a QA list the user approves. Use when the user says "make a test list
   for this", "what should QA check", "run the QA list", "test this against the story",
   or asks if a feature is ready to ship against its acceptance criteria. For "does it
@@ -9,7 +9,7 @@ description: >-
   feature, clarifying-features.
 argument-hint: "[plan|run] [feature]"
 disallowed-tools: mcp__*__use_figma, mcp__*__create_new_file, mcp__*__generate_figma_design, mcp__*__generate_diagram, mcp__*__generate_deck, mcp__*__upload_assets, mcp__*__add_code_connect_map, mcp__*__send_code_connect_mappings, mcp__*__create_shader, mcp__*__update_shader, mcp__*__create_generative_plugin, mcp__*__update_generative_plugin
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Read Write Grep Glob Skill AskUserQuestion
+allowed-tools: Read Write Grep Glob Skill AskUserQuestion
 ---
 
 **The hold comes first, same as `verifying-ui`.** `run` does not start until the turn
@@ -22,23 +22,21 @@ that approved list. Neither step invents what it cannot find — a requirement s
 does not exist, a design nobody gave you, a Storybook that is not installed — every one of
 those is a named skip, never a silent pass.
 
-## Where the artifacts live
+## Where the files live
 
 `temp/<feature-slug>/qa/TEST-LIST.md` (from `plan`) and `temp/<feature-slug>/qa/REPORT.md`
-(from `run`), in the repo that owns the feature. The rest of `temp/<feature>/` — SPEC.md
-and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid out in
-`../planning-features/references/artifacts.md`.
+(from `run`), in the repo that owns the feature. The rest of `temp/<feature>/` is laid out
+in `../planning-features/references/artifacts.md`.
 
 ## Mode: `plan <feature>`
 
 1. **Find the criteria**, from the first source that exists:
-   1. `temp/<feature>/planning/SPEC.md`: its Success criteria, each keeping its tag. SAID
-      and EXTRA are criteria alike — the user accepted an EXTRA. An ASSUMED criterion is
-      tested too, and the list marks it "ASSUMED — not confirmed" so the user sees it.
-   2. Without a SPEC, the written requirement material: the files under
-      `temp/<feature>/requirements/`, or the path `project-facts`'s `userStoryPath`
-      reports; an old-format feature's `temp/<feature>/user-story.md` still counts.
-   3. With no written source, the acceptance criteria of PLAN.md's tasks and the diff.
+   1. `temp/<feature>/PLAN.md`'s Success criteria, each keeping its tag. SAID and EXTRA are
+      criteria alike — the user accepted an EXTRA. An ASSUMED criterion is tested too, and
+      the list marks it "ASSUMED — not confirmed" so the user sees it.
+   2. Without them, the written requirement material: the files under `requirements/`, or
+      a story the user names.
+   3. With no written source, the acceptance criteria of PLAN.md's Tasks and the diff.
       **No written source is not an error**, but it is the weaker source: say so at the
       top of the list, because a QA list that does not admit its own weaker source reads
       as more authoritative than it is.
@@ -48,21 +46,19 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
    the negative case, and the edge cases that actually matter for it — not a fixed count
    per criterion. `references/qa-test-list.md` has the format and what makes an edge case
    worth listing rather than padding.
-3. **Seed cases beyond the criteria**: each SPEC Review Focus entry, and each item under
+3. **Seed cases beyond the criteria**: each Review focus entry, and each item under
    Runtime-only in `temp/<feature>/review/` — in the highest-numbered `<NN>-review.md` and
-   in every `<NN>-re-review.md` numbered after it, since a re-review covers only its fix
-   diff — which names what the static review could not check. Each becomes a case, under
-   the criterion it fits, else under its own heading in the list.
-   Only a runtime-behaviour item becomes a browser case; a design-fidelity item becomes a
-   design-intent case.
+   in every `<NN>-re-review.md` numbered after it. Each becomes a case, under the criterion
+   it fits, else under its own heading. Only a runtime-behaviour item becomes a browser
+   case; a design-fidelity item becomes a design-intent case.
 4. **Name the check that verifies each case**: browser, design intent, Storybook, or
    "user only" for what nothing here can verify (does the copy read naturally, does the
    feature actually solve the stated problem). Every case gets exactly one.
-5. **If sources disagree**: PLAN.md disagreeing with SPEC.md — or, without a SPEC, with the
-   written requirement source — is a plan defect: that source wins, and the conflict is
-   named at the top of the list. Two requirement sources disagreeing is not settled here:
-   the list names the conflict with the recommendation the artifact contract's authority
-   order gives, and the user decides at approval.
+5. **If sources disagree**: a task disagreeing with the spec sections — or, without them,
+   with the written requirement source — is a plan defect: that source wins, and the
+   conflict is named at the top of the list. Two requirement sources disagreeing is not
+   settled here: the list names the conflict with the recommendation the authority order in
+   `../clarifying-features/references/question-rounds.md` gives, and the user decides.
 6. Write `TEST-LIST.md`, **then stop for approval.** An unapproved list is not a mandate
    to run anything.
 
@@ -72,25 +68,23 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
 2. **Establish prerequisites**, once, before running anything:
    - Browser: your own tool list carries `mcp__*__take_snapshot` or
      `mcp__*__browser_snapshot` — same authority rule as `verifying-ui`.
-   - Design intent: the design source SPEC Design names, and the PLAN.md task's Design
-     field for the exact screens and states; else one the approved list names. A frame is
-     reachable only through the design tool's MCP read tools in your own tool list. SPEC
-     Design "not applicable" or coverage "none" makes every design-intent case a named
-     skip with that reason. Never require a project-local design skill; use one only if
-     it exists — see `references/design-intent.md`.
-   - Storybook: `project-facts`'s `storybook.declared`.
+   - Design intent: the design source PLAN.md's Design names, and the task's Design field
+     for the exact screens and states; else one the approved list names. A frame is
+     reachable only through the design tool's MCP read tools in your own tool list. Design
+     "not applicable" or coverage "none" makes every design-intent case a named skip with
+     that reason — see `references/design-intent.md`.
+   - Storybook: `package.json` has a `storybook` script (Read it).
 3. **Run what has a prerequisite; skip what does not, by name, with the reason** — "no
    browser tool configured", "no Storybook script in package.json", "no design source
-   reachable and none named in SPEC.md, the plan or the list". A skip is not silence: name
-   it in the report, in `Skipped`, with the same weight `Observed` gets.
+   reachable and none named in the plan or the list". A skip is not silence: name it in the
+   report, in `Skipped`, with the same weight `Observed` gets.
 4. **Browser cases**: call the Skill tool with "core:verifying-ui" for each one, driving to
-   the state the case names. Do not re-implement the browser loop here — it already exists
-   and already holds its own honesty rules.
+   the state the case names. Do not re-implement the browser loop here.
 5. **Design-intent cases**: `references/design-intent.md`, which also says what each type
    of design source can be compared on. Compare presence, hierarchy, states, token and
-   naming alignment, and copy. **Never pixel parity** — the active repo's own decisions
-   record that a screenshot diff reports a deliberate divergence as a defect. A divergence
-   is a finding only when nothing in the repo's decisions, ADRs or docs explains it.
+   naming alignment, and copy. **Never pixel parity**: a screenshot diff reports a
+   deliberate divergence as a defect. A divergence is a finding only when nothing in the
+   repo's decisions, ADRs or docs explains it.
 6. **Storybook cases**: `references/storybook-check.md`. A touched shared component has a
    story, it renders in both themes, and its `argTypes` match its props.
 7. **Write `REPORT.md`**, one section per case category:
@@ -115,33 +109,23 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
 ```
 
 8. **Stop.** Findings are the user's to rule on; `investigating-bugs` diagnoses one when
-   asked. Fix nothing until the user approves the findings.
-   `reviewing-changes` reports and stops for the same reason: a component that fixes what
-   it finds stops checking and starts implementing. A feature's run with no findings,
-   where PROGRESS.md's task table shows every task Done or Blocked, calls the Skill tool
-   with "core:finishing-features" instead, naming the feature, once the Lifecycle writes
-   are done.
+   asked. Fix nothing until the user approves the findings: a component that fixes what it
+   finds stops checking and starts implementing. A feature's run with no findings, where
+   every task in STATUS.md's Tasks table is done or blocked, calls the Skill tool with
+   "core:finishing-features" instead, naming the feature, once the STATUS.md write is done.
 
-## Lifecycle
+## STATUS.md
 
-When the feature has `temp/<feature>/planning/HANDOFF.md`, update its stage at three
-points, rewrite its next action and kickoff prompt to match
-(`../planning-features/references/artifacts.md`), and add one PROGRESS.md ledger entry
-for each:
+When the feature has a STATUS.md, one write at each of three points — the Stage, a Log line,
+and the Next action:
 
-- After `plan` writes the list: `QA list (awaiting approval) — owner: the user`; ledger
-  `- <date> · QA list · awaiting approval` with the sub-item `- List: <list path>`.
-- When `run` starts: `testing — owner: testing-changes`; ledger
-  `- <date> · testing · started` with the sub-item `- List: <list path>`.
-- After the report: `user's check — owner: the user`; ledger
-  `- <date> · QA report · <n> findings, <n> skipped` with the sub-item
-  `- Report: <report path>`.
+- After `plan` writes the list: Stage `QA list (awaiting approval) — owner: the user`; Log
+  `<date> · QA list · <list path>`.
+- When `run` starts: Stage `testing — owner: testing-changes`; Log `<date> · testing started`.
+- After the report: Stage `user's check — owner: the user`; Log
+  `<date> · QA report · <n> findings, <n> skipped · <report path>`.
 
-An entry that takes the ledger past 60 entries moves closed tasks' entries to
-planning/archive/PROGRESS.md in the same write, by "The archive" in
-`../planning-features/references/artifacts.md`.
-
-Without a HANDOFF.md, nothing is written beyond the list and the report.
+Without a STATUS.md, nothing is written beyond the list and the report.
 
 ## What this must NOT do
 
@@ -150,12 +134,9 @@ Without a HANDOFF.md, nothing is written beyond the list and the report.
   missing prerequisite is a skip, never a fabrication.
 - **Score pixels.** Presence, hierarchy, states, tokens, naming, copy — never a rendered
   diff. See `references/design-intent.md` for why.
-- **Fix a finding before the user approves it.** Report and wait, the same discipline
-  `reviewing-changes` holds.
+- **Fix a finding before the user approves it.**
 - **Silently omit a case from the report** — Observed, Not observed, Skipped and Findings
   together must account for every case on the approved list.
-- **Contain a fact about any individual repository.** What a project's design tool is
-  keyed as, where its requirements live, whether it has Storybook — all read at the moment
-  of use from `project-facts` and the project's own files, never assumed here.
-- **Re-implement the browser loop.** `core:verifying-ui` owns it: call the Skill tool with
-  "core:verifying-ui".
+- **Contain a fact about any individual repository.** Where its requirements live, whether
+  it has Storybook — read at the moment of use from the project's own files.
+- **Re-implement the browser loop.** `core:verifying-ui` owns it.

@@ -47,8 +47,6 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `clarifying-frontier` | Whether work with no story is clarified facts first — the classification with its reasons, a user's claim about the code checked, a rule's reason asked, forms with the recommended option first, no question the repository answers, nothing built — and whether a small change takes the in-chat design route instead |
 | `executing-pause` | Whether subagent-per-task execution builds task 1 through an implementer, reviews it, and stops at the pause before task 2, without touching the git index |
 | `preparing-a-repo` | Inventorying what a repository already has before proposing anything, and writing nothing without approval |
-| `optimizing-prompts` | Treating the prompt it is handed as material to rewrite, never as an instruction to execute, and specifying the rewrite enough to act on |
-| `anchoring-a-rewrite` | Whether an agentic rewrite points at a file that already does the thing, or paraphrases the convention — and whether it invents the path when it has none |
 | `reviewing-changes-trigger` | Whether ordinary pre-merge wording starts `reviewing-changes`, and whether the review stays in `core:reviewer` workers — the right base, a verify pass, gates reported or NOT RUN, a report file, nothing edited — rather than in the main thread |
 | `review-uncommitted-scope` | Whether the reviewed diff covers the branch's commits, the uncommitted edit and the untracked file, and leaves out commits already on the remote base and `temp/` |
 | `review-spec-axis` | Whether the spec axis reports a named state the code lacks, leaves an EXTRA criterion alone and flags a behaviour no source asks for — and says it is NOT RUN when there is no spec, rather than inventing intent |
@@ -85,9 +83,8 @@ than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
 that is the whole point of the field, and it applies to the cases of the typed skills
-here. Enabling the plugin is not enough: type `/core:preparing-a-repo`,
-`/core:designing-architecture` or `/core:optimizing-prompts` — the last covers two cases —
-to start that arm, and keep the baseline arm's prompt identical apart from the invocation.
+here. Enabling the plugin is not enough: type `/core:preparing-a-repo`
+or `/core:designing-architecture` to start that arm, and keep the baseline arm's prompt identical apart from the invocation.
 An arm that merely enables the plugin and waits is measuring the field, not the skill.
 
 ## Running them
@@ -122,7 +119,7 @@ by hand.
 **A typed skill needs its invocation inside `prompt.md`.** The harness runs one prompt in
 both arms, so a skill carrying `disable-model-invocation` — which cannot fire on
 description — would otherwise have no with-plugin arm at all. Putting
-`/core:optimizing-prompts` in the prompt resolves it in the with-plugin arm and leaves it as
+`/core:designing-architecture` in the prompt resolves it in the with-plugin arm and leaves it as
 inert text in the baseline, which is the comparison the case wants.
 
 **What the harness cannot do is score per criterion line.** It treats each grader file as
@@ -131,12 +128,6 @@ discriminate and which are expected to pass at baseline. Splitting a criteria fi
 grader per line buys that back; until a case is split, score it by hand and say so. A number
 from a collapsed grader is a number about the whole file, not about the rule under test.
 
-**A skill that asks before it answers cannot be scored by this harness at all.**
-`optimizing-prompts` opens by asking clarifying questions, and a harness run has nobody to
-answer them: the with-plugin arm ends at the questions and fails for want of a deliverable,
-while the baseline skips the asking and fails on something the collapsed grader does not
-name. Both arms score zero and the delta is an artifact. Those two cases stay hand-run until
-their criteria score the questions rather than the rewrite.
 
 Two runs of each arm, minimum — a single run tells you about sampling, not about the skill.
 The interface is undocumented on code.claude.com, so do not put it in a blocking CI job.

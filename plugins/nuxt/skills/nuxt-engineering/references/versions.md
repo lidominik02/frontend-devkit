@@ -4,9 +4,9 @@ Read the installed versions before applying anything on this page. The wrong hal
 version-gated rule is worse than no rule, and Nuxt moved the source directory in one
 major and is moving the server layer in the next.
 
-```
-node -p "Object.entries({...require('./package.json').dependencies,...require('./package.json').devDependencies}).filter(([k])=>/^(nuxt|nitro|@nuxt\/|vue|pinia|typescript|vue-tsc|@pinia\/nuxt)/.test(k)).map(e=>e.join('@')).join('\n')"
-```
+Read the workspace's `package.json` (`dependencies` and `devDependencies`) with the Read
+tool and note the majors of `nuxt`, `nitro`, any `@nuxt/*` package, `vue`, `pinia`,
+`@pinia/nuxt`, `typescript` and `vue-tsc`.
 
 Then read `nuxt.config` for `compatibilityDate` and anything under `future` — those
 change runtime behaviour without changing an installed version.
@@ -109,9 +109,6 @@ silent:
 - A sudden wall of `Cannot find name 'ref'` across auto-imports is a known rough edge in
   project-references build mode, not a defect in the diff. Check the installed patch
   version before chasing it.
-
-`run-gates.mjs` in the `core` plugin reports a bare `vue-tsc` on a solution-file
-`tsconfig.json` as `typecheckVacuous`.
 
 ## Testing
 

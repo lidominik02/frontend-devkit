@@ -8,7 +8,7 @@ An acceptance criterion is a testable claim the source makes, stated or implied 
 customer can request a refund within 30 days of the order" is one; "the flow should feel
 fast" is not, because nothing in this skill can verify a feeling. Extract the criteria
 first, as a flat list, before mapping any cases to them — a criterion discovered while
-writing cases is a sign the extraction pass was too shallow. A SPEC's Success criteria
+writing cases is a sign the extraction pass was too shallow. PLAN.md's Success criteria
 are that list already: take each as written, with its tag.
 
 Per criterion, map:
@@ -51,7 +51,7 @@ Every case gets exactly one of:
 ```
 ## Test list: <feature>
 
-<one line stating the source: "from temp/<feature>/planning/SPEC.md", the requirement
+<one line stating the source: "from temp/<feature>/PLAN.md", the requirement
 files it came from, or "no written requirement found; derived from PLAN.md's tasks and
 the diff">
 <each conflict between sources, when there is one — see below>
@@ -62,20 +62,20 @@ the diff">
 - Edge: <case> — verified by: <…>
 - Edge: <case> — verified by: <…>    (only the ones that matter for this criterion)
 
-### Beyond the criteria: <the Review Focus entry or Runtime-only item, with its source>
+### Beyond the criteria: <the Review focus entry or Runtime-only item, with its source>
 - <case> — verified by: <…>
 ```
 
-A criterion from a source without tags carries no tag. A Review Focus entry or a
+A criterion from a source without tags carries no tag. A Review focus entry or a
 Runtime-only item that fits a criterion goes under it instead of its own heading.
 
 ## When sources disagree
 
-**SPEC.md and PLAN.md** disagreeing is a plan defect: PLAN.md is built from the SPEC alone,
-so the SPEC wins. Name the conflict at the top of the list, with what each says, and derive
-the cases from the SPEC.
+**PLAN.md's spec sections and its Tasks** disagreeing is a plan defect: the tasks are built
+from the spec alone, so the spec wins. Name the conflict at the top of the list, with what
+each says, and derive the cases from the spec.
 
-**A written requirement source and PLAN.md**, when there is no SPEC, disagreeing is the
+**A written requirement source and PLAN.md's Tasks**, when there are no spec sections, disagreeing is the
 same plan defect: the source is the closer statement of what the feature is for, and a
 plan can drift from it during implementation without anyone updating either. The source
 wins; name the conflict at the top of the list the same way, and derive the cases from the
@@ -83,5 +83,5 @@ source.
 
 **Two requirement sources** disagreeing is not settled here. Name the conflict at the top
 of the list, each source quoted with its location, with the recommendation the authority
-order in `../../planning-features/references/artifacts.md` (DECISIONS.md, rule 4) gives.
+order in `../../clarifying-features/references/question-rounds.md` gives.
 The user decides at approval.
