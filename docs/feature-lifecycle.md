@@ -188,7 +188,7 @@ once no work is left; otherwise it stays
 under `temp/<feature>/` with the work left in its HANDOFF.md, and another close-out
 archives it. `resume <feature>` brings an archived feature back to `temp/<feature>/` once
 the user confirms, and records the reopening in its ledger. The user pushes, merges and
-opens the merge request: `commit-hygiene.mjs` denies Claude a push or a merge.
+opens the merge request; the recommended permission settings deny Claude a push or a merge.
 
 ## Resuming
 

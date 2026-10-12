@@ -14,7 +14,7 @@ in well under a second. Why the values it reads live in a config file:
 | `skill-dirs` | A directory under a pack's `skills/` or under `.claude/skills/` without a `SKILL.md` |
 | `budget` | The always-on description total of the shipped packs over `budget.ceiling` in `devkit.config.json`. When it passes, it prints the total against the ceiling |
 | `references` | A cited `.md` that does not resolve **from the file citing it** |
-| `scripts` | A `.mjs` that does not parse, or a `hooks.json` arg that is not a file inside the pack holding that `hooks.json` |
+| `scripts` | A `.mjs` under `plugins/` or `scripts/` that does not parse |
 | `plugin-root` | A `${CLAUDE_PLUGIN_ROOT}/` path in any `.md` under a pack's `skills/` or `agents/`, references included, that does not resolve inside that pack |
 | `versions` | A `plugin.json` without `version`, one not `X.Y.Z`, two packs disagreeing, a `marketplace.json` entry declaring `version`, no entries at all, or a `plugins/` directory with no entry |
 | `changelog` | A plugin version with no `## X.Y.Z - YYYY-MM-DD` section in `CHANGELOG.md`, the heading the release workflow takes the notes from; `TBD` in place of the date is a finding |

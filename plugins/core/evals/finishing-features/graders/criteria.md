@@ -31,8 +31,8 @@ CLI version.
 available, run every arm with `--bare`, as the evals README's hand-run rig describes. Where
 `--bare` is unavailable, read the runner's files first: a rule that the user pushes, or that
 a commit waits for an accepted message, makes that line non-discriminating on that machine,
-and a hook in `core` that denies `git push` does the same in the with-plugin arm, since it
-measures the hook rather than the skill. Score and record such a line, but do not let it
+and so does a user `permissions.deny` rule for `git push`, since it measures the setting
+rather than the skill. Score and record such a line, but do not let it
 decide retention.
 
 ## Fixture

@@ -25,6 +25,56 @@ Add to `~/.claude/settings.json` (on Windows, `%USERPROFILE%\.claude\settings.js
 
 Then run `/reload-plugins`.
 
+## Permissions and attribution
+
+The devkit ships no hook. A plugin cannot install permission rules — from a plugin's
+settings only `agent` and `subagentStatusLine` take effect (docs, read 2026-10-12) — so
+without the settings below nothing stops a credential read or a push. Add them to your user
+settings next to the marketplace:
+
+```json
+{
+  "attribution": { "commit": "", "pr": "", "sessionUrl": false },
+  "permissions": {
+    "deny": [
+      "Read(.env)", "Read(.env.*)", "Read(!.env.example)",
+      "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.gnupg/**)",
+      "Edit(package-lock.json)", "Edit(pnpm-lock.yaml)", "Edit(yarn.lock)", "Edit(bun.lock)", "Edit(bun.lockb)",
+      "Edit(.git/**)",
+      "Bash(git push:*)", "Bash(git pull:*)", "Bash(git merge:*)", "Bash(git commit-tree:*)",
+      "Bash(gh pr merge:*)", "Bash(glab mr merge:*)",
+      "PowerShell(git push:*)", "PowerShell(git pull:*)", "PowerShell(git merge:*)", "PowerShell(git commit-tree:*)",
+      "PowerShell(gh pr merge:*)", "PowerShell(glab mr merge:*)"
+    ]
+  }
+}
+```
+
+What these rules cover, and what they do not:
+
+- A `Read` deny applies to the file tools, to Grep and Glob, to an `@file` reference, and to
+  the file commands Claude Code recognises in Bash (`cat`, `head`, `tail`, `sed`, `tee`)
+  and the targets of Bash redirections (docs, read 2026-10-12). It does not apply to a
+  command that does not name the file (`grep -r KEY .`) or to a script that opens the file
+  itself; for those, the sandbox (macOS, Linux, WSL2) and the OS are the boundary.
+- An `Edit(...)` rule covers the `Write` tool too; a `Write(...)` rule is accepted and never
+  consulted (docs, read 2026-10-12).
+- `attribution: false` gives the same result in one value on a CLI newer than 2.1.281 (docs,
+  read 2026-10-12).
+- `git -C . push` is not matched by the deny rules; the devkit's skills never write it.
+- No native rule covers an upload (`curl -d @.env`), an environment dump (`printenv`) or a
+  download piped into a shell (`curl | sh`). The sandbox covers the network on macOS and
+  Linux; on native Windows nothing does.
+- Whether the `Read` deny covers PowerShell's `Get-Content`, `gc` and `type` is not
+  documented; it is row 6 of the observation below.
+
+**Observation.** Not observed: rows 1–12 of the verification matrix (`Read .env` denied,
+`.env.example` allowed, Grep and `@.env`, Bash `cat`/`head`/redirect, Bash `grep KEY .env`,
+PowerShell `Get-Content`/`gc`/`type`, `Write`/`Edit` of a lockfile, `git push` in Bash and
+PowerShell, `git merge-base` under the merge rule, `git pull --rebase`, `snapshot.mjs take`
+under `Edit(.git/**)`, a commit with the object-form `attribution`) have not been run in a
+session yet. Until they are, every claim above is from the documentation only.
+
 ## Choosing packs
 
 Enable only the packs whose frameworks you actually use: a plain-Vue repo pays nothing for
@@ -37,25 +87,16 @@ advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is
 
 ## Node
 
-The plugins need Node 22 or later, as `node` on the `PATH`. Every hook starts through
-`scripts/run.mjs`, which checks the version first. On an older Node the hook does not load
-and a message names the version found and the fix: `block-secrets` blocks every tool call
-it matches, with the message each time; the other three fail open and print it once per
-session. That holds from Node 14.8, the first that parses `run.mjs`; on an older Node every
-hook, `block-secrets` included, fails open without the message. Without `node` on the
-`PATH` no hook runs at all, and the error the shell reports is not the devkit's.
+Node 22 or newer on `PATH`; the one shipped script, `snapshot.mjs`, needs nothing else.
 
 ## Platforms
 
-The hooks and scripts run on Linux, Windows and macOS, on the Node version above. Windows
-is observed: Windows 10 Pro 10.0.19045 (build 10.0.19045.6466) with Node 22.23.3 and
-Claude Code 2.1.292 on 2026-10-10. There `scripts/validate.mjs` and the test suite pass,
-four tests skipped on Windows; and in a Claude Code session the `Bash` and `PowerShell`
-tools are judged by `block-secrets` and `commit-hygiene` (see
-[Observed in a Windows session](hooks.md#observed-in-a-windows-session) and
-[Known update behaviour](#known-update-behaviour)). Linux is observed: Ubuntu 24.04.5 LTS (kernel 6.8.0)
-with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10; the hooks and the test suite run
-there. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
+The script and the tooling run on Linux, Windows and macOS, on the Node version above.
+Windows is observed: Windows 10 Pro 10.0.19045 (build 10.0.19045.6466) with Node 22.23.3
+and Claude Code 2.1.292 on 2026-10-10, where `scripts/validate.mjs` and the test suite
+pass ([Known update behaviour](#known-update-behaviour)). Linux is observed: Ubuntu 24.04.5
+LTS (kernel 6.8.0) with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10; the test suite
+runs there. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
 every push to `main` and `dev` and on every pull request; it is not observed in a Claude
 Code session.
 

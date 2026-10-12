@@ -10,7 +10,7 @@
     {
       "name": "core",
       "source": "./plugins/core",
-      "description": "Framework-agnostic: a feature lifecycle with automatic review, bug investigation and fixing, branch syncing, browser verification, commit/MR authoring, repo preparation, prompt rewriting, and four deterministic hooks. Install in every repository.",
+      "description": "Framework-agnostic: a feature lifecycle with automatic review, bug investigation and fixing, branch syncing, browser verification, commit/MR authoring and repo preparation. Install in every repository.",
       "category": "development",
       "keywords": [
         "review",

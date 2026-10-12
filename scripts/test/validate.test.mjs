@@ -76,9 +76,6 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
     [LOCAL_AGENT]: agentText({ name: 'local-agent', description: LOCAL_DESCRIPTION, extraField: 'permissionMode: plan' }),
     [LOCAL_SKILL]: ['---', 'name: local', `description: ${LOCAL_DESCRIPTION}`, 'argument-hint: "<target>"', '---', '', 'Local.', ''].join('\n'),
     'plugins/core/scripts/ok.mjs': 'export const ok = true;\n',
-    'plugins/core/hooks/hooks.json': JSON.stringify({
-      hooks: { PostToolUse: [{ hooks: [{ type: 'command', command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/scripts/ok.mjs'] }] }] },
-    }),
     'README.md': README,
     'devkit.config.json': configText({ ceiling: defect === 'budget' ? 100 : 2000 }),
     'CHANGELOG.md': defect === 'changelog' ? CHANGELOG.replace('1.0.0', '0.9.0') : CHANGELOG,
@@ -260,40 +257,6 @@ test('plugin-root fails on a dead path in a reference file', (t) => {
   assert.deepEqual(byName(runChecks(['plugin-root'], root))['plugin-root'].findings, [
     'plugins/core/skills/demo/references/guide.md -> ${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs does not resolve inside plugins/core',
   ]);
-});
-
-describe('the scripts check reads every listed pack\'s hooks.json, every arg inside its own pack', () => {
-  const VUE = {
-    '.claude-plugin/marketplace.json': JSON.stringify({
-      plugins: [{ name: 'core', source: './plugins/core' }, { name: 'vue', source: './plugins/vue' }],
-    }),
-    'plugins/vue/.claude-plugin/plugin.json': JSON.stringify({ name: 'vue', version: '1.0.0' }),
-    'plugins/vue/scripts/own.mjs': 'export const own = true;\n',
-  };
-  const hooks = (...args) => JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: 'node', args }] }] } });
-  const scripts = (t, override) => byName(runChecks(['scripts'], fixture(t, { override: { ...VUE, ...override } }))).scripts.findings;
-
-  test('an arg naming a file in its own pack passes', (t) => {
-    assert.deepEqual(scripts(t, { 'plugins/vue/hooks/hooks.json': hooks('${CLAUDE_PLUGIN_ROOT}/scripts/own.mjs') }), []);
-  });
-
-  test('a missing script in a pack other than core is a finding', (t) => {
-    assert.deepEqual(scripts(t, { 'plugins/vue/hooks/hooks.json': hooks('${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs') }), [
-      'plugins/vue/hooks/hooks.json -> ${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs is not a file inside plugins/vue',
-    ]);
-  });
-
-  test('an arg leaving its pack through .. is a finding, even when the target exists', (t) => {
-    assert.deepEqual(scripts(t, { 'plugins/vue/hooks/hooks.json': hooks('${CLAUDE_PLUGIN_ROOT}/../core/scripts/ok.mjs') }), [
-      'plugins/vue/hooks/hooks.json -> ${CLAUDE_PLUGIN_ROOT}/../core/scripts/ok.mjs is not a file inside plugins/vue',
-    ]);
-  });
-});
-
-// The scripts check is the one reading of the core hooks.json; a renamed file is a dead hook.
-test('the core hooks.json exists and every arg names a file inside its pack', () => {
-  assert.ok(fs.existsSync(path.join(REPO_ROOT, 'plugins', 'core', 'hooks', 'hooks.json')), 'no hooks.json to check');
-  assert.deepEqual(byName(runChecks(['scripts'], REPO_ROOT)).scripts.findings, []);
 });
 
 // Partway through adding a pack, its directory exists before its marketplace entry does.

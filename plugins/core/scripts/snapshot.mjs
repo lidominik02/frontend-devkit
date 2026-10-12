@@ -18,7 +18,37 @@ import { spawnSync } from 'node:child_process';
 import { closeSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, rmSync, writeSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { isCredentialPath } from './lib/credential-paths.mjs';
+
+// Credential material: kept out of every tree and diff. A Windows path arrives with
+// backslashes and a case-insensitive filesystem opens `.env` for `.ENV`, so paths are
+// compared lowercased with forward slashes. A template (`.env.example`) is not a secret.
+const SECRET_DIRS = ['secrets', '.ssh', '.gnupg'];
+const KEY_EXTENSIONS = ['pem', 'p12', 'pfx', 'keystore', 'key'];
+const KEY_FILES = ['id_rsa', 'id_ed25519', 'id_ecdsa'];
+const IN_SECRET_DIR = new RegExp(`(^|/)(${SECRET_DIRS.map((d) => d.replace('.', '\\.')).join('|')})/`);
+const KEY_EXTENSION = new RegExp(`\\.(${KEY_EXTENSIONS.join('|')})$`);
+const KEY_FILE = new RegExp(`(^|/)(${KEY_FILES.join('|')})(\\.pub)?$`);
+const TEMPLATE = /\.(example|sample|template|dist)$/;
+
+/** @param {string} file */
+const normalizePath = (file) => file.replace(/\\/g, '/').toLowerCase();
+
+/** @param {string} name a lowercased path segment */
+const isDotenvName = (name) => name === '.env' || name.startsWith('.env.');
+
+/** @param {string} file */
+function isCredentialPath(file) {
+  const p = normalizePath(file);
+  if (TEMPLATE.test(p)) return false;
+  const parts = p.split('/');
+  const base = parts.at(-1) ?? '';
+  if (isDotenvName(base)) return true;
+  // A file under a dotenv-named directory (`.env.d/secret`).
+  if (parts.slice(0, -1).some((dir) => isDotenvName(dir) && !TEMPLATE.test(dir))) return true;
+  if (IN_SECRET_DIR.test(p) || /(^|\/)\.aws\/credentials$/.test(p)) return true;
+  if (KEY_EXTENSION.test(p) || KEY_FILE.test(p)) return true;
+  return /serviceaccount[a-z0-9_.-]*\.json$/.test(base) || base === 'credentials.json';
+}
 
 const USAGE = 'usage: snapshot.mjs take | snapshot.mjs diff <base> [--out <file>]';
 

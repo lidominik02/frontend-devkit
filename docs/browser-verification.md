@@ -22,7 +22,7 @@ opens a browser; that hold is its first instruction. Why it is model-invocable a
 
 It grants itself the tools that look at a page — snapshots, screenshots, console, network,
 navigation — and withholds `evaluate_script`, the upload tools and every interaction tool,
-so those still prompt. The reasoning is in [Hooks](hooks.md#what-no-hook-covers) and
+so those still prompt. No deny rule covers an MCP upload tool; the reasoning is in
 [ADR 0006](adr/0006-guardrails-enforced-where-stated.md).
 
 ## Installing a browser MCP server

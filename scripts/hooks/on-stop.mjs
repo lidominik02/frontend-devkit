@@ -4,7 +4,7 @@
 // This repo has no package.json gates for a consumer-side check to run, so this
 // runs the checks CI enforces before the turn ends, not after a push.
 //
-// Node, not bash, for the reason hooks.json states: bash exits 2 on a syntax
+// Node, not bash: bash exits 2 on a syntax
 // error and 2 is the block signal, so a broken shell hook blocks every tool call
 // including the edit that would repair it. Node exits 1 on a SyntaxError, which
 // is non-blocking, so a broken hook here fails open.

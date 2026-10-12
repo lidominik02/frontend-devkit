@@ -51,11 +51,9 @@ Never grant a command a component deliberately holds behind approval;
 built on. Whether a grant can override a project `permissions.deny` rule is
 undocumented, so do not build on the answer either way. Absence from `allowed-tools`
 is a prompt-level guarantee, though — it stops nothing once the user approves a
-`git commit` by hand. `commit-hygiene.mjs` is the deterministic layer underneath it:
-whoever runs the command, an attribution trailer or a planning-artifact reference in
-the message is denied regardless of which turn approved the call, and a `git push`, a
-`git merge` other than `git merge --abort`, and a `git pull` that merges are denied
-outright: the user pushes and merges.
+`git commit` by hand. The user's own deny rules and attribution setting are the layer
+underneath ([Installation](../installation.md#permissions-and-attribution)): the user pushes
+and merges.
 
 **Use `disallowed-tools` where a "must NOT" is absolute.** `allowed-tools` cannot enforce
 anything — it pre-approves, and every unlisted tool stays callable behind a prompt. A
@@ -74,7 +72,7 @@ is scoped to the invocation. **Name each tool.** A wildcard in the tool segment,
 `verifying-ui` grants itself to look at a page, which leaves the skill with nothing to look
 with; a tool named in both lists is withdrawn, so `disallowed-tools` wins over
 `allowed-tools`. The components: `investigating-bugs` drops the write tools, `verifying-ui` drops the
-page-evaluate and file-upload tools that `block-secrets` cannot see, and `testing-changes`
+page-evaluate and file-upload tools that no deny rule covers, and `testing-changes`
 drops the design tool's write tools. Keep the prose rule
 as well as the field, and say which of the two is doing the work — claiming enforcement
 that is not happening is worse than an honest advisory rule. Only for prohibitions that

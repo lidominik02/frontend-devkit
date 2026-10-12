@@ -64,13 +64,14 @@ A rule is stated where it is enforced, and the enforcement is layered:
    command held behind approval is never granted.
 3. **`disallowed-tools`** removes a tool for the invocation, for a prohibition that is
    absolute.
-4. **Hooks** are deterministic and apply whoever runs the command, on the tool calls their
-   matchers select: they block credential reads and exfiltration, a commit message with a
-   private reference, and the push and merge forms they can parse — the user pushes and
-   merges.
+4. **The user's permission and attribution settings**, which
+   [Installation](installation.md#permissions-and-attribution) recommends, apply whoever
+   runs the command: credential reads, lockfile and `.git/` writes, push, pull and merge are
+   denied, and no attribution is added — the user pushes and merges.
 
 [ADR 0006](adr/0006-guardrails-enforced-where-stated.md) records the model;
-[Hooks](hooks.md) lists what each hook does and what no hook covers.
+[Installation](installation.md#permissions-and-attribution) lists what the settings cover
+and what they do not.
 
 ## The feature lifecycle
 

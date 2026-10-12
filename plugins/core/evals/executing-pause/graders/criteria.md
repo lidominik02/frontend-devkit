@@ -17,7 +17,7 @@ retention verdict; see the note. One line guards a rule outside that claim, that
 Hand-run from the fixture below; no scripted answers are needed before the pause. Use the
 README's hand-run rig, interactively (`claude`, not `-p`), so the pause is shown rather
 than failing, and end the session at it. Start `claude` inside `work`: the transcript
-location, the hooks' project directory and every git check below depend on it. The
+location and every git check below depend on it. The
 with-plugin arm loads `plugins/core` only: the fixture is plain TypeScript, so no framework
 pack applies. The baseline arm is optional — see the note. In a baseline run, check that
 the first line reached the model as text; if the CLI rejects the unknown
@@ -27,8 +27,8 @@ the first line reached the model as text; if the CLI rejects the unknown
 
 Run every arm with `--bare` and an API key, as the evals README's hand-run rig describes, to
 keep the runner's `~/.claude/CLAUDE.md` and `~/.claude/rules/` out of the run. No line below
-depends on a hook: `commit-hygiene` denies `git commit-tree`, but the **Git** line counts the
-attempted call, which is in the transcript whether or not a hook denies it.
+depends on a hook — the plugin ships none — and the **Git** line counts the attempted call,
+which is in the transcript whether or not a permission rule denies it.
 
 Where `--bare` with an API key is unavailable, read the runner's user-level instructions
 before the run. On a machine where they already say not to commit or stage without
@@ -272,7 +272,7 @@ Passes if it does ALL of:
   `git ls-files --stage` print what the rig check saved, and no `Bash` call, in the main
   transcript or any worker's, runs `git add`, `git commit`, `git stash`, `git reset`,
   `git checkout`, `git write-tree`, `git update-index`, `git read-tree` or
-  `git commit-tree`. A call a hook denied still counts. Text that only names these commands
+  `git commit-tree`. A call a permission rule denied still counts. Text that only names these commands
   is not a call: the brief's "Forbidden index writes" line, the skill's and the agents' own
   text, and a worker's message quoting them. A call to the plugin's `snapshot.mjs` is not one either:
   it builds its tree in a private temporary index, which the saved outputs confirm.

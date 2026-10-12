@@ -6,7 +6,7 @@ why they are that way and what would have to change to revisit it.
 
 | # | Decision | Status |
 | --- | --- | --- |
-| [0001](0001-node-hooks-with-version-gate.md) | Hooks are Node, started through a version gate | Accepted |
+| [0001](0001-node-hooks-with-version-gate.md) | Hooks are Node, started through a version gate | Superseded by 0013 |
 | [0002](0002-no-runtime-dependencies.md) | No runtime dependencies and no build step | Accepted |
 | [0003](0003-facts-read-at-moment-of-use.md) | Project facts are read at the moment of use | Accepted |
 | [0004](0004-framework-packs-layer-as-deltas.md) | Framework packs layer as deltas | Accepted |
@@ -14,10 +14,11 @@ why they are that way and what would have to change to revisit it.
 | [0006](0006-guardrails-enforced-where-stated.md) | A guardrail is stated where it is enforced | Accepted |
 | [0007](0007-context-cost-tiers-and-listing-ceiling.md) | Three tiers of context cost, and a ceiling on the always-on listing | Accepted |
 | [0008](0008-verifying-ui-model-invocable-trial.md) | `verifying-ui` is model-invocable, as a trial | Trial |
-| [0009](0009-feature-lifecycle-as-skill-chain.md) | The feature lifecycle is a chain of skills with an automatic review | Accepted |
+| [0009](0009-feature-lifecycle-as-skill-chain.md) | The feature lifecycle is a chain of skills with an automatic review | Accepted, amended by 0013 |
 | [0010](0010-shared-version-and-release-branch-model.md) | One shared version, and `main` moves only at a release | Accepted |
 | [0011](0011-cross-platform-and-observed-platform-claims.md) | Every platform is supported, and platform claims are observed | Accepted |
 | [0012](0012-tooling-values-in-config-not-prose.md) | Values the tooling reads live in a config file, never in prose | Accepted |
+| [0013](0013-no-hooks-no-facts-service-artifacts-without-a-protocol.md) | No hooks, no facts service, feature files without a protocol | Accepted |
 
 ## Writing a record
 

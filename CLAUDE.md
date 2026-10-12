@@ -29,10 +29,10 @@ repo that enables the pack. Bodies load on trigger. References load only when th
 points at them. Guardrails and ordering belong in the body; lookup material belongs in
 a reference. (ADR 0007)
 
-**Hooks are Node, never bash.** Bash exits `2` on a syntax error and `2` is the hook
-protocol's block signal, so a broken shell hook blocks every tool call — including the
-edit that would repair it. Node exits `1` on a `SyntaxError`, which is non-blocking.
-Fail closed on a policy decision; fail open on a broken interpreter. (ADR 0001)
+**The devkit ships no hook and runs no project code automatically.** The boundary is the
+consumer's permission and attribution settings, the sandbox and the OS; the devkit
+recommends and documents them. A new hook only when no native setting can express it, it
+prevents a reported incident, and the report is in the CHANGELOG. (ADR 0013)
 
 **Components live in `skills/`, never `commands/`.** A skill already carries the slash
 invocation, and the checks that read component frontmatter select on `SKILL.md` or

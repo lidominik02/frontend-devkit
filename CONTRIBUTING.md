@@ -24,7 +24,7 @@ node scripts/validate.mjs                       # the static checks CI runs
 node --test "scripts/test/*.test.mjs"           # the tests on the guarantees
 node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
 claude plugin validate . --strict               # marketplace + entries
-claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
+claude plugin validate ./plugins/core --strict  # manifest fields
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```

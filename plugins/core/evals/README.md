@@ -171,8 +171,7 @@ plugin — it is not a no-plugin arm, so the installed copies are still disabled
 `claude --help` on 2.1.283 names `ANTHROPIC_API_KEY`, or an `apiKeyHelper` passed with
 `--settings`, as the only Anthropic auth under `--bare`; the second route is unobserved.
 "An API key", here and in each case's criteria, means either. A hand-run therefore isolates
-user-level instructions only by running every arm with `--bare` and an API key, which also
-turns the `core` hooks off in every arm: score a line that depends on a hook N/A. Where
+user-level instructions only by running every arm with `--bare` and an API key. Where
 that is unavailable, a case that user-level instructions could contaminate names the lines
 whose content a runner's instructions may already state, and on such a machine those lines
 are non-discriminating rather than evidence for retention. The rig check records which
@@ -189,8 +188,7 @@ choice the criteria can score rather than something the environment decided.
 
 `core` has one wrinkle a framework pack does not. Its skills trigger on description, so
 a baseline arm has to disable the whole plugin rather than merely avoid naming the
-skill. No case depends on a hook — the hooks still shipped at this commit are irrelevant to
-every case — so an honest verification section is the skill's own reporting in either
+skill. The plugin ships no hook, so an honest verification section is the skill's own reporting in either
 arm; note which arm you were in before crediting it to the skill.
 
 ## Writing a case

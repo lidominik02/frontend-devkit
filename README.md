@@ -23,15 +23,15 @@ at the moment of use from files the project already maintains, so nothing goes s
   works.
 - **Framework knowledge** for Vue 3 on Vite and for Nuxt, checked against the installed
   versions.
-- **Guard hooks** that block credential reads and exfiltration through file tools and
-  shell commands, commit messages naming a private artifact, and the git push and merge
-  forms they can parse. What they do not cover is listed in [Hooks](docs/hooks.md).
+- **Recommended settings** — permission deny rules and an empty attribution that keep
+  credentials unread and pushes yours; the devkit ships no hook
+  ([Installation](docs/installation.md#permissions-and-attribution)).
 
 ## Packs
 
 | Pack | For | Depends on |
 | --- | --- | --- |
-| [`core`](plugins/core/README.md) | Every repository: lifecycle, bugs, review, hooks | — |
+| [`core`](plugins/core/README.md) | Every repository: lifecycle, bugs, review | — |
 | [`vue`](plugins/vue/README.md) | Vue 3 single-page apps on Vite | `core` |
 | [`nuxt`](plugins/nuxt/README.md) | Server-rendered Nuxt apps; a delta on `vue` | `core`, `vue` |
 
@@ -81,8 +81,8 @@ Every skill, and what it answers to, is listed in the [`core` README](plugins/co
 - Lifecycle artifacts under `temp/` — never `git add`ed, and you are told once when `temp/`
   is not ignored.
 - Code, only after you approved a plan, a design or a fix.
-- A commit, only with a message you accepted. You push and merge; a hook denies Claude the
-  push and merge forms it can parse.
+- A commit, only with a message you accepted. You push and merge; your permission settings
+  deny Claude the push (see [Installation](docs/installation.md#permissions-and-attribution)).
 - Configuration, only through `preparing-a-repo`, and only the fixes you approved.
 
 The browser for `verifying-ui` is an MCP server you install; the devkit detects what is
@@ -96,7 +96,6 @@ there and says plainly when there is nothing to drive.
 | [The feature lifecycle](docs/feature-lifecycle.md) | From an idea to a commit |
 | [Browser verification](docs/browser-verification.md) | UI checks, QA lists, browser MCP setup |
 | [Scripts](docs/scripts.md) | What the devkit detects, and how gates run |
-| [Hooks](docs/hooks.md) | What each hook blocks, and what no hook covers |
 | [Architecture](docs/architecture.md) | How the parts fit, and the principles behind them |
 | [Decision records](docs/adr/README.md) | Why it is built this way |
 

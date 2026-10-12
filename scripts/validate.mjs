@@ -295,15 +295,14 @@ export function checkReferences(root = ROOT) {
   return { name: 'references', findings: bad, ok: bad.length === 0 };
 }
 
-// --- every script parses, every hook target exists ---------------------------
+// --- every script parses -------------------------------------------------------
 
 // The packs and the repository's own tooling; .claude/ holds no script.
 export function scriptRoots(root = ROOT) {
   return [r(root, 'plugins'), r(root, 'scripts')];
 }
 
-// A script with a syntax error and a script that deliberately blocks are
-// indistinguishable by exit code, so this runs before anything behavioural.
+// A script with a syntax error fails before any test of its behaviour is read.
 export function checkScripts(root = ROOT) {
   const bad = [];
   const mjs = [];
@@ -329,31 +328,7 @@ export function checkScripts(root = ROOT) {
     }
   }
 
-  // Every arg a pack's hooks.json names must be a file inside that pack: a renamed file is a
-  // dead hook, and ${CLAUDE_PLUGIN_ROOT} is the root of the pack that holds the hooks.json.
-  const { list, findings: unread } = loadPacks(root);
-  bad.push(...unread);
-  for (const pack of list) {
-    const packDir = r(root, pack.dir);
-    const cfgPath = path.join(packDir, 'hooks', 'hooks.json');
-    if (!fs.existsSync(cfgPath)) continue;
-    let cfg;
-    try { cfg = JSON.parse(read(cfgPath)); }
-    catch { bad.push(`${rel(root, cfgPath)} is not valid JSON`); continue; }
-    for (const entries of Object.values(cfg?.hooks ?? {})) {
-      for (const entry of Array.isArray(entries) ? entries : []) {
-        for (const h of entry?.hooks ?? []) {
-          for (const a of h?.args ?? []) {
-            const resolved = path.resolve(packDir, String(a).replaceAll('${CLAUDE_PLUGIN_ROOT}', packDir));
-            const inside = resolved.startsWith(packDir + path.sep);
-            if (!inside || !fs.statSync(resolved, { throwIfNoEntry: false })?.isFile()) {
-              bad.push(`${rel(root, cfgPath)} -> ${a} is not a file inside ${pack.dir}`);
-            }
-          }
-        }
-      }
-    }
-  }
+  bad.push(...loadPacks(root).findings);
   return { name: 'scripts', findings: bad, ok: bad.length === 0 };
 }
 
@@ -469,7 +444,6 @@ export function checkSkillDirs(root = ROOT) {
 // The variable is the root of the pack that holds the component, so a path into another
 // pack, or a renamed script, resolves to nothing at runtime. Every .md under skills/ and
 // agents/ is scanned, references included: a reference is followed at runtime as the body is.
-// hooks.json paths are the scripts check's.
 const PLUGIN_ROOT_REF = /\$\{CLAUDE_PLUGIN_ROOT\}\/([A-Za-z0-9._/-]*[A-Za-z0-9_-])/g;
 
 /** @returns {string[]} */
