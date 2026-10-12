@@ -63,10 +63,10 @@ transcript read to the last line written, in chat as much as in files:
    evidence for it, the absolute path of `references/transcripts.md`, and per-session
    extracts made under its rules. Raw extracts go only here.
 
-4. **Run the analysts.** Dispatch the five analysts in `references/analysts.md` in
+4. **Run the analysts.** From the five in `references/analysts.md`, dispatch those whose
+   dimension the symptom touches — one is enough for a one-dimension symptom — in
    parallel, in one message, each with the case file path, its dimension and the
-   anonymity rule above. Four is allowed when the symptom makes one dimension
-   empty; say which was dropped and why.
+   anonymity rule above; name each dimension left out and why.
 
 5. **Synthesise and write the report** to `temp/diagnoses/<slug>/REPORT.md` in the
    shape `references/analysts.md` gives. Before writing, check every finding against

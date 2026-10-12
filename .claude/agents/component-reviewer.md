@@ -18,16 +18,15 @@ markdown that is this marketplace's actual product. A skill is not prose: it is
 loaded into a context window under a cost, followed under pressure, and wrong when
 it is confidently inapplicable.
 
-Run `node scripts/validate.mjs` first and report nothing it already catches.
-Frontmatter fields, the description cap, dead references, literal repo names, the
-always-on budget ceiling are mechanically enforced. Your job
-starts where that stops — including a description that grows while the total stays
-under the ceiling.
+Run `node scripts/validate.mjs` first and report nothing it already catches: frontmatter
+fields, the description budget, dead references, script placement, versions, the
+changelog and the pack structure. Your job starts where that stops — including a
+description that grows while the total stays under the ceiling.
 
 ## What you check
 
-**1. Repo-agnosticism in spirit.** The grep catches literal names. It does not
-catch a rule shaped around one repository — a directory layout only one project
+**1. Repo-agnosticism in spirit.** No check reads for a repository's name, and none
+catches a rule shaped around one repository — a directory layout only one project
 uses, a gate name from one `package.json`, an assumption that a store is Pinia
 because one app's is. Flag any guidance that would be wrong in a greenfield project
 of the same stack.
@@ -44,12 +43,13 @@ only when the body points at it. Content in a body that is consulted rarely is p
 for constantly. Flag a body carrying material that reads like lookup — tables,
 version matrices, exhaustive lists, worked examples.
 
-**4. Tool grants match behaviour.** Read `allowed-tools` and `disallowed-tools`
-against what the component actually does. A read-only skill holding a write tool is
-a guardrail that is not there; a skill whose instructions require a tool its grants
-exclude will fail at runtime in a way no check catches. If a component's whole
-premise is that it does not act — it diagnoses, or rewrites text — the grant list is
-the enforcement, and prose promising restraint without it is not a guarantee.
+**4. Tool grants match behaviour.** A skill's `allowed-tools` pre-approves and excludes
+nothing: a tool it lacks still runs behind a prompt, so a step that needs one is a
+prompt, not a failure. What removes a tool is a skill's `disallowed-tools` while it is
+active and an agent's `tools` list for its whole run. Flag a grant for a command the
+body holds behind approval; a read-only agent whose `tools` holds a write tool; a body
+step needing a tool its `disallowed-tools` or `tools` takes away; and a must-NOT enforced
+by prose alone where one of those two fields could carry it.
 
 **5. Guardrails stated where enforced.** A rule that lives only in a reference is
 not in context when the body is followed. If a component must not do something, the

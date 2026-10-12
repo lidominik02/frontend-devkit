@@ -2,7 +2,7 @@
 // its own mkdtemp directory, never in the repository or the user's git index.
 
 import assert from 'node:assert/strict';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,28 +20,6 @@ export function runScript(file, { args = [], input = '', env = {}, cwd = REPO_RO
   });
   if (res.error) throw res.error;
   return { code: res.status, stdout: res.stdout, stderr: res.stderr };
-}
-
-// runScript without blocking the event loop, so independent runs can overlap.
-export function runScriptAsync(file, { args = [], input = '', env = {}, cwd = REPO_ROOT } = {}) {
-  return spawnAsync(process.execPath, [file, ...args], { cwd, env: { ...gitEnv(), ...env }, input });
-}
-
-function spawnAsync(command, args, { input = '', ...options }) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, options);
-    let stdout = '';
-    let stderr = '';
-    child.stdout.setEncoding('utf8').on('data', (d) => { stdout += d; });
-    child.stderr.setEncoding('utf8').on('data', (d) => { stderr += d; });
-    child.on('error', reject);
-    child.on('close', (code) => resolve({ code, stdout, stderr }));
-    child.stdin.end(input);
-  });
-}
-
-export function hookEvent(toolName, toolInput, extra = {}) {
-  return JSON.stringify({ tool_name: toolName, tool_input: toolInput, ...extra });
 }
 
 // On Windows a process stopped by taskkill releases its handle on its cwd a moment
@@ -87,17 +65,4 @@ export function gitRepo(t, { commit = false } = {}) {
   git(dir, ['config', 'commit.gpgsign', 'false']);
   if (commit) git(dir, ['commit', '-q', '--allow-empty', '--no-verify', '-m', 'init']);
   return dir;
-}
-
-// os.tmpdir() reads TMPDIR on POSIX and TMP/TEMP on Windows, so all three move together.
-// A spawned npm writes a debug log to ~/.npm and a compile cache to the tmpdir.
-export function isolatedEnv(dir) {
-  return {
-    TMPDIR: dir,
-    TMP: dir,
-    TEMP: dir,
-    npm_config_cache: path.join(dir, 'npm-cache'),
-    npm_config_logs_dir: path.join(dir, 'npm-logs'),
-    NODE_DISABLE_COMPILE_CACHE: '1',
-  };
 }

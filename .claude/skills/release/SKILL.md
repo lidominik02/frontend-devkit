@@ -36,10 +36,9 @@ git describe --tags --match 'v*' --abbrev=0
 - **No `v*` tag:** nothing is released yet. List `git log --oneline` and release the
   version the manifests already carry, unbumped — skip step 2.
 
-If `git status` shows uncommitted changes to `CHANGELOG.md` or a
-`plugins/*/.claude-plugin/plugin.json`, name those files and stop: the release commit
-would carry them. Uncommitted changes anywhere else: name them; they are not part of this
-release, which contains only the commits listed, and they do not stop it.
+If `git status --porcelain` shows anything, name it and stop: step 3 validates the working
+tree, which must then be exactly what the release commit holds, so the tree is clean before
+the first form and nothing but the release's own files changes after it.
 
 When the commits change something shipped — the `git diff --quiet` exited 1 — ask in one
 form whether the manual release smoke at the end of this skill ran on this code. If it did

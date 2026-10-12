@@ -44,7 +44,7 @@ skills and undocumented for `agents/`.
 pre-approves commands for the invoking turn only — the grant clears on the next message —
 so it is for removing prompts, never for widening reach. Read each body and grant its
 real command set: `investigating-bugs` shells out to nothing, so it is granted no `Bash`
-command — only `Read Grep Glob` and the `Agent` its batch mode dispatches.
+command — only `Read Grep Glob`.
 Never grant a command a component deliberately holds behind approval;
 `describing-changes` withholds `git commit`, `git push`, `glab mr create` and
 `gh pr create` on purpose, and pre-approving those would delete the guarantee it is

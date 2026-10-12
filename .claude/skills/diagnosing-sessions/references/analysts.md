@@ -1,12 +1,13 @@
 # Analysts, synthesis and the report
 
-Five analysts run in parallel, one dimension each, from the same case file. Each reads
+Up to five analysts run in parallel, one dimension each, from the same case file; only the
+dimensions the symptom touches are dispatched. Each reads
 the case file and the transcripts it lists, writes no file, and returns findings. The
 synthesis merges them into the report.
 
 ## The dispatch
 
-Dispatch each analyst with the Agent tool, all five in one message. Each prompt is the
+Dispatch each analyst with the Agent tool, all dispatched ones in one message. Each prompt is the
 shared preamble below, followed by its dimension block.
 
 ### Shared preamble
@@ -69,8 +70,7 @@ shared preamble below, followed by its dimension block.
    spend on work the other dimensions mark as repeated or discarded. State whether the
    figure is a total or a lower bound.
 
-Four analysts are allowed when the symptom leaves one dimension with nothing to look
-at; the report names the dropped dimension and why.
+The report names each dimension not dispatched and why.
 
 ## Synthesis
 
