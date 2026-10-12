@@ -13,7 +13,7 @@ devkit. This file is only the rules that must hold; `docs/adr/` records why they
 no file paths, helper names or conventions from a specific codebase. Those belong in
 that repo's own `CLAUDE.md`. Every project-specific fact — package manager, gates, base
 branch, git host, commit convention — is read at the moment of use by
-`plugins/core/scripts/project-facts.mjs` from a file the project already maintains.
+the skill, with the rules in `project.md`, from a file the project already maintains.
 Nothing is cached, so nothing goes stale. (ADR 0003)
 
 **A specialised pack is a delta on its base, not a copy of it.** It carries only what

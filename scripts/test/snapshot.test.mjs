@@ -91,3 +91,25 @@ test('a failing required clean filter exits 1 with nothing on stdout', (t) => {
   assert.match(res.stderr, /^snapshot: .*data\.bin/s);
   assert.deepEqual(indexBytes(repo), before);
 });
+
+// A path the caller already holds — an earlier review's diff, a file of the user's — is never
+// overwritten, so a reused --out cannot destroy the record it names.
+test('diff refuses an --out that already exists and leaves it unchanged', (t) => {
+  const repo = workingRepo(t);
+  const out = path.join(tempDir(t), 'existing.diff');
+  fs.writeFileSync(out, 'keep me\n');
+  const res = snapshot(repo, ['diff', 'HEAD', '--out', out]);
+  assert.equal(res.code, 1);
+  assert.equal(res.stdout, '');
+  assert.match(res.stderr, /--out names an existing file; choose a new path/);
+  assert.equal(fs.readFileSync(out, 'utf8'), 'keep me\n');
+});
+
+test('a relative --out from a subdirectory resolves from the root and is refused when it exists', (t) => {
+  const repo = workingRepo(t);
+  write(repo, { 'temp/reviews/01-review.diff': 'earlier review\n' });
+  const res = runScript(SNAPSHOT, { args: ['diff', 'HEAD', '--out', 'temp/reviews/01-review.diff'], cwd: path.join(repo, 'src'), env: NO_GIT_ENV });
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /--out names an existing file/);
+  assert.equal(fs.readFileSync(path.join(repo, 'temp/reviews/01-review.diff'), 'utf8'), 'earlier review\n');
+});

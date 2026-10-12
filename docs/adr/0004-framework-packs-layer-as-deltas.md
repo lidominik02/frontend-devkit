@@ -28,8 +28,8 @@ enable time.
   the shape from the manifests, so no pair is written down by hand.
 - Every dependency is declared directly: `nuxt` names both `core` and `vue`.
 - One pack refers to another by skill invocation (`/vue:vue-engineering`), never by path.
-- `project-facts.mjs` reports the packs that serve a project as `stack.packs`, ordered
-  general to specific; the later pack wins a conflict.
+- A skill finds the packs that serve a project from its `package.json`, by the rule in
+  `core`'s `project.md`, ordered general to specific; the later pack wins a conflict.
 
 ## Consequences
 

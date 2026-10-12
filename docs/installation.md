@@ -50,19 +50,14 @@ hook, `block-secrets` included, fails open without the message. Without `node` o
 The hooks and scripts run on Linux, Windows and macOS, on the Node version above. Windows
 is observed: Windows 10 Pro 10.0.19045 (build 10.0.19045.6466) with Node 22.23.3 and
 Claude Code 2.1.292 on 2026-10-10. There `scripts/validate.mjs` and the test suite pass,
-four tests skipped on Windows; `run-gates.mjs` reports a missing binary as `not-run` with
-cmd.exe, Windows PowerShell 5.1.19041.6456, PowerShell 7.6.6 and Git Bash as the npm
-script shell, while Yarn Berry and pnpm were not observed; and in a Claude Code session
-the `Bash` and `PowerShell` tools are judged by `block-secrets` and `commit-hygiene` and
-`verify-before-done` blocks on a failing gate (see
-[Observed in a Windows session](hooks.md#observed-in-a-windows-session),
-[Known update behaviour](#known-update-behaviour) and
-[scripts](scripts.md#run-gatesmjs)). Linux is observed: Ubuntu 24.04.5 LTS (kernel 6.8.0)
+four tests skipped on Windows; and in a Claude Code session the `Bash` and `PowerShell`
+tools are judged by `block-secrets` and `commit-hygiene` (see
+[Observed in a Windows session](hooks.md#observed-in-a-windows-session) and
+[Known update behaviour](#known-update-behaviour)). Linux is observed: Ubuntu 24.04.5 LTS (kernel 6.8.0)
 with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10; the hooks and the test suite run
 there. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
 every push to `main` and `dev` and on every pull request; it is not observed in a Claude
-Code session. [scripts](scripts.md) describes
-the process-group handling `run-gates.mjs` applies on macOS and Linux.
+Code session.
 
 ## Updating
 

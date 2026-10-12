@@ -12,7 +12,7 @@ failure mode is that it comes back as "looks right" instead.
 `/core:verifying-ui` closes that loop against a browser MCP server. Serve the app, take the
 URL the dev server actually printed, snapshot the accessibility tree before the screenshot,
 read the console and the network, drive the page to the state under test, and re-observe
-after the fix. It is the same move `run-gates.mjs` makes for the type-checker, one layer
+after the fix. It is the same move the gate rule makes for the type-checker, one layer
 up: replace a claim with an observation, and report the gap when there is no observation
 to be had.
 
@@ -33,8 +33,7 @@ is the point. `preparing-a-repo` offers it as a proposal rather than assuming it
 not bundled: [ADR 0005](adr/0005-browser-mcp-not-bundled.md).
 
 A server installed at user scope serves every project without appearing in any file in the
-repository. So `project-facts.mjs` reports what a repository declares, never whether a
-browser is there: the only authority on that is the caller's own tool list, and a skill
+repository. So no file in the repository says whether a browser is there: the only authority on that is the caller's own tool list, and a skill
 that inferred "no browser configured" from an absent `.mcp.json` would be confidently
 wrong in the common case.
 

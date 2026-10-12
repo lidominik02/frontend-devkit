@@ -1,163 +1,37 @@
 # Scripts
 
-The `core` pack's shared scripts, in `plugins/core/scripts/`. Skills and hooks call them;
-you can run them by hand to see what the devkit sees. Every fact is read at the moment of
-use from a file the project already maintains, and nothing is cached:
-[ADR 0003](adr/0003-facts-read-at-moment-of-use.md).
-
-## `project-facts.mjs`
-
-**`project-facts.mjs`** describes a project from its own files: package manager (the
-Corepack field, else the lockfile), gates (`package.json` scripts, with aliases resolved —
-`typecheck`, `type-check` and `test:unit` all occur in the wild), base branch
-(`origin/HEAD`), git host (the remote plus `.gitlab/` markers, so a self-hosted GitLab is
-recognised), commit convention (points at the commitlint config rather than paraphrasing
-it) and merge-request templates.
-
-Gates are reported as `declared`. A script name existing says nothing about whether its
-binary resolves, so `available` stays `null` until something runs it.
-
-`projectRoot` says whether the directory is a project root: it has a `package.json` or a
-`.claude/project.json`, or it is the git top level. Anywhere else — below the top level
-with neither file, or outside any git work tree — every gate, dev server and Storybook
-script it did not find carries that reason instead of "no script", so a wrong working
-directory never reads as a project without gates. The directory is reported, never
-resolved to the top level, which would describe a wrong directory inside another
-repository as that repository.
-
-`devServer` and `browserTools` draw the same line. `devServer.declaredPort` is the port
-the script *names*, and Vite, Nuxt and Next all walk to the next free one when it is
-taken — so the URL to open is the one the server printed, and a caller that trusts the
-declared number verifies a page nothing is serving. `browserTools` lists the browser MCP
-servers this repository declares in `.mcp.json` and whether its settings approve them;
-`available` stays `null` there too, because a server installed at user scope serves every
-project without appearing in any file here. Only the caller's own tool list settles that
-one.
-
-`stack` names the stack, not the pack: `vue-spa`, `nuxt`, `react-spa`, `next`, or `null`.
-A meta-framework is checked before the view library it builds on, so a Nuxt app never
-reports as plain Vue. `stack.packs` maps that to the packs which serve it — `nuxt`
-resolves to `['vue', 'nuxt']`, general first — so no component has to restate the
-mapping in prose and drift from it.
-
-## `run-gates.mjs`
-
-**`run-gates.mjs`** runs those gates and separates three outcomes:
-
-| Status | Means |
-| --- | --- |
-| `pass` | ran, clean |
-| `fail` | ran, found a defect **in the code** |
-| `not-run` + `blocking: true` | could not run — a defect **in the setup** |
-
-In a directory that is not a project root, every gate is `not-run` with the `projectRoot`
-reason and `blocking: false`, `passed` is false and the exit code is 1: nothing there can
-pass, and the Stop hook, which acts only on a `fail` or a blocking `not-run`, stays silent
-in a session started outside a project.
-
-Classification reads the exit code and the captured output, not `proc.error`: under
-`shell: true` a missing binary returns `{ status: 127, error: null }`, because the shell
-itself started fine. On every OS exit 127 marks a missing binary; output such as
-`command not found` or `No such file or directory` under any other exit code is a `fail`.
-On Windows, where cmd.exe exits 1, a stderr line that starts with `'<x>' is not recognized
-as an internal or external command` marks it too (observed on Windows 10 Pro 10.0.19045,
-Node 22.23.3, npm); the same text in the middle of a line, or on stdout, is a `fail`.
-PowerShell's wording, `The term '<x>' is not recognized` after an optional `<x> :` prefix,
-is matched on stderr as well. With Windows PowerShell 5.1.19041.6456 or PowerShell 7.6.6 as
-npm's script shell, a missing binary was classified `not-run` as not installed (observed on
-Windows 10 Pro 10.0.19045.6466, Claude Code 2.1.292, Node 22.23.3, on 2026-10-10). Neither
-the exit code Yarn Berry gives on Windows nor pnpm on Windows has been observed yet.
-Probing `node_modules/.bin` is not a workaround — in a pnpm workspace a binary such as
-`vue-tsc` lives in the workspace package and never at the root, so a root probe reports
-every workspace binary missing.
-
-Under `--json` every gate that ran and did not pass — a `fail`, or a `not-run` that timed
-out, whose command is not installed or whose script does not exist — carries an `output`
-field: the end of its stdout and stderr, merged in the order they arrived, cut to the last
-60 lines and then to at most 4000 characters. A `pass`, and a `not-run` that never started
-— its shell could not be spawned included — carry none. Without `--json` the whole output
-of each gate is printed, in the same arrival order.
-
-Stages: `fast` (typecheck, lint) · `full` (+ test) · `release` (+ build). Stages are picked
-by risk and by what the user has released: `build` is the slowest gate and guards the
-release, so it runs in the `release` stage only, when that stage is asked for. Every gate
-has a timeout, and a script that starts a watcher is refused rather than left to hang.
-A gate whose script rewrites files — `--fix`, `--write` or `--apply` (not `--fix-dry-run`),
-in the script itself or one level down in a script it runs through `run-s`, `run-p`,
-`npm-run-all`, `npm run`, `pnpm [run]` or `yarn [run]` — is never executed, `--gate format`
-included: it is `not-run` with `blocking: false`, and its reason asks for the package.json
-script to check only, with the fix moved into a separate script such as `lint:fix`.
-
-Exit codes: `0` every gate the project has that may run ran and passed (a refused fixer is
-`not-run` and does not fail the run) · `1` a gate failed, a gate the project declares
-could not run, or the directory is not a project root · `2` a usage error · `128 + n`
-stopped by signal `n` (SIGINT, SIGTERM or SIGHUP). A usage error runs no gate: an unknown
-`--stage`, a `--gate` that is not one of the canonical names `typecheck`, `lint`, `test`,
-`build`, `format` (an alias such as `test:unit` is refused), a flag with no value or
-another flag in its place (`--stage --json`), a flag given twice, an unknown flag (`--stag
-full`, `--jsn`) or an argument that belongs to no flag, or a bad `--timeout` or
-`--budget`. stderr says `run-gates: <message>`, and under `--json` stdout is `{"passed":
-false, "usageError": "<message>"}` with no `results`. The Stop hook hands that message
-back as a non-blocking notice and does not remember the tree as green.
-
 ## `snapshot.mjs`
 
-**`snapshot.mjs`** captures the working state as a git tree without committing or staging
-anything. `take` prints a tree id covering tracked, staged and untracked non-ignored files;
-`diff <base>` writes a header line, `--stat` and a `-U10` diff from `<base>` — a tree id, a
-commit, or any rev such as a merge-base — to that state into a file under the repository
-root's `temp/` (or `--out`, a relative path resolved from the root whatever the current
-directory), and prints its path. The tree is built in a throwaway copy of the index, so the
-index stays byte-identical and no ref or `HEAD` moves; only unreachable, gc-able objects
-are written. The root's `temp/` and every path `block-secrets` treats as credential
-material are left out of both, whether or not `temp/` is gitignored; a second header line
-names each credential path that differs from the base, since the diff cannot show it.
-Submodule working-tree changes are not captured.
+`plugins/core/scripts/snapshot.mjs` is the one script `core` ships. The lifecycle skills use
+it to give a review a base that covers uncommitted and untracked work without committing or
+staging anything. It needs Node 22 and git, nothing else.
 
-## `env-names.mjs`
-
-**`env-names.mjs`** lists the variable names a dotenv-style file defines without their
-values: `node env-names.mjs <file>…`. It prints one name per line in file order without
-repeats, skips comments, blank lines and lines without `=`, and drops a leading `export `.
-A value is not written, nor is a continuation line of a quoted (`"`, `'` or backtick)
-multi-line value, which runs to its closing quote or to the end of the file, nor of an
-unquoted value that opens a PEM block with `-----BEGIN `, which runs to the line holding
-`-----END ` or to the end of the file. Any other unquoted value ends at its line, as
-dotenv reads it (the `LINE` pattern of the dotenv package, 17.4.1), so a following line
-that looks like `NAME=…` is a definition there too, and its left side is printed as a
-name. With
-several files each list has a `<file>:` header; an unreadable file is named on stderr and
-the exit code is 1. A file whose name is not `.env` or `.env.*` (in any letter case) is
-refused unread the same way, since a line of a key file can look like `NAME=`; the rule is
-`isDotenvFile` in `lib/credential-paths.mjs`, the one `block-secrets.mjs` points at the
-helper by. It needs Node alone.
-
-## Per-project override
-
-`.claude/project.json` is honoured when a project has one, purely to correct what detection
-gets wrong. It is never required.
-
-```json
-{
-  "gates": { "test": "pnpm test:ci" },
-  "baseBranch": "develop",
-  "verifyOnStop": false,
-  "stages": { "fast": ["typecheck"] },
-  "timeoutMs": 300000
-}
+```
+node plugins/core/scripts/snapshot.mjs take
+node plugins/core/scripts/snapshot.mjs diff <base> [--out <file>]
 ```
 
-That is the whole set. `gates` and `baseBranch` replace what detection found;
-`verifyOnStop: false` silences the Stop hook; `stages` is merged over the built-in stages
-by name, so the entry above *replaces* `fast` rather than adding to it; `timeoutMs` sets
-the per-gate timeout, though a `--timeout` flag still wins over it, and a `--budget` flag
-caps each gate at what is left of the whole run. A timeout of `0` sets none; the budget
-still applies. A gate that times out is stopped with every process still reachable through
-it; on Windows a process whose parent shell has already exited is not. On macOS and Linux
-each gate runs in a process group of its own, which `run-gates.mjs` stops when it is
-interrupted or terminated; a `SIGKILL` to it, or to the process group it was started in,
-ends it without that cleanup, and the gate's processes run on.
+- **`take`** prints a tree id for the current working state: tracked changes, staged
+  changes and untracked files that are not ignored. The tree is built in a temporary copy of
+  the index, so the user's index stays byte-identical.
+- **`diff <base>`** writes a header line, a `--stat` and a `-U10` diff from `<base>` — a
+  tree id, a commit or any rev — to the current state, and prints the file's path. The
+  header ends in `snapshot tree <id>`, which a later re-review diffs from. A relative
+  `--out` resolves from the repository root; without one the file goes to
+  `temp/snapshots/`. An `--out` that already exists is refused with exit 1, so an earlier
+  review's diff is never overwritten.
 
-`gates.format` accepts only known formatters. The value is a string from a checked-out file
-handed to a subprocess, and the allowlist is what keeps it a convenience rather than an
-execution primitive.
+**What it leaves out.** `temp/`, every credential path (dotenv files, keys, certificates
+and the like) — the header names a credential path that changed, since the diff cannot —
+ignored files, and submodule work trees, which are recorded at the commit they have checked
+out. Staged and unstaged versions of one file are not told apart.
+
+**What it does not promise.** It is a review base, not a backup. The tree is reachable from
+no ref, so `git gc` can prune it once its expiry passes. Recovering committed work is a
+backup ref's job; uncommitted work is the user's to commit. A clean filter that is not
+`required` and fails stores the content unfiltered, and the script still exits 0 (git
+2.43.0); a `required` one that fails (Git LFS sets it) exits 1.
+
+Exit 0 means the tree id or the diff path is on stdout. Exit 1 means nothing is on stdout and
+stderr says why: not a git work tree, a failed required clean filter, a base that names no
+tree, an existing `--out`, or a usage error.

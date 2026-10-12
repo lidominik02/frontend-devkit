@@ -33,16 +33,10 @@ a reference never has to resolve from the agent's side.
 
 **Only inject a command that cannot fail.** A skill body can run a command and inject
 its output with `` !`command` ``, which turns "the model is told to run the script" into
-"the output is already here" — but **a non-zero exit aborts the whole invocation.** So
-`project-facts.mjs` is injectable and is asserted to exit 0 against an empty directory, a
-malformed `package.json`, a malformed `project.json`, a literal `null`, wrong types
-throughout, a directory below the git top level with no `package.json`, and a directory
-that does not exist.
-`run-gates.mjs` is **not** injectable: it exits 1 whenever a gate fails, which is
-precisely the moment the skill is most needed, and in any directory that is not a project
-root; injecting it would make a failing type-check look like a broken skill. Injection is
-documented for skills and undocumented for `agents/`, which is why `reviewer` still runs
-its facts step explicitly.
+"the output is already here" — but **a non-zero exit aborts the whole invocation.** A gate
+exits non-zero exactly when the skill is most needed, so no shipped skill injects one; the
+skills read the project's files and run its scripts as steps. Injection is documented for
+skills and undocumented for `agents/`.
 
 ## Tool grants
 

@@ -21,8 +21,9 @@ nuxt  ──depends on──▶  vue  ──depends on──▶  core
 
 `vue` holds the component-model truth that is identical everywhere. `nuxt` carries only
 what server rendering inverts or adds, names every `vue` rule that does not apply there,
-and `vue` points back at it. `project-facts.mjs` reports which packs serve a project as
-`stack.packs`, ordered general to specific — the later pack wins a conflict.
+and `vue` points back at it. A skill finds the packs that serve a project from its
+`package.json`, by the rule in `core`'s `project.md`, general to specific — the later pack
+wins a conflict.
 [ADR 0004](adr/0004-framework-packs-layer-as-deltas.md)
 
 ## Facts are read at the moment of use
@@ -31,8 +32,9 @@ The devkit runs on top of an existing project and requires nothing to be added t
 Every fact it needs — package manager, quality gates, base branch, git host, commit
 convention — is read at the moment of use from a file the project already maintains:
 `package.json`, the lockfile, the git remote, `commitlint.config.*`,
-`.gitlab/merge_request_templates/`. Nothing is cached, so nothing goes stale.
-[Scripts](scripts.md) describes what is read;
+`.gitlab/merge_request_templates/`. Nothing is cached, so nothing goes stale. It is read
+by the skill that needs it, with the four rules in
+[`project.md`](../plugins/core/skills/planning-features/references/project.md);
 [ADR 0003](adr/0003-facts-read-at-moment-of-use.md) records why.
 
 The one capability that is not self-contained is the browser: `verifying-ui` drives an MCP

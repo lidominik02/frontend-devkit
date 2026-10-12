@@ -1,8 +1,8 @@
 # Hooks
 
-The `core` pack ships four hooks, declared in
+The `core` pack ships two hooks, declared in
 [`hooks.json`](../plugins/core/hooks/hooks.json). Each one starts through `run.mjs`, which
-checks the Node version first ([Installation](installation.md#node)). All four are Node,
+checks the Node version first ([Installation](installation.md#node)). Both are Node,
 not bash: [ADR 0001](adr/0001-node-hooks-with-version-gate.md).
 
 Each hook acts only on the tool calls its matcher selects; what falls outside every
@@ -12,8 +12,6 @@ matcher is listed under [What no hook covers](#what-no-hook-covers).
 | --- | --- | --- |
 | `block-secrets.mjs` | PreToolUse | Blocks reading or sending credential material through file tools, `Bash` and `PowerShell` |
 | `commit-hygiene.mjs` | PreToolUse | Blocks a commit message with an attribution trailer or a private reference, and the `git` push and merge forms it can parse |
-| `format-on-write.mjs` | PostToolUse | Formats what was just written with the project's own formatter |
-| `verify-before-done.mjs` | Stop | Blocks the end of a turn when a `fast` gate fails |
 
 ## Hook input on Windows
 
@@ -48,8 +46,6 @@ working tree's `core` loaded through `--plugin-dir`:
   file-tool dotenv message.
 - `git push origin main` from the `Bash` tool and from the `PowerShell` tool were both
   denied by `commit-hygiene`, with the message to hand the step back to the user.
-- `verify-before-done` blocked the end of a turn on a failing lint gate, and its reason
-  carried the gate's own output.
 - In the `stream-json` output, a PreToolUse denial appeared as a `hook_response` with
   `hook_name` `PreToolUse:<Tool>`, `exit_code` 2 and the reason in `stderr`.
 
@@ -357,58 +353,12 @@ Some forms stay out of reach, and the file's header lists every one: a git alias
 `node -e`, `make`, `npm run`), a git subcommand that runs another command
 (`git submodule foreach`, `git rebase --exec`), a host CLI (`gh pr merge`).
 
-## `format-on-write.mjs`
-
-Formats what was just written with the project's own formatter, located by walking up from
-the file so workspace installs are found.
-
-- A file whose resolved path lies outside the project directory (`CLAUDE_PROJECT_DIR`, else
-  the working directory) is left as written — a file in the user's auto-memory or in an
-  `--add-dir` directory elsewhere, or the target of a symlink that points out of the
-  project — since the walk would otherwise fall back to the project's formatter.
-- A file governed by another formatter's config — a biome, dprint or oxfmt file the hook's
-  `OTHER_FORMATTER_CONFIGS` names — is not formatted with prettier, even when prettier is
-  installed. The nearest directory from the file up to the project root that holds either
-  that or a prettier config (a name in the hook's `PRETTIER_CONFIGS`, or a `prettier` key in
-  its `package.json`) decides, so a workspace package's own config wins over the root's.
-  A declared `gates.format` is checked first and keeps precedence; the detection needs no
-  `.claude/project.json`.
-- Never blocks — the edit has already happened, and PostToolUse cannot block.
-
-## `verify-before-done.mjs`
-
-Runs the `fast` gates through [`run-gates.mjs`](scripts.md#run-gatesmjs) before the turn
-can end. When one fails, it blocks with each failing gate's name, command and the end of
-its output — the last 60 lines, at most 4000 characters — followed by every gate that
-could not run, with its reason.
-
-It is silent:
-
-- when the repo has no gates, or its only gates are refused fixers;
-- when nothing has changed;
-- when `verifyOnStop: false` ([Per-project override](scripts.md#per-project-override));
-- when the directory it checks (`CLAUDE_PROJECT_DIR`, else the event's `cwd`) is not a
-  project root — it has no `package.json` or `.claude/project.json` and is not the git top
-  level — even if the gates at the top level fail.
-
-It honours `stop_hook_active` so it cannot loop. It skips the gates when the repository's
-tracked and untracked non-ignored files are unchanged since the last passing run in the
-same session — a change only to ignored files, such as generated types, is not detected,
-and a failing run is never remembered, so an unchanged red tree still blocks. It exits
-silently while a background subagent is running; a background shell such as a dev server
-never skips the gates. Its git calls and the gates share a 190-second budget inside the
-hook's 200-second timeout. Each run that goes on to the gates deletes the session state
-files in the temp directory (`devkit-verify-before-done-*`) that were last modified more
-than seven days ago; a run that skips an unchanged tree touches its own file, so the age
-counts from its last use.
-
 ## What no hook covers
 
-Three coverage holes no matcher can close:
+Two coverage holes no matcher can close:
 
 - An `@file` reference in a prompt inserts file contents with no tool call at all. Close it
   with a `Read(...)` deny rule in project settings.
-- A file written by Bash or PowerShell never fires a PostToolUse hook.
 - `block-secrets` matches file tools, `Bash` and `PowerShell`, so **no MCP tool is covered
   by it**.
 

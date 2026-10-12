@@ -1,38 +1,18 @@
 #!/usr/bin/env node
-// Captures a repository's working state as a git tree, so a diff can cover
-// uncommitted and untracked work without anything being committed or staged.
-//
-// The working state is tracked changes, staged changes and untracked files
-// that are not ignored. `temp/` and every path isCredentialPath matches are
-// left out of the tree and the diff, whether or not `temp/` is gitignored. The
-// diff's header names each credential path that changed, since the diff cannot.
-//
-// The tree is built in a temporary copy of the index, unique to this process
-// and removed when it exits, so the user's index stays byte-identical. Blobs
-// and trees are written to the object store -- unreachable, harmless, removed
-// by gc -- but no ref, index or HEAD changes (git 2.43.0).
-//
-// Submodule working-tree changes are invisible: a submodule is recorded at the
-// commit it has checked out, never with its uncommitted edits (git 2.43.0).
+// A review base, not a backup: the tree is reachable from no ref, so `git gc` can prune it;
+// it leaves out credential paths, `temp/`, ignored files and submodule work trees; staged and
+// unstaged versions of one file are not told apart. Recovery of committed work is a backup
+// ref's job; uncommitted work is the user's to commit. The tree is built in a temporary copy
+// of the index, so the user's index stays byte-identical (git 2.43.0).
 //
 // Usage:
-//   node snapshot.mjs take
-//       print a tree id for the current working state
-//   node snapshot.mjs diff <base> [--out <file>] [--feature <slug>]
-//       write a header, --stat and a -U10 diff from <base> (a tree id, a
-//       commit, or any rev such as a merge-base) to the current state into a
-//       file, and print its path. The default path is
-//       temp/<slug>/tasks/<name>.diff with --feature, else
-//       temp/snapshots/<name>.diff, under the repository root. A relative
-//       --out resolves from the repository root too, whatever the current
-//       directory. Nothing is written outside the repository's temp/ unless
-//       --out names the file.
-//
-// Exit 0 = the tree id or the diff path is on stdout. Exit 1 = nothing is on
-// stdout and stderr says why: not a git work tree, a required clean filter
-// failed (Git LFS sets required), a base that names no tree, or a usage error.
-// A failing clean filter that is not required stores the unfiltered content,
-// and snapshot still exits 0 (git 2.43.0).
+//   node snapshot.mjs take              print a tree id for the current working state
+//   node snapshot.mjs diff <base> [--out <file>]
+//       write a header, --stat and a -U10 diff from <base> (a tree, a commit or any rev) to
+//       the current state, and print its path: --out resolved from the repository root, else
+//       temp/snapshots/<name>.diff. An --out that already exists is refused.
+// Exit 0 = the tree id or the diff path is on stdout. Exit 1 = stderr says why: not a git
+// work tree, a required clean filter failed, a base that names no tree, an existing --out.
 
 import { spawnSync } from 'node:child_process';
 import { closeSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, rmSync, writeSync } from 'node:fs';
@@ -40,7 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { isCredentialPath } from './lib/credential-paths.mjs';
 
-const USAGE = 'usage: snapshot.mjs take | snapshot.mjs diff <base> [--out <file>] [--feature <slug>]';
+const USAGE = 'usage: snapshot.mjs take | snapshot.mjs diff <base> [--out <file>]';
 
 /**
  * @param {string} cwd
@@ -128,8 +108,8 @@ function buildTree(top, base) {
   }
 }
 
-/** @param {string} top @param {string} base @param {string|null} out @param {string|null} feature */
-function writeDiff(top, base, out, feature) {
+/** @param {string} top @param {string} base @param {string|null} out */
+function writeDiff(top, base, out) {
   let baseTree;
   try {
     baseTree = git(top, ['rev-parse', '--verify', '--end-of-options', `${base}^{tree}`]).trim();
@@ -153,10 +133,16 @@ function writeDiff(top, base, out, feature) {
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15);
   const name = `${stamp}-${baseTree.slice(0, 7)}-${tree.slice(0, 7)}.diff`;
   // Relative to the root, where temp/ is excluded, not to a subdirectory the caller is in.
-  const file = out ? path.resolve(top, out) : path.join(top, 'temp', ...(feature ? [feature, 'tasks'] : ['snapshots']), name);
+  const file = out ? path.resolve(top, out) : path.join(top, 'temp', 'snapshots', name);
   mkdirSync(path.dirname(file), { recursive: true });
 
-  const fd = openSync(file, 'w');
+  let fd;
+  try {
+    fd = openSync(file, 'wx');
+  } catch (err) {
+    if (/** @type {NodeJS.ErrnoException} */ (err).code === 'EEXIST') throw new Error('--out names an existing file; choose a new path');
+    throw err;
+  }
   try {
     writeSync(fd, header);
     // Off a terminal --stat truncates long paths to `.../` at 80 columns (git 2.43.0).
@@ -182,14 +168,12 @@ function main() {
 
   /** @type {string|null} */ let base = null;
   /** @type {string|null} */ let out = null;
-  /** @type {string|null} */ let feature = null;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
-    if (a === '--out' || a === '--feature') {
+    if (a === '--out') {
       const v = rest[++i];
       if (!v) throw new Error(`${a} needs a value\n${USAGE}`);
-      if (a === '--out') out = v;
-      else feature = v;
+      out = v;
     } else if (a.startsWith('-') || base !== null) {
       throw new Error(`unexpected argument '${a}'\n${USAGE}`);
     } else {
@@ -197,11 +181,7 @@ function main() {
     }
   }
   if (base === null) throw new Error(`diff needs a base\n${USAGE}`);
-  // A slash or a leading dot in the slug could place the file outside temp/.
-  if (feature !== null && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(feature)) {
-    throw new Error(`--feature '${feature}' must be a single path segment of letters, digits, '.', '_' or '-'`);
-  }
-  process.stdout.write(`${writeDiff(toplevel(), base, out, feature)}\n`);
+  process.stdout.write(`${writeDiff(toplevel(), base, out)}\n`);
 }
 
 try {

@@ -1,5 +1,5 @@
 {
-  "description": "Four guarantees: no credential leaves the machine through a file tool, Bash or PowerShell; no commit carries an attribution trailer or names something only Claude and the user can see, and no push, merge or merging pull runs, since the user pushes and merges; nothing reaches review unformatted; and no turn ends on failing gates. All four are Node scripts: bash exits 2 on a syntax error and 2 is the block signal, so a shell hook with a syntax error blocks every tool call. Node exits 1, which is non-blocking, so it fails open.",
+  "description": "Two PreToolUse guards remain until the native permission settings replace them; see docs/installation.md.",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,7 +8,10 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/block-secrets.mjs"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs",
+              "${CLAUDE_PLUGIN_ROOT}/scripts/block-secrets.mjs"
+            ],
             "timeout": 10
           }
         ]
@@ -19,33 +22,11 @@
           {
             "type": "command",
             "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/commit-hygiene.mjs"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs",
+              "${CLAUDE_PLUGIN_ROOT}/scripts/commit-hygiene.mjs"
+            ],
             "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/format-on-write.mjs"],
-            "timeout": 60
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/run.mjs", "${CLAUDE_PLUGIN_ROOT}/scripts/verify-before-done.mjs"],
-            "timeout": 200
           }
         ]
       }

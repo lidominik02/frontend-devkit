@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 // Stop hook: the marketplace's own gates, run before a turn can end.
 //
-// `core` is enabled in this repo, so verify-before-done.mjs already fires here —
-// but it reads gates from package.json scripts and this repo has none, so the
-// devkit's own Stop guarantee is silent in the repo that ships it. This closes
-// that: the checks CI enforces now run before the turn ends, not after a push.
+// This repo has no package.json gates for a consumer-side check to run, so this
+// runs the checks CI enforces before the turn ends, not after a push.
 //
 // Node, not bash, for the reason hooks.json states: bash exits 2 on a syntax
 // error and 2 is the block signal, so a broken shell hook blocks every tool call

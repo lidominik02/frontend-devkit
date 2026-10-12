@@ -25,8 +25,7 @@ at the moment of use from files the project already maintains, so nothing goes s
   versions.
 - **Guard hooks** that block credential reads and exfiltration through file tools and
   shell commands, commit messages naming a private artifact, and the git push and merge
-  forms they can parse; that format what was written; and that stop a turn ending on
-  failing gates. What they do not cover is listed in [Hooks](docs/hooks.md).
+  forms they can parse. What they do not cover is listed in [Hooks](docs/hooks.md).
 
 ## Packs
 

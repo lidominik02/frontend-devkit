@@ -26,7 +26,6 @@ node scripts/pack-graph.mjs                     # pack layering, derived from th
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields, hooks.json
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
-node plugins/core/scripts/project-facts.mjs     # what detection sees here
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```
 

@@ -19,8 +19,8 @@ repository.
 - The devkit ships no MCP server. The browser server is the consuming repository's, or the
   user's, to install: `chrome-devtools-mcp` for day-to-day work, `@playwright/mcp` where
   cross-engine coverage is the point. `preparing-a-repo` offers it as a proposal.
-- `project-facts.mjs` reports what a repository declares in `.mcp.json`, never whether a
-  browser is available. Only the caller's own tool list settles that.
+- Whether a browser is available is never inferred from a repository's files. Only the
+  caller's own tool list settles that.
 
 ## Consequences
 

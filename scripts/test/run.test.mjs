@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { REPO_ROOT, gitRepo, hookEvent, isolatedEnv, runScript, tempDir, write } from './helpers.mjs';
+import { REPO_ROOT, hookEvent, isolatedEnv, runScript, tempDir } from './helpers.mjs';
 
 const SCRIPTS = path.join(REPO_ROOT, 'plugins', 'core', 'scripts');
 const RUN = path.join(SCRIPTS, 'run.mjs');
@@ -34,15 +34,6 @@ function assertSame({ direct, viaRun }, expectedCode) {
   assert.deepEqual(viaRun, direct);
 }
 
-function verifyBeforeDoneEvent(t) {
-  const dir = gitRepo(t);
-  fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ scripts: { lint: 'node -e "process.exit(1)"' } }));
-  // A fresh npm cache makes npm check for its own update, and only the first of the two runs
-  // prints the notice, so the gate output would differ between them.
-  const env = { ...isolatedEnv(tempDir(t)), npm_config_update_notifier: 'false', CLAUDE_PROJECT_DIR: dir };
-  return { input: JSON.stringify({ stop_hook_active: false }), env };
-}
-
 describe('run.mjs on Node 22 or later: the hook behaves as if started directly', () => {
   test('block-secrets', () => {
     assertSame(both('block-secrets.mjs', { input: hookEvent('Read', { file_path: DOTENV }) }), 2);
@@ -50,33 +41,6 @@ describe('run.mjs on Node 22 or later: the hook behaves as if started directly',
 
   test('commit-hygiene', () => {
     assertSame(both('commit-hygiene.mjs', { input: hookEvent('Bash', { command: 'git push' }) }), 2);
-  });
-
-  // A no-op exits 0 silently too, so the formatter leaves a mark on each run.
-  test('format-on-write', (t) => {
-    const proj = tempDir(t);
-    const log = path.join(tempDir(t), 'formatted');
-    const file = path.join(proj, 'a.ts');
-    write(proj, {
-      'node_modules/prettier/package.json': JSON.stringify({ name: 'prettier', bin: { prettier: 'bin/prettier.cjs' } }),
-      'node_modules/prettier/bin/prettier.cjs':
-        `require('node:fs').appendFileSync(${JSON.stringify(log)}, process.argv.slice(2).join(' ') + '\\n');\n`,
-      'a.ts': 'x\n',
-    });
-    const opts = { input: hookEvent('Write', { file_path: file }), env: { CLAUDE_PROJECT_DIR: proj } };
-    const marks = () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '');
-
-    const direct = runScript(hookPath('format-on-write.mjs'), opts);
-    assert.equal(marks(), `--write ${file}\n`, 'the hook started directly did not run the formatter');
-    const viaRun = runScript(RUN, { ...opts, args: [hookPath('format-on-write.mjs')] });
-    assert.equal(marks(), `--write ${file}\n--write ${file}\n`, 'the hook through run.mjs did not run the formatter');
-    assertSame({ direct, viaRun }, 0);
-  });
-
-  test('verify-before-done', (t) => {
-    const res = both('verify-before-done.mjs', verifyBeforeDoneEvent(t));
-    assertSame(res, 0);
-    assert.equal(JSON.parse(res.viaRun.stdout).decision, 'block');
   });
 
   test('argv, stdin and the exit code reach the hook untouched', (t) => {
@@ -122,7 +86,7 @@ describe('run.mjs below Node 22: the hook is not loaded, and the user is told wh
     }
   });
 
-  for (const hook of ['commit-hygiene.mjs', 'format-on-write.mjs', 'verify-before-done.mjs']) {
+  for (const hook of ['commit-hygiene.mjs']) {
     test(`${hook} fails open and prints the message once per session`, (t) => {
       const { run } = oldNode(t);
       const first = run(hook, { session_id: 's1', tool_name: 'Bash', tool_input: { command: 'git push' } });
@@ -142,7 +106,7 @@ describe('run.mjs below Node 22: the hook is not loaded, and the user is told wh
   test('without a session_id the message is printed on every call', (t) => {
     const { run } = oldNode(t);
     for (let i = 0; i < 2; i++) {
-      const res = run('format-on-write.mjs', { tool_name: 'Write' });
+      const res = run('commit-hygiene.mjs', { tool_name: 'Bash' });
       assert.equal(res.code, 1);
       assert.equal(res.stderr, MESSAGE);
     }
