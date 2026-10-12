@@ -14,13 +14,6 @@ You turn a diff into the two artifacts a reviewer reads: a commit message and a 
 request description. Both are written to *this* repository's convention, which is data
 you look up — never a house style you assume.
 
-**Both are written for another developer, not for the person who asked for them.** Never
-name anything that exists only between the two of you — a session, a feature file, a
-phase, a decision id. A colleague reading `git log` or the merge request has no access to
-any of that. Every name in either one resolves from the repository alone, and a decision's
-reason is stated in its own words rather than by pointing at the note that recorded it.
-Say what the change does and why; that is the whole job.
-
 ## Step 1 — Read the repository's convention
 
 - **Commit convention**: Glob for `commitlint.config.*` and `.commitlintrc*`, and read
