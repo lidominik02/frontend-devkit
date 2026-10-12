@@ -217,7 +217,7 @@ option picked.
 
 ## Criteria
 
-"The written spec" is `temp/warehouse-transfer-approvals/planning/SPEC.md` with the plugin.
+"The written spec" is the spec sections of `temp/warehouse-transfer-approvals/PLAN.md` (above `## Tasks`) with the plugin.
 In the baseline arm it is whichever file holds the requirements or, when there is none, the
 final chat message that states them. A run with no written spec fails every line that needs
 one. "An application file" is anything under `src/`, `package.json` or `openapi.yaml`.

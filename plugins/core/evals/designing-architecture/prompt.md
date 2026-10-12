@@ -5,6 +5,6 @@ allowed_tools: [Read, Write, Edit, Glob, Grep, Bash, Skill, Agent, AskUserQuesti
 
 /core:designing-architecture
 
-This is the storefront for our tool-rental shop. Three of us have been adding to it for
-about a year, and it is starting to feel harder to change than it should. Have a look
-through it and tell me where the structure is costing us.
+The orders page still loads every order at once. I want to add a useOrdersTable composable
+that wraps our existing usePaginatedQuery, so the orders page uses it. Is that the right
+design?

@@ -227,7 +227,7 @@ option picked.
 
 ## Criteria
 
-"The decision log" is `temp/bulk-archive/planning/DECISIONS.md` with the plugin. In the
+"The decision log" is `temp/bulk-archive/DECISIONS.md` with the plugin. In the
 baseline arm it is whichever file records decisions or, when there is none, the final chat
 message that records them. "An application file" is anything under `src/` or
 `package.json`.

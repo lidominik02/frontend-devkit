@@ -3,70 +3,67 @@ type: llm
 weight: 1
 ---
 
-Tests three guardrails of `designing-architecture` when it is typed with no decision to
-make: the run stops after a short list of what is worth restructuring, before designing any
-of it; it changes no code; and it recommends no abstraction that would have a single
-consumer. The fixture holds one real candidate — a price rule copied into three files that
-the history shows changing together — and one generic-looking helper with a single caller,
-so the tempting answer and the right one are both reachable. Capability on the stop and the
-single-consumer lines; the other two lines are regression guards (see the note).
+Tests how `designing-architecture` evaluates a design the user brings: a new composable that
+wraps an existing one, for a single page. The run must find the existing mechanism and count
+its callers before judging, put a substantially different option beside the user's, state
+what the user's design costs to carry — one consumer included — write no code, and leave the
+decision to the user. The fixture makes the proposal look reasonable: `usePaginatedQuery`
+already serves three pages exactly as the orders page needs, so the wrapper only forwards.
+Capability on the first, second, third and fifth lines; the no-code line is a regression
+guard (see the note).
 
 ## Run
 
 Hand-run from the fixture below, with the plugin and without it, two runs of each. The
 skill asks through forms, so a harness run ends at its first form. Use the evals README's
 hand-run rig, interactively (`claude`, not `-p`), so each form can be answered. The
-with-plugin runs load `plugins/core` only: the fixture is plain TypeScript, so no framework
-pack applies. Every run gets `--strict-mcp-config` with an empty `{"mcpServers":{}}`.
+with-plugin runs load `plugins/core` only: the case scores the generic skill, and the `vue`
+pack is not under test. Every run gets `--strict-mcp-config` with an empty
+`{"mcpServers":{}}`.
 
-Line 1 of the prompt is the typed invocation. The text after it reaches the skill as its
-argument and names no particular decision, so the skill routes it to its no-question
-branch, the survey. The first form a with-plugin run shows tells which branch ran: the
-survey's "Which one becomes the question?" form, or the question-confirming form ("This is
-the question"). Record the branch for every with-plugin run, with the CLI version. A run on
-the question branch has misrouted an open-ended request: a skill failure (see "Scripted
-answers").
-
+Line 1 of the prompt is the typed invocation; the text after it is the user's proposal.
 Before the first baseline run, check whether the CLI passes an unknown
-`/core:designing-architecture` through to the model as text; when it rejects it instead,
-the baseline prompt is the same without line 1. Record which, with the CLI version.
+`/core:designing-architecture` through to the model as text; when it rejects it instead, the
+baseline prompt is the same without line 1. Record which, with the CLI version.
 
 **User-level instructions.** Where an API key is available, run every arm with `--bare`, as
 the evals README's hand-run rig describes; no line here depends on a hook. Without one, read
 the runner's `~/.claude/CLAUDE.md` and `~/.claude/rules/` first: a rule that holds edits
-until asked makes the "changes no code" line non-discriminating on that machine, and a rule
-against speculative abstractions does the same for the single-consumer line. Score and
-record such a line, but do not let it decide retention.
+until asked makes the no-code line non-discriminating on that machine; a rule to search
+before adding code does the same for the existing-mechanism line, and a rule against
+speculative abstractions for the cost line. Score and record such a line, but do not let it
+decide retention.
 
 ## Fixture
 
-A fresh directory per run, a git repository with three commits:
+A fresh directory per run, a git repository with one commit, "Initial commit", holding:
 
 ```
-.gitignore                      node_modules/ and temp/, one per line
-package.json                    below
-tsconfig.json                   below
-src/api/types.ts                below
-src/catalog/productCard.ts      below — price rule, copy 1
-src/catalog/catalogPage.ts      below
-src/cart/cartSummary.ts         below — price rule, copy 2
-src/orders/orderRow.ts          below — price rule, copy 3
-src/orders/ordersToCsv.ts       below — the helper with one caller
-src/orders/ordersPage.ts        below
-src/main.ts                     below
+.gitignore                          node_modules/ and temp/, one per line
+package.json                        below
+tsconfig.json                       below
+src/api/types.ts                    below
+src/composables/usePaginatedQuery.ts  below — the existing mechanism
+src/pages/CustomersPage.vue         below — caller 1
+src/pages/InvoicesPage.vue          below — caller 2
+src/pages/ProductsPage.vue          below — caller 3
+src/pages/OrdersPage.vue            below — the one consumer of the proposal
+src/main.ts                         below
 ```
 
-Install `typescript` in `node_modules`, the one thing runs may share.
+Install the dependencies in `node_modules`, the one thing runs may share. Observed with
+vue 3.5.43, vue-tsc 2.2.12 and typescript 5.9.3: `npx vue-tsc --noEmit` exits 0.
 
 `package.json`:
 
 ```json
 {
-  "name": "toolrent-web",
+  "name": "toolrent-admin",
   "private": true,
   "type": "module",
-  "scripts": { "typecheck": "tsc --noEmit" },
-  "devDependencies": { "typescript": "^5.6.0" }
+  "scripts": { "typecheck": "vue-tsc --noEmit" },
+  "dependencies": { "vue": "^3.5.0" },
+  "devDependencies": { "typescript": "^5.6.0", "vue-tsc": "^2.1.0" }
 }
 ```
 
@@ -82,255 +79,213 @@ Install `typescript` in `node_modules`, the one thing runs may share.
     "strict": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": ["src/**/*.ts", "src/**/*.vue"]
 }
 ```
 
 `src/api/types.ts`:
 
 ```ts
-export interface Tool {
-  id: string
-  name: string
-  dailyRateCents: number
+export interface Page<T> {
+  items: T[]
+  total: number
 }
 
-export interface CartLine {
-  tool: Tool
-  days: number
-}
+export interface Customer { id: string; name: string; email: string }
+export interface Invoice { id: string; number: string; totalCents: number }
+export interface Product { id: string; name: string; dailyRateCents: number }
+export interface Order { id: string; placedAt: string; customerName: string }
+```
 
-export interface Order {
-  id: string
-  placedAt: string
-  customerName: string
-  totalCents: number
+`src/composables/usePaginatedQuery.ts`:
+
+```ts
+import { ref, shallowRef, watch } from 'vue'
+import type { Page } from '../api/types'
+
+export function usePaginatedQuery<T>(url: string, pageSize = 20) {
+  const page = ref(1)
+  const items = shallowRef<T[]>([])
+  const total = ref(0)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+
+  async function load(): Promise<void> {
+    loading.value = true
+    error.value = null
+    try {
+      const res = await fetch(`${url}?page=${page.value}&pageSize=${pageSize}`)
+      if (!res.ok) throw new Error(`GET ${url} failed: ${res.status}`)
+      const body = (await res.json()) as Page<T>
+      items.value = body.items
+      total.value = body.total
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  watch(page, load, { immediate: true })
+  return { page, items, total, pageSize, loading, error }
 }
 ```
 
-`src/catalog/productCard.ts`:
+`src/pages/CustomersPage.vue`:
 
-```ts
-import type { Tool } from '../api/types'
+```vue
+<script setup lang="ts">
+import type { Customer } from '../api/types'
+import { usePaginatedQuery } from '../composables/usePaginatedQuery'
 
-function formatPrice(cents: number): string {
-  if (cents === 0) return 'Included'
-  return new Intl.NumberFormat('de-AT', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(cents / 100)
-}
+const { page, items, total, pageSize, loading, error } = usePaginatedQuery<Customer>('/api/customers')
+</script>
 
-export function productCard(tool: Tool): string {
-  return `<article class="card">
-  <h3>${tool.name}</h3>
-  <p>${formatPrice(tool.dailyRateCents)} per day</p>
-</article>`
-}
+<template>
+  <p v-if="error">{{ error }}</p>
+  <table v-else :aria-busy="loading">
+    <tr v-for="c in items" :key="c.id"><td>{{ c.name }}</td><td>{{ c.email }}</td></tr>
+  </table>
+  <button :disabled="page === 1" @click="page--">Previous</button>
+  <button :disabled="page * pageSize >= total" @click="page++">Next</button>
+</template>
 ```
 
-`src/catalog/catalogPage.ts`:
+`src/pages/InvoicesPage.vue` is `CustomersPage.vue` with `Customer` read as `Invoice`, the
+call as `usePaginatedQuery<Invoice>('/api/invoices', 50)`, and the row as
+`<tr v-for="i in items" :key="i.id"><td>{{ i.number }}</td><td>{{ (i.totalCents / 100).toFixed(2) }}</td></tr>`.
 
-```ts
-import type { Tool } from '../api/types'
-import { productCard } from './productCard'
+`src/pages/ProductsPage.vue` is `CustomersPage.vue` with `Customer` read as `Product`, the
+call as `usePaginatedQuery<Product>('/api/products')`, and the row as
+`<tr v-for="p in items" :key="p.id"><td>{{ p.name }}</td><td>{{ p.dailyRateCents / 100 }} per day</td></tr>`.
 
-export async function renderCatalog(root: HTMLElement): Promise<void> {
-  const response = await fetch('/api/tools')
-  const tools = (await response.json()) as Tool[]
-  root.innerHTML = tools.map(productCard).join('')
-}
-```
+`src/pages/OrdersPage.vue`:
 
-`src/cart/cartSummary.ts`:
+```vue
+<script setup lang="ts">
+import { onMounted, shallowRef } from 'vue'
+import type { Order, Page } from '../api/types'
 
-```ts
-import type { CartLine } from '../api/types'
+const orders = shallowRef<Order[]>([])
 
-const euros = new Intl.NumberFormat('de-AT', {
-  style: 'currency',
-  currency: 'EUR',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0,
+onMounted(async () => {
+  const res = await fetch('/api/orders?page=1&pageSize=1000')
+  orders.value = ((await res.json()) as Page<Order>).items
 })
+</script>
 
-export function cartSummary(lines: CartLine[]): string {
-  const totalCents = lines.reduce((sum, line) => sum + line.tool.dailyRateCents * line.days, 0)
-  const total = totalCents === 0 ? 'Included' : euros.format(totalCents / 100)
-  return `<aside class="cart">
-  <p>${lines.length} tools</p>
-  <p>Total: ${total}</p>
-</aside>`
-}
-```
-
-`src/orders/orderRow.ts`:
-
-```ts
-import type { Order } from '../api/types'
-
-export function orderRow(order: Order): string {
-  const total =
-    order.totalCents === 0
-      ? 'Included'
-      : (order.totalCents / 100).toLocaleString('de-AT', {
-          style: 'currency',
-          currency: 'EUR',
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        })
-  return `<tr><td>${order.id}</td><td>${order.placedAt.slice(0, 10)}</td><td>${total}</td></tr>`
-}
-```
-
-`src/orders/ordersToCsv.ts`:
-
-```ts
-import type { Order } from '../api/types'
-
-export function ordersToCsv(orders: Order[]): string {
-  const header = 'Order,Date,Customer,Total'
-  const lines = orders.map((order) =>
-    [
-      order.id,
-      order.placedAt.slice(0, 10),
-      `"${order.customerName.replace(/"/g, '""')}"`,
-      (order.totalCents / 100).toFixed(2),
-    ].join(','),
-  )
-  return [header, ...lines].join('\n')
-}
-```
-
-`src/orders/ordersPage.ts`:
-
-```ts
-import type { Order } from '../api/types'
-import { orderRow } from './orderRow'
-import { ordersToCsv } from './ordersToCsv'
-
-export async function renderOrders(root: HTMLElement): Promise<void> {
-  const response = await fetch('/api/orders')
-  const orders = (await response.json()) as Order[]
-  root.innerHTML = `<table>${orders.map(orderRow).join('')}</table>
-<a download="orders.csv" href="data:text/csv,${encodeURIComponent(ordersToCsv(orders))}">Export</a>`
-}
+<template>
+  <table>
+    <tr v-for="o in orders" :key="o.id">
+      <td>{{ o.id }}</td><td>{{ o.placedAt.slice(0, 10) }}</td><td>{{ o.customerName }}</td>
+    </tr>
+  </table>
+</template>
 ```
 
 `src/main.ts`:
 
 ```ts
-import { renderCatalog } from './catalog/catalogPage'
-import { renderOrders } from './orders/ordersPage'
+import { createApp, type Component } from 'vue'
+import CustomersPage from './pages/CustomersPage.vue'
+import InvoicesPage from './pages/InvoicesPage.vue'
+import OrdersPage from './pages/OrdersPage.vue'
+import ProductsPage from './pages/ProductsPage.vue'
 
-const root = document.querySelector<HTMLElement>('#app')
-if (root) {
-  if (location.pathname.startsWith('/orders')) void renderOrders(root)
-  else void renderCatalog(root)
+const pages: Record<string, Component> = {
+  '/customers': CustomersPage,
+  '/invoices': InvoicesPage,
+  '/orders': OrdersPage,
+  '/products': ProductsPage,
 }
+createApp(pages[location.pathname] ?? ProductsPage).mount('#app')
 ```
 
-Set-up, so the history shows the three price copies changing together:
-
-1. `git init -b main`. Write every file above, except that in `productCard.ts`,
-   `cartSummary.ts` and `orderRow.ts` both fraction-digit options read `2` and `'Included'`
-   reads `'Free'`. Commit everything as "Initial commit".
-2. In those three files only, set both fraction-digit options to `0`. Commit as "Round
-   prices to whole euros".
-3. In those three files only, change `'Free'` to `'Included'`. Commit as "Label zero prices
-   as included".
-
-The working tree now matches the files above. No `temp/` folder, no `.claude/` folder, and
-no unused-code or duplicate-code tool in `package.json`, so the skill has no detector to
-ask about.
+No `temp/` folder, no `.claude/` folder, no `CLAUDE.md` and no decision records, so the
+evidence is the code alone.
 
 Rig check before each run: `git status --short` prints nothing; `git log --oneline` prints
-three commits; `git log --name-only --format= | sort | uniq -c` counts 3 for each of the
-three price files and 1 for every other file; `npx tsc --noEmit` exits 0; `ls temp` fails.
-After a with-plugin run's first turn, the init event carries `core@inline` and no transcript
-line contains `plugins/cache`; the baseline arm's init event lists no `core` plugin. Record
-which isolation applied: `--bare` with an API key, or, without it, the user-level
-instruction files present.
+one commit; `git grep -l usePaginatedQuery -- src` lists exactly the composable and the
+three pages above; `npx vue-tsc --noEmit` exits 0; `ls temp` fails. After a with-plugin
+run's first turn, the init event carries `core@inline` and no transcript line contains
+`plugins/cache`; the baseline arm's init event lists no `core` plugin. Record which
+isolation applied: `--bare` with an API key, or, without it, the user-level instruction
+files present.
 
 ## Scripted answers
 
 In order of precedence:
 
-1. A with-plugin run whose first form confirms a question ("This is the question", "Change
-   it") has taken the decision loop rather than the survey: end the session there,
-   unanswered. It lists nothing, so its stop line fails; score its price-rule and
-   single-consumer lines inconclusive, and its "changes no application file" line as usual.
-   It counts toward the two runs per arm.
-2. A form or chat question offering to make a change, to start on one of the findings, or
-   to design one — "Want me to extract this?", "Shall I refactor it?", "Which one becomes
-   the question?": the answer "End here" where it is an option; otherwise end the session
-   there, unanswered.
-3. A form asking whether to run a detector tool: "Read and grep only".
+1. A form choosing between designs — the user's wrapper beside any other option — or asking
+   whether to approve or build one: end the session there, unanswered. It is the form the
+   last criteria line scores.
+2. A form or chat question offering to write the code: end the session there, unanswered.
+3. A form confirming the question ("This is the question", "Change it") or asking about
+   outside research: the option marked "(recommended)".
 4. Anything else: the option marked "(recommended)"; with none marked, the first option. A
    chat question with no options gets "Go with what you'd recommend."
 
-End the session at the first of: the run ending its turn with no question and no background
-task still running, the first edit to an application file (which is scored), or
-`max_turns`. Record, per run, the full text of every question asked, its options in order,
-and the option picked.
+End the session at the first of: rule 1 or 2, the run ending its turn with no question and
+no background task still running, the first edit to an application file (which is scored),
+or `max_turns`. Record, per run, the full text of every question asked, its options in
+order, and the option picked.
 
 "An application file" is anything outside `temp/` and `node_modules/`.
 
 ## Criteria
 
 Passes if it does ALL of:
-- Lists at most five things worth restructuring, each with a `path:line` for its evidence
-  and a stated cost of leaving it as it is, and then stops: before the user picks one, it
-  shows no code for a new or changed function and offers no set of options or a
-  recommended way to restructure any of them.
-- Names the price rule as worth restructuring, citing all three copies —
-  `src/catalog/productCard.ts`, `src/cart/cartSummary.ts` and `src/orders/orderRow.ts` —
-  and its cost: one change to how prices read touches three files, as each of the two
-  later commits did.
-- Recommends no new shared function, util, module or layer whose only consumer would be one
-  file. `ordersToCsv` may be left unmentioned, or mentioned as used once and fine where it
-  is; where a run raises generalising it, the text says it has one caller, labels it a
-  speculative proposal rather than a cleanup to make, and states what building and carrying
-  it would cost.
-- Changes no application file: after the run, `git status --short` prints nothing (the
-  fixture ignores `temp/`), and `git log --oneline` still prints three commits.
+- Names the existing mechanism with its path, `src/composables/usePaginatedQuery.ts`, and
+  its call sites: three — `CustomersPage.vue`, `InvoicesPage.vue` and `ProductsPage.vue` —
+  counted from a search the run made, not taken from the prompt.
+- Offers, beside the user's design, at least one substantially different option: the orders
+  page calling `usePaginatedQuery` directly as the three other pages do, or another design
+  that adds no orders-only composable. A renamed wrapper, a wrapper with other parameters or
+  in another folder is a variation, not a different option.
+- States what the user's design costs to carry: that `useOrdersTable` would have one
+  consumer, `OrdersPage.vue`, and what it adds — a second name to read through, a layer
+  that only passes calls on, one more place to change when `usePaginatedQuery` changes, or
+  the orders page working unlike the other three.
+- Changes no application file — after the run, `git status --short` prints nothing and
+  `git log --oneline` prints one commit — and writes neither the body of `useOrdersTable`
+  nor a rewritten `OrdersPage.vue` in chat.
+- Leaves the decision to the user through a form whose options include the user's design
+  and the different option, each with its consequence.
 
 Fails if it does ANY of:
-- Writes code for the fix before the user has picked a finding — a code block of an
-  extracted price function or of a changed call site — or presents options with a
-  recommendation for restructuring any finding before that pick.
-- Lists more than five findings, or a finding with no `path:line`.
-- Recommends a generic CSV or export helper, a shared export layer, or any other new
-  abstraction whose only consumer would be `ordersPage.ts` or another single file, as a
-  cleanup to make — or ranks it alongside the price rule as a finding of the same weight —
-  without saying it has one caller and what it would cost.
-- Edits, creates or deletes any application file, or stages or commits anything.
+- Agrees with the proposal, or argues against it, without having searched for and counted
+  the callers of `usePaginatedQuery`; or gives a wrong count.
+- Offers only the user's design, or only variations of it.
+- Calls the wrapper good practice or "cleaner" without saying it has one consumer and what
+  it costs to carry.
+- Edits, creates or deletes any application file, stages or commits anything, or writes out
+  the wrapper's implementation or the rewritten page.
+- Decides for the user — "go ahead and add it", "don't add it" — as the run's last word, or
+  asks only in chat without options.
 
-Recorded, not scored: which branch each with-plugin run took, read from its first form —
-the survey or the question loop — with the CLI version; whether the with-plugin run wrote
-`temp/architecture/survey-<date>/SURVEY.md`, and how many findings it holds; whether any run
-folded the CSV export's `toFixed(2)` total into the shared price rule — a machine-readable
-number that answers to a different rule than a price shown to a customer.
+Recorded, not scored: which option each run recommended, and whether it said what speaks for
+the user's design; whether the with-plugin run wrote a draft `ARCHITECTURE-<slug>.md` in the
+scratchpad; whether text for the user uses the reference's terms (module, depth, shallow,
+seam) rather than the project's words; whether any run raised the orders endpoint's
+`pageSize=1000` or a missing error state as a separate finding, and parked it.
 
 ## Note for scoring
 
 Score per line, and compare plugin against no plugin.
 
-Expected baseline:
-- **The stop** fails unaided. Asked where the structure is costing them, an unaided run
-  answers with its findings and the fix for each, usually with the extracted price function
-  written out.
-- **The single-consumer line** fails unaided. `ordersToCsv` reads as generic, and a "what
-  would you restructure" answer ordinarily pads its list with "make this a reusable export
-  utility" beside the real duplication.
-- **The price rule** passes unaided: three copies of one rule are easy to spot. It is kept
-  as a regression guard — a skill that holds its guards so hard it reports nothing, or
-  drops a real finding for want of a fourth copy, fails here.
-- **No application file changed** is expected to pass unaided, because the prompt asks a
-  question rather than for a change. It is kept as a regression guard: a with-plugin run
-  that goes on from the list into building is the defect the skill exists to prevent.
+Expected baseline: the bare model usually agrees with the proposal and does not search for an
+existing mechanism. The user names `usePaginatedQuery`, so a baseline mentions it, but
+without opening the pages that call it or counting them.
+- **The existing mechanism** fails unaided: no search, no count.
+- **The different option** fails unaided: the answer refines the wrapper — its name, its
+  return value — rather than setting a design without it beside it.
+- **The cost** fails unaided: a wrapper per table reads as tidy, and an agreeing answer does
+  not say it has one consumer.
+- **No code** is expected to pass unaided on files, because the prompt asks a question;
+  a baseline that writes the wrapper out in chat fails it, and that is recorded with the
+  line. It is kept as a regression guard: a with-plugin run that goes on from its
+  recommendation into building is the defect the skill exists to prevent.
+- **The decision** fails unaided: the bare answer ends on a verdict, not a form.
 
-A baseline that passes the stop and the single-consumer lines on both runs says the skill's
-guardrails add nothing here, and by the retention table they should go.
+A baseline that passes the first three lines on both runs says the skill's evaluation of a
+user's design adds nothing here, and by the retention table that part should go.

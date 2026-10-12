@@ -6,22 +6,26 @@ allowed_tools: [Read, Write, Edit, Glob, Grep, Skill, Bash, AskUserQuestion]
 /core:planning-features plan multi-currency
 
 We've finished working out what multi-currency invoicing has to do. The spec is saved at
-`temp/multi-currency/planning/SPEC.md`; here it is:
+`temp/multi-currency/PLAN.md`; here it is:
 
 ```markdown
-# Spec: multi-currency
-
-## Sources
-- The product owner, in the requirements session of 2026-09-18 — confirms: the product owner
+# Plan: multi-currency
 
 ## Outcome
 Invoices and credit notes can be issued in the customer's currency, and each keeps the
 exchange rate of its issue date, so customers abroad are billed in their own currency and
 issued documents never change value.
 
+## Sources
+- The product owner, in the requirements session of 2026-09-18 — confirms: the product owner
+
 ## Constraints
 - Rates come from the ECB daily reference feed, fetched by an existing backend job; the frontend reads them from `GET /api/rates`.
 - Documents issued before this ships stay in EUR.
+- `GET /api/rates?date=YYYY-MM-DD` — exists; returns `{ date, rates: { USD, GBP } }` against EUR, where `date` is the latest publication day on or before the one asked for.
+- `POST /api/invoices` accepts `currency`, `rate` and `rateDate` — exists.
+- `GET /api/invoices` returns `currency`, `rate` and `rateDate` on each invoice — exists; invoices issued before this ships return `EUR` with rate `1`. The frontend `Invoice` type has none of the three yet.
+- `POST /api/credit-notes` accepts `currency` and `rate` — exists.
 
 ## Success criteria
 - SAID — A new invoice preselects the customer's currency; the issuer can change it to any supported currency before issuing.
@@ -50,9 +54,9 @@ issued documents never change value.
 ## Design
 Type: frames read through the design tool — location: the "Invoices — currency" page,
 frames "New invoice", "Invoice PDF" and "Credit note". Coverage: partial — no frame shows
-the rates error state; SPEC States settles it (D2).
+the rates error state; States settles it (D2).
 
-## Global Constraints
+## Global constraints
 - Supported currencies: EUR, USD, GBP — exactly these three, in this order.
 - Base currency: EUR.
 - Rates are stored with 6 decimal places; converted amounts are rounded half-even to 2 decimal places.
@@ -60,7 +64,7 @@ the rates error state; SPEC States settles it (D2).
 - Rate line copy: "Rate on issue date: 1 EUR = {rate} {currency}"
 - Error copy: "Exchange rates are unavailable. Try again in a few minutes."
 
-## Review Focus
+## Review focus
 - A draft issued after a rate change takes the new day's rate, while an already issued invoice keeps its own.
 - The dashboard never adds amounts in different currencies.
 
@@ -71,31 +75,18 @@ the rates error state; SPEC States settles it (D2).
 - `src/reports/revenue.ts` — the dashboard's totals
 - `src/api/client.ts` — the API client; it has no rates call yet
 
-## Contract
-- `GET /api/rates?date=YYYY-MM-DD` — exists; returns `{ date, rates: { USD, GBP } }` against EUR, where `date` is the latest publication day on or before the one asked for.
-- `POST /api/invoices` accepts `currency`, `rate` and `rateDate` — exists.
-- `GET /api/invoices` returns `currency`, `rate` and `rateDate` on each invoice — exists; invoices issued before this ships return `EUR` with rate `1`. The frontend `Invoice` type has none of the three yet.
-- `POST /api/credit-notes` accepts `currency` and `rate` — exists.
-
 ## Out of scope
 - Currencies beyond the three.
 
 ## Deferred
 - Editing a customer's default currency — trigger: a customer asks to change theirs.
-
-## Verification seams
-- Rate storage and rounding: the review and the typecheck.
-- The PDF and the selector: the browser, once released.
-- The copy: the user.
 ```
 
-One thing is still open, and it's with the product owner — it's the only entry in
-`temp/multi-currency/planning/OPEN-QUESTIONS.md`:
+One thing is still open, and it's with the product owner — it's the only open question in
+`temp/multi-currency/DECISIONS.md`:
 
 ```markdown
-- **OQ1** · Does a credit note use the rate of the invoice it credits, or the rate on its own issue date?
-  - Owner: product owner
-  - Blocks: the credit-note rate (SPEC Business rules)
+- OQ1 · Does a credit note use the rate of the invoice it credits, or the rate on its own issue date? · owner: product owner · blocks: the credit-note rate (PLAN Business rules)
 ```
 
 It's a few weeks of work and I'll be picking it up and putting it down between other

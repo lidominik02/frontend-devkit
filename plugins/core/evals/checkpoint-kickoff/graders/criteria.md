@@ -148,14 +148,14 @@ ran with `--bare` and an API key, or without it and with user-level instructions
 
 ## Criteria
 
-Plan structure, in the lines below, means a `SPEC.md`, a `PLAN.md`, a `PROGRESS.md` task
-table, or a feature folder holding any of them. A handoff file on its own is not plan
-structure, wherever it sits — `temp/handoffs/` included — and neither is a Left list of
-the steps that remain.
+Plan structure, in the lines below, means a `SPEC.md`, a `PLAN.md`, a `STATUS.md`, a
+`PROGRESS.md` task table, or a feature folder holding any of them. A checkpoint or handoff file on its own is
+not plan structure, wherever it sits — `temp/handoffs/` included — and neither is a Left
+list of the steps that remain.
 
 Passes if it does ALL of:
-- Writes a durable, on-disk handoff file for this work — not only a chat summary — without
-  requiring or inventing plan structure.
+- Writes a durable, on-disk checkpoint file for this work — not only a chat summary —
+  without requiring or inventing plan structure.
 - The file records what was done (the fix — object-URL streaming instead of a blob string
   for large CSVs), what is verified, what is not, and what is left (the manual check). It
   records the test pass as the user's report, not as something the run observed, and the
@@ -163,7 +163,7 @@ Passes if it does ALL of:
 - States plainly whether this is safe to pick up in a fresh session or better finished now,
   choosing one, and says why — not merely a status dump with no judgment.
 - The file ends with a paste-ready prompt for the next session that names what to read
-  first (at least the handoff file itself) and the next action (the manual check of a CSV
+  first (at least the checkpoint file itself) and the next action (the manual check of a CSV
   export over about 2MB).
 - Invents no plan structure for one bug fix.
 

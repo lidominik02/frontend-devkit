@@ -38,8 +38,7 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
    2. Without a SPEC, the written requirement material: the files under
       `temp/<feature>/requirements/`, or the path `project-facts`'s `userStoryPath`
       reports; an old-format feature's `temp/<feature>/user-story.md` still counts.
-   3. With no written source, the acceptance criteria of PLAN.md's tasks — an old-format
-      feature's phase files, as `handoff-format.md` maps them — and the diff.
+   3. With no written source, the acceptance criteria of PLAN.md's tasks and the diff.
       **No written source is not an error**, but it is the weaker source: say so at the
       top of the list, because a QA list that does not admit its own weaker source reads
       as more authoritative than it is.
@@ -115,14 +114,8 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
 <cases with no findings>
 ```
 
-8. **Offer the investigation** when Findings holds at least one entry, once `REPORT.md`
-   and the Lifecycle writes below are done: one AskUserQuestion form, "Investigate their
-   causes in parallel (recommended)" or "Not now". The first calls the Skill tool with
-   "core:investigating-bugs" in its batch mode, naming the feature and `REPORT.md`'s path.
-   It comes after every write because that skill blocks the file tools. It reports a
-   cause and a next step per finding, and stops. With no findings there is no form.
-9. **Stop.** Fix nothing until the user approves the findings; whether and how to fix
-   them is the user's decision, made after the investigation when one ran.
+8. **Stop.** Findings are the user's to rule on; `investigating-bugs` diagnoses one when
+   asked. Fix nothing until the user approves the findings.
    `reviewing-changes` reports and stops for the same reason: a component that fixes what
    it finds stops checking and starts implementing. A feature's run with no findings,
    where PROGRESS.md's task table shows every task Done or Blocked, calls the Skill tool
@@ -133,7 +126,7 @@ and PLAN.md under `planning/`, `requirements/`, `design/`, `review/` — is laid
 
 When the feature has `temp/<feature>/planning/HANDOFF.md`, update its stage at three
 points, rewrite its next action and kickoff prompt to match
-(`../planning-features/references/handoff-format.md`), and add one PROGRESS.md ledger entry
+(`../planning-features/references/artifacts.md`), and add one PROGRESS.md ledger entry
 for each:
 
 - After `plan` writes the list: `QA list (awaiting approval) — owner: the user`; ledger

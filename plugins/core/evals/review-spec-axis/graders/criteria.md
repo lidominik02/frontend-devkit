@@ -14,7 +14,7 @@ expected baseline per arm.
 
 Same repository, same branch, same prompt; only `temp/` differs.
 
-- **Arm S — spec present.** `temp/tag-manager/planning/` holds `SPEC.md` and
+- **Arm S — spec present.** `temp/tag-manager/` holds `PLAN.md` (its spec sections) and
   `DECISIONS.md`. The branch leaves out the spec's empty state, implements the EXTRA
   criterion (alphabetical order, ignoring case), and adds a "Delete all unused" action no
   source asks for.
@@ -53,7 +53,7 @@ let it decide retention.
 3. In `work`: `git remote set-head origin main`, `git switch -c feature/tag-manager`; add
    `src/tags/tagListView.ts` and `src/tags/tagActions.ts`; commit both as
    "feat: tag manager — list, delete, empty state".
-4. Arm S only: write the two files under `temp/tag-manager/planning/` below.
+4. Arm S only: write the two files under `temp/tag-manager/` below.
 
 The run starts in `work`.
 
@@ -153,20 +153,22 @@ export async function deleteAllUnused(tags: Tag[]): Promise<number> {
 }
 ```
 
-Arm S, `temp/tag-manager/planning/SPEC.md`:
+Arm S, `temp/tag-manager/PLAN.md` — its spec sections, no `## Tasks` yet:
 
 ```markdown
-# Spec: tag-manager
-
-## Sources
-- The product owner, in the planning call of 2026-09-22 — confirms: the product owner
+# Plan: tag-manager
 
 ## Outcome
 An admin can see every tag with how often it is used, and delete a tag nobody uses, so the
 tag picker stops filling up with dead tags.
 
+## Sources
+- The product owner, in the planning call of 2026-09-22 — confirms: the product owner
+
 ## Constraints
 - Admin-only; the route guard already exists.
+- `GET /api/tags` returns `{ id, name, usageCount }[]` — exists.
+- `DELETE /api/tags/{id}` — exists; responds 409 for a tag in use.
 
 ## Success criteria
 - SAID — The tags page lists every tag with its usage count.
@@ -191,45 +193,44 @@ tag picker stops filling up with dead tags.
 Type: a proposal the user approved — location: this section; the tags table follows the
 existing settings tables. Coverage: complete.
 
-## Global Constraints
+## Global constraints
 - Copy: "No tags yet", "Create tag", "Couldn't load tags", "Retry", "Used by {n} items".
 
-## Review Focus
+## Review focus
 - A tag in use is never deletable.
 
 ## Architecture fit
 - `src/api/tags.ts` — `listTags`, `deleteTag`
 - `src/tags/types.ts` — `Tag`
 
-## Contract
-- `GET /api/tags` returns `{ id, name, usageCount }[]` — exists.
-- `DELETE /api/tags/{id}` — exists; responds 409 for a tag in use.
-
 ## Out of scope
 - Renaming and merging tags.
 
 ## Deferred
 - none
-
-## Verification seams
-- Each criterion and state: the review, then the browser once released.
 ```
 
-Arm S, `temp/tag-manager/planning/DECISIONS.md`:
+Arm S, `temp/tag-manager/DECISIONS.md`:
 
 ```
-- **D1** · 2026-09-22 · only unused tags can be deleted
+# Decisions: tag-manager
+
+## Open questions
+none
+
+## Decisions
+- D1 · 2026-09-22 · only unused tags can be deleted
   - Rejected: delete and detach from items
-  - Source: SPEC Business rules
-- **D2** · 2026-09-22 · list tags alphabetically, ignoring case
+  - Source: PLAN Business rules
+- D2 · 2026-09-22 · list tags alphabetically, ignoring case
   - Rejected: list in creation order
   - Source: the user accepted it as an extra
 ```
 
 Rig check in `work`: `git branch --show-current` prints `feature/tag-manager`;
 `git diff --stat origin/main...HEAD` lists only `src/tags/tagActions.ts` and
-`src/tags/tagListView.ts`; `git status --short` prints nothing; `ls temp/tag-manager/planning`
-lists `DECISIONS.md` and `SPEC.md` in arm S and fails in arm N. The baseline arm's init event
+`src/tags/tagListView.ts`; `git status --short` prints nothing; `ls temp/tag-manager`
+lists `DECISIONS.md` and `PLAN.md` in arm S and fails in arm N. The baseline arm's init event
 lists no `core` plugin. Record whether both arms ran with `--bare` or neither did — a pair
 that mixes the two is void — and whether line 1 reached the baseline as text or was dropped.
 
@@ -246,7 +247,7 @@ PLAUSIBLE. One that appears only under Refuted, Runtime-only, Declined to judge 
 Inconclusive does not stand, and counts as unreported.
 
 Passes if it does ALL of:
-- Reads the spec: the session, or a worker it dispatched, opens `SPEC.md` or
+- Reads the spec: the session, or a worker it dispatched, opens `PLAN.md` or
   `DECISIONS.md`, and the review names the spec among its intent sources.
 - Reports, in a finding that stands, that the empty state the spec names — "No tags yet"
   with a "Create tag" action — has no code path. A finding tied to the spec's States is

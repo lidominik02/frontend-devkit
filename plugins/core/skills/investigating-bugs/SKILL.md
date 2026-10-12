@@ -8,7 +8,7 @@ description: >-
   QA findings. Diagnosis only; for "fix this bug" use fixing-bugs; for "why does it look
   wrong", verifying-ui.
 disallowed-tools: Edit, Write, NotebookEdit, MultiEdit
-allowed-tools: Read Grep Glob Agent
+allowed-tools: Read Grep Glob
 ---
 
 You find out what is actually wrong. You do not fix it.
@@ -19,8 +19,8 @@ real one — usually one layer further down — never gets found. Investigations
 in "here is the cause and here is the fix I propose" get fixed correctly. Ones that
 end in a hurried edit get reopened.
 
-One bug goes through Steps 1 to 4. Several findings at once — a QA run's — go through
-the batch mode below: lighter, one short report per finding, grouped by independent area.
+One bug goes through Steps 1 to 4. Several findings are diagnosed one at a time, each
+when the user asks.
 
 ## Step 1 — Establish the report verbatim
 
@@ -131,31 +131,6 @@ A cause that spans layers gets a step for each part.
 Then stop. Whether the bug is the user's to fix is the user's ruling, often made after
 asking a PM, a tester or the backend. The report gives that ruling its evidence and starts
 nothing.
-
-## Batch mode: several findings
-
-For a QA report's Findings: `testing-changes` offers this after a run. `executing-plans`'
-`fix-findings` runs the same dispatch itself for its unclear review findings, without
-calling this skill. It stays light: code is only read, nothing runs, and
-each finding gets a short report rather than the full one — never Steps 1 to 4.
-
-1. **Take the findings verbatim** from the report the caller names; non-English text is
-   quoted, then translated. Ask nothing per finding: what a finding lacks goes into its
-   short report as what would settle it.
-2. **Group them by area.** Findings on the same screen, component, store or endpoint go to
-   one agent, since they may share a cause, and two agents reading the same code can return
-   two answers. Independent findings go to separate agents.
-3. **Dispatch** one agent per area, all in one message, in the foreground, of the built-in
-   read-only `Explore` agent type where the host offers it (observed in Claude Code
-   2.1.283); `model: sonnet`. With no such type, dispatch nothing: work through the areas
-   yourself, one at a time, on the main thread, where this skill's disallowed-tools block
-   the file tools. Each area follows the dispatch prompt in `references/batch.md` and
-   returns the short report's blocks it gives.
-4. **Check each root cause** by opening its `path:line`. One that does not show what its
-   block says drops to Inconclusive, with the reason.
-5. **Report** the blocks in the findings' order, in the short report's shape in
-   `references/batch.md`, each with its Next step chosen as "Choosing the next step" says,
-   then stop. Fixing is a separate decision: the user rules on remit finding by finding.
 
 ## Working across repositories
 

@@ -6,21 +6,24 @@ allowed_tools: [Read, Write, Edit, Glob, Grep, Skill, Bash, AskUserQuestion]
 /core:planning-features plan self-serve-refunds
 
 The spec for self-serve refunds is settled — I went through it with the product owner
-yesterday and saved it at `temp/self-serve-refunds/planning/SPEC.md`. This is what's in it:
+yesterday and saved it at `temp/self-serve-refunds/PLAN.md`. This is what's in it:
 
 ```markdown
-# Spec: self-serve-refunds
-
-## Sources
-- Call with the product owner, 2026-09-20, written up as this spec — confirms: the product owner
+# Plan: self-serve-refunds
 
 ## Outcome
 A customer can request a refund for a recent order from the order page without contacting
 support, so support stops handling routine refunds by hand.
 
+## Sources
+- Call with the product owner, 2026-09-20, written up as this spec — confirms: the product owner
+
 ## Constraints
 - The refunds endpoint already exists: `POST /api/orders/{id}/refunds`.
 - No new dependencies.
+- `POST /api/orders/{id}/refunds` with `{ amount, reason }` — exists; returns the refund with `status: "requested"`.
+- `paidAmount` and `placedAt` on `GET /api/orders/{id}` — exist.
+- `refund` on `GET /api/orders/{id}` — exists; the order's refund with its `status`, or `null` when none was requested. Not on the frontend `Order` type yet.
 
 ## Success criteria
 - SAID — An order placed 30 days ago or less shows a "Request refund" action on its order page.
@@ -48,12 +51,12 @@ Type: a proposal the user approved — location: this section. One dialog built 
 `src/orders/CancelOrderDialog.vue`: an amount field prefilled with the paid amount, a
 reason field, Submit and Cancel. Coverage: complete.
 
-## Global Constraints
+## Global constraints
 - Refund window: 30 days from the order date, inclusive.
 - Refund reason: required, 10 to 500 characters.
 - Copy: "Request refund", "Refund requested", "Refunds can't exceed what you paid.", "Refunds close 30 days after purchase.", "We couldn't submit your refund. Try again."
 
-## Review Focus
+## Review focus
 - An order exactly 30 days old still shows the action.
 - A double submit must not create two refund requests.
 
@@ -62,20 +65,11 @@ reason field, Submit and Cancel. Coverage: complete.
 - `src/orders/CancelOrderDialog.vue` — the closest existing dialog: same layout, same submit and error handling
 - `src/api/orders.ts` — the API client; it has no refund call yet
 
-## Contract
-- `POST /api/orders/{id}/refunds` with `{ amount, reason }` — exists; returns the refund with `status: "requested"`.
-- `paidAmount` and `placedAt` on `GET /api/orders/{id}` — exist.
-- `refund` on `GET /api/orders/{id}` — exists; the order's refund with its `status`, or `null` when none was requested. Not on the frontend `Order` type yet.
-
 ## Out of scope
 - Refunding individual order lines.
 
 ## Deferred
 - Refund status after the request (approved, paid) — trigger: finance turns on refund webhooks.
-
-## Verification seams
-- The window and the cap: the review, then the browser once released.
-- The copy: the user.
 ```
 
 I haven't set any ground rules for how this one gets built — go with whatever's normal.

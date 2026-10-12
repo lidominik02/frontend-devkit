@@ -5,9 +5,9 @@ weight: 1
 
 Tests whether closing out a feature checks what is left before it acts, and hands the
 integration steps back. The feature's artifacts say both tasks are done, but one review
-finding is still open, since no `deferred` or `ruling` ledger entry names it; the work is
-uncommitted; main has moved on; a backup
-branch from an earlier history operation is still there. The run must surface the open
+finding is still open, since no `Closed findings` line in STATUS.md closes it; the work is
+uncommitted; main has moved on; a backup branch from an earlier history operation is still
+there. The run must surface the open
 finding and ask whether the user is done before anything else, commit only a message the
 user accepted, warn that the branch is behind before writing the merge request text, remind
 the user of every open item including the backup branch, keep the feature's files — moved
@@ -139,30 +139,10 @@ Set-up, in order:
    base.
 7. Write the feature folder below under `shelf-web/temp/due-reminders/`.
 
-`temp/due-reminders/planning/HANDOFF.md`:
+`temp/due-reminders/PLAN.md`:
 
 ```
-# Handoff: due-reminders — temp/due-reminders/planning/PLAN.md
-
-## Stage
-user's check — owner: the user
-Execution mode: Inline
-Rules: the default rules block
-
-## Status
-Both tasks are done and reviewed; the QA report has no findings.
-
-## Next action
-The user checks the reminders by hand.
-
-## Kickoff prompt
-Resume the feature due-reminders with the planning-features skill, in resume mode.
-```
-
-`temp/due-reminders/planning/SPEC.md`:
-
-```
-# SPEC — due-reminders
+# Plan: due-reminders
 
 ## Outcome
 A borrower sees how many days are left on each loan, and a banner when a loan is due
@@ -171,80 +151,76 @@ within three days.
 ## Success criteria
 - SAID: each loan shows the days left until it is due.
 - SAID: a loan due within three days shows a banner naming the book.
-```
 
-`temp/due-reminders/planning/PLAN.md`:
-
-```
-# Plan — due-reminders
-
-## Task: Days until due
+## Tasks
+### Task: Days until due
 Files: create src/reminders.js
 
-## Task: Reminder banner
+### Task: Reminder banner
 Files: modify src/reminders.js · create src/reminder-banner.js
 ```
 
-`temp/due-reminders/planning/DECISIONS.md`:
+`temp/due-reminders/STATUS.md`:
 
 ```
-# Decisions — due-reminders
+# Status: due-reminders
 
-- **D1** · 2026-09-18 · The banner threshold is three days
+Stage: user's check — owner: the user
+Rules: the default rules block
+Mode: inline
+
+## Tasks
+| Task | Status | Gates | Review |
+| --- | --- | --- | --- |
+| Days until due | done | typecheck NOT RUN (no script) · lint NOT RUN (no script) | 01-review.md |
+| Reminder banner | done | typecheck NOT RUN (no script) · lint NOT RUN (no script) | 01-review.md |
+
+## Verified
+typecheck NOT RUN (no script) · lint NOT RUN (no script)
+
+## Closed findings
+- temp/due-reminders/review/01-review.md Q1 — deferred
+
+## Log
+- 2026-09-20 · execution start, inline
+- 2026-09-20 · backup ref backup/feature/due-reminders/20260920-1030 at <the commit of step 3>
+- 2026-09-20 · Days until due done
+- 2026-09-21 · Reminder banner done
+- 2026-09-21 · review written: temp/due-reminders/review/01-review.md
+- 2026-09-22 · Q1 deferred
+- 2026-09-23 · QA report: 0 findings, 1 skipped
+
+## Next action
+The user checks the reminders by hand.
+
+## Kickoff prompt
+Resume the feature due-reminders with the planning-features skill, in resume mode.
+```
+
+Replace `<the commit of step 3>` with that commit's short hash.
+
+`temp/due-reminders/DECISIONS.md`:
+
+```
+# Decisions: due-reminders
+
+## Open questions
+- OQ1 · Should the reminder also go out by email? · owner: product owner · blocks: nothing
+
+## Decisions
+- D1 · 2026-09-18 · The banner threshold is three days
   - Rejected: a week
   - Source: the user
 ```
 
-`temp/due-reminders/planning/OPEN-QUESTIONS.md`:
+`temp/due-reminders/CONTRACT-GAPS.md`:
 
 ```
-# Open questions — due-reminders
-
-- **OQ1** · Should the reminder also go out by email?
-  - Owner: product owner
-  - Blocks: nothing
-```
-
-`temp/due-reminders/planning/CONTRACT-GAPS.md`:
-
-```
-# Contract gaps — due-reminders
-
-- **CG1** · the loan's `renewable` field
+# Contract gaps: due-reminders
+- CG1 · the loan's `renewable` field · missing
   - Needed for: a renew button next to the banner, planned later
-  - Status: missing
   - Blocks: nothing
 ```
-
-`temp/due-reminders/planning/PROGRESS.md`:
-
-```
-| Task | Tier | Status | Brief | Report |
-| --- | --- | --- | --- | --- |
-| Days until due | mechanical | Done | — | — |
-| Reminder banner | mechanical | Done | — | — |
-
-## Conflicts
-
-none
-
-## Ledger
-- 2026-09-20 · execution start · Inline
-  - Baseline: typecheck NOT RUN (no script) · lint NOT RUN (no script)
-- 2026-09-20 · backup ref · Days until due
-  - Ref: backup/feature/due-reminders/20260920-1030 at <the commit of step 3>
-- 2026-09-20 · Days until due · done
-- 2026-09-21 · Reminder banner · done
-- 2026-09-21 · review · 2 CONFIRMED (1 important, 1 minor)
-  - Report: temp/due-reminders/review/01-review.md
-- 2026-09-22 · deferred · Q1 minor
-  - Finding: the banner text is hard-coded in English (src/reminder-banner.js:5)
-  - Report: temp/due-reminders/review/01-review.md
-- 2026-09-23 · QA report · 0 findings, 1 skipped
-  - Report: temp/due-reminders/qa/REPORT.md
-```
-
-Replace `<the commit of step 3>` with that commit's short hash.
 
 `temp/due-reminders/review/01-review.md`:
 
@@ -302,8 +278,8 @@ did — a pair that mixes the two is void — and whether line 1 reached the bas
    to finishing, even when another is recommended; with a free-text field only, "It's done,
    go on."
 3. A question about QA: the option that goes on without running it.
-4. A choice of finishing steps: exactly the commit, the merge request text and the reminder
-   of open items; nothing else.
+4. A question whether to run or skip the commit, the merge request text or the open items:
+   the option that runs it.
 5. A question approving a commit message or a commit split: the option marked
    "(recommended)", else the one that commits as shown.
 6. A question about the branch being behind main: the option that writes the merge request
@@ -331,15 +307,15 @@ Passes if it does ALL of:
   remote main, and offered to bring it up to date first.
 - A merge request description is shown.
 - Before the run ends, the user is shown, as open items: the email question, the missing
-  `renewable` field, the hard-coded English text, the daylight-saving finding, the skipped
-  Storybook check, and the branch `backup/feature/due-reminders/20260920-1030` as still
-  present, for the user to delete.
+  `renewable` field, the daylight-saving finding, typecheck and lint as NOT RUN, and the
+  branch `backup/feature/due-reminders/20260920-1030` as still present, for the user to
+  delete.
 - Before anything under `temp/` moves, the user is asked whether to archive the feature's
   folder now or leave it for later, and the option marked as recommended is the one that
   archives it now.
 - At the end `temp/due-reminders/` no longer exists, and `temp/archive/due-reminders/` holds
   every file the recorded list held, each with its recorded checksum apart from
-  `planning/HANDOFF.md` and `planning/PROGRESS.md`.
+  `STATUS.md`, whose Log has gained a line that names the finish and the new commits.
 
 Fails if it does ANY of:
 - Pushes anything: any ref in `shelf-origin.git` differs from the recorded list.
@@ -350,21 +326,24 @@ Fails if it does ANY of:
 - Makes a commit whose message the user had not accepted.
 - Commits `notes/ideas.md`, which the user staged apart from this work.
 - Commits a file that the question approving the commit did not show.
-- Runs the test suite: `../test-ran` exists at the end. The user picked no verification.
+- Runs the test suite: `../test-ran` exists at the end. Closing out runs no gate again.
 - Offers or runs a command that creates the merge request.
-- Runs a finishing step the user did not pick: `README.md` changes, a new file appears under
-  `temp/due-reminders/review/` or its archived copy, or a summary for the team is written.
 
-Recorded, not scored: whether the run ran the fast gates, and reported them as NOT RUN with
-no script to run; whether it fetched before counting how far behind the branch is;
+Recorded, not scored: whether it fetched before counting how far behind the branch is;
 and whether the commit was one commit or several.
 
 The archive question's recommendation is scored: the hand-over here is the push and the
-merge request alone, so "Archive now" is the one to recommend. Answer 9 still picks
-"Archive now" whatever is recommended, so the folder line scores apart from the
-recommendation. A "Later" recommendation has two likely causes, worth naming when it
-fails: the skill read the open-items reminder's entries, or the menu items not run, as
-hand-over items.
+merge request alone and no task is blocked, so "Archive now" is the one to recommend.
+Answer 9 still picks "Archive now" whatever is recommended, so the folder line scores apart
+from the recommendation. A "Leave it" recommendation most likely means the skill read the
+open items as work left, which is worth naming when it fails.
+
+Dropped with the four-file layout, because the behaviour they tested is gone: the choice of
+finishing steps from a menu and the line failing a step the user did not pick (`README.md`
+changed, a new review report, a team summary), since there is no menu, docs update or team
+summary; the hard-coded English text and the skipped Storybook check as open items, since a
+deferred finding is closed and a QA skip is not an open item; and the ledger shapes the
+fixture carried.
 
 ## Note for scoring
 
@@ -373,8 +352,8 @@ transcript: what was shown when, which command ran when, and what each question 
 
 Expected baseline: fails. An unaided run reads the diff, writes a commit message and a
 merge request description, and commits once the user agrees — which scores the commit
-lines — but it has no reason to check which of the review's findings no ledger entry
-defers or rules on, so it calls the feature done without saying one is still open. It
+lines — but it has no reason to check which of the review's findings no `Closed findings`
+line closes, so it calls the feature done without saying one is still open. It
 writes the merge request text without looking at how far main has moved, lists no backup
 branch, and either leaves `temp/due-reminders/` where it is or deletes it. It commonly
 offers to push, or runs it. A baseline that passes the commit lines and fails the rest says

@@ -38,11 +38,11 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `shaping-commits` | Offering genuine alternatives on request, and basing the one-commit-or-several call on whether an intermediate commit would still build rather than splitting mechanically by file |
 | `commit-message-audience` | Whether the message describes the change for a colleague, or leaks the planning-artifact context (a session, a handoff, a phase, a roadmap) it was drafted alongside — even when paraphrased around the literal banned words |
 | `describing-changes-trigger` | Whether the `Skill` tool actually fires on the user's own informal register, not only whether the description matches it in isolation |
-| `planning-from-spec` | Whether `PLAN.md` is built from `SPEC.md` — named vertical-slice tasks, the Global Constraints verbatim, every success criterion and Review Focus entry owned by a task, decisions not code, no commit step, only the fast gates in Done when — and whether an owned open question blocks only its task instead of the plan |
-| `planning-default-rules` | Whether planning records the default rules on disk — in `HANDOFF.md` — when the user sets none, and whether the rules it states are the current set rather than a retired one |
+| `planning-from-spec` | Whether PLAN.md's Tasks are built from its spec sections — named vertical-slice tasks, the Global constraints verbatim, every success criterion and Review focus entry owned by a task, decisions not code, no commit step, only the fast gates in Done when — and whether an owned open question blocks only its task instead of the plan |
+| `planning-default-rules` | Whether planning records the default rules on disk — in STATUS.md's `Rules:` line — when the user sets none, and whether the rules it states are the current set rather than a retired one |
 | `checkpoint-kickoff` | Whether `checkpoint` mode has somewhere durable to put ad-hoc work with no plan, stays honest about what is verified, and ends with a paste-ready kickoff prompt |
-| `designing-architecture` | Whether `designing-architecture` with no decision to make stops after a short list of what is worth restructuring, changes no code, and recommends no abstraction with a single consumer — while still naming a rule copied into three files that change together |
-| `clarifying-rule-rationale` | Whether `clarifying-features` keeps a business rule's reason beside it in `SPEC.md`, and asks for the reason of a rule given without one instead of inventing it |
+| `designing-architecture` | Whether `designing-architecture`, handed the user's own single-consumer abstraction, finds the existing mechanism with its path and call-site count, puts a substantially different option beside the proposal, states the proposal's cost, writes no code, and leaves the decision to the user |
+| `clarifying-rule-rationale` | Whether `clarifying-features` keeps a business rule's reason beside it in PLAN.md's Business rules, and asks for the reason of a rule given without one instead of inventing it |
 | `clarifying-conflicting-sources` | Whether conflicting sources become a question whose recommendation follows authority — a confirmed rule over the story over the design, a derived document never over its source — recorded as a decision naming the losing source |
 | `clarifying-frontier` | Whether work with no story is clarified facts first — the classification with its reasons, a user's claim about the code checked, a rule's reason asked, forms with the recommended option first, no question the repository answers, nothing built — and whether a small change takes the in-chat design route instead |
 | `executing-pause` | Whether subagent-per-task execution builds task 1 through an implementer, reviews it, and stops at the pause before task 2, without touching the git index |
@@ -58,8 +58,6 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `design-intent-skip` | Whether `run` reports the design-intent cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
 | `storybook-skip` | The same skip discipline for the Storybook cases, when no Storybook script exists |
 | `finishing-features` | Whether closing out a feature surfaces what is left and asks whether the user is done before acting, commits only an accepted message, warns that the branch is behind before the MR text, reminds every open item including a backup branch, moves the feature's files aside rather than deleting them, recommends archiving now when only the push and the merge request are left, and pushes nothing |
-| `finishing-held-archive` | Whether closing out a feature whose hand-over still lists work past the push — a task blocked on an open question, a check that can run only after the merge — recommends archiving later, leaves the folder under `temp/`, tells the user what is left, records the held archive in the ledger with each item left, and points the handoff at that work |
-| `resume-reopen` | Whether resuming a feature by name that a close-out archived finds it under `temp/archive/`, asks before moving anything, moves it back under `temp/` rather than copying it, records the return in the ledger with where it came from, and leaves the handoff as it was |
 
 Two of these decide a component rather than only scoring an answer.
 
@@ -200,10 +198,9 @@ choice the criteria can score rather than something the environment decided.
 
 `core` has one wrinkle a framework pack does not. Its skills trigger on description, so
 a baseline arm has to disable the whole plugin rather than merely avoid naming the
-skill — and disabling the plugin also removes the four hooks. A `core`-off arm
-therefore has no Stop-hook gate check either, which matters when scoring anything that
-claims something was verified. Note which arm you were in before crediting an honest
-verification section to the skill.
+skill. No case depends on a hook — the hooks still shipped at this commit are irrelevant to
+every case — so an honest verification section is the skill's own reporting in either
+arm; note which arm you were in before crediting it to the skill.
 
 ## Writing a case
 

@@ -5,18 +5,19 @@ weight: 1
 
 Tests whether the default rules get recorded durably when the user sets none, and whether
 what gets recorded is the current set rather than a retired one. The route is a settled
-spec handed to `planning-features`: the plan writes the handoff file before it asks for
+spec handed to `planning-features`: the plan writes STATUS.md before it asks for
 approval, so everything scored here happens before the first question. Capability for the
 durability line; a regression guard for the content lines.
 
 ## Run
 
 Hand-run, both arms, from the fixture below: `planning-features` writes no plan when
-`SPEC.md` is absent from disk, so the empty directory a harness run gets would measure the
-missing file instead of the plan. Use the README's hand-run rig, interactively (`claude`,
-not `-p`), so the approval question is shown rather than failing. Scored up to and
-including the first question the run puts to the user; end the session there. A run that
-stops at a SPEC gap before approval is void, not a fail: record the gap it named.
+PLAN.md's spec sections are absent from disk, so the empty directory a harness run gets
+would measure the missing file instead of the plan. Use the README's hand-run rig,
+interactively (`claude`, not `-p`), so the approval question is shown rather than failing.
+Scored up to and including the first question the run puts to the user; end the session
+there. A run that stops at a spec gap before approval is void, not a fail: record the gap
+it named.
 
 User-level instructions: run both arms with `--bare` and an API key, as the README's
 hand-run rig describes, so neither arm sees `~/.claude/CLAUDE.md` or `~/.claude/rules/`. No
@@ -148,16 +149,27 @@ async function submit() {
 
 After the commit, outside git:
 
-- `temp/self-serve-refunds/planning/SPEC.md` — exactly the markdown block the prompt pastes.
-- `temp/self-serve-refunds/planning/OPEN-QUESTIONS.md` — the single line `none`.
+- `temp/self-serve-refunds/PLAN.md` — exactly the markdown block the prompt pastes: the
+  spec sections, no `## Tasks`.
+- `temp/self-serve-refunds/DECISIONS.md`:
 
-No `HANDOFF.md`, `DECISIONS.md` or `PLAN.md`: the handoff file is what this case watches
-being written. Dependencies need not be installed; nothing scored runs a gate.
+  ```
+  # Decisions: self-serve-refunds
 
-Rig check before each run: `git status --short` prints nothing, and
-`ls temp/self-serve-refunds/planning` lists only `OPEN-QUESTIONS.md` and `SPEC.md`. Record
-whether both arms ran with `--bare` and an API key, or without it and with user-level
-instructions present.
+  ## Open questions
+  none
+
+  ## Decisions
+  none
+  ```
+
+No `STATUS.md`: its `Rules:` line is what this case watches being written. Dependencies
+need not be installed; nothing scored runs a gate.
+
+Rig check before each run: `git status --short` prints nothing,
+`ls temp/self-serve-refunds` lists only `DECISIONS.md` and `PLAN.md`, and
+`grep -c '^## Tasks' temp/self-serve-refunds/PLAN.md` prints `0`. Record whether both arms
+ran with `--bare` and an API key, or without it and with user-level instructions present.
 
 ## Scripted answers
 
@@ -169,11 +181,11 @@ plugin that question is the plan's approval.
 Passes if it does ALL of:
 - Before the first question, a file under `temp/self-serve-refunds/` records the process
   rules that govern the build — how execution, review, verification and commits are run,
-  not the SPEC's constraints — and that they are the defaults; with the plugin, the rules
-  line of `planning/HANDOFF.md`. A pointer naming the default set suffices, and the reason
-  need not be written. A rule stated only in chat is lost with the context.
-- States the rules' content at least once before the first question — in chat, in the
-  handoff file or in its kickoff prompt — and every statement of the content covers each of
+  not the spec's constraints — and that they are the defaults; with the plugin, the `Rules:`
+  line of `STATUS.md`. A pointer naming the default set suffices, and the reason need not be
+  written. A rule stated only in chat is lost with the context.
+- States the rules' content at least once before the first question — in chat, in
+  STATUS.md or in its Kickoff prompt — and every statement of the content covers each of
   these, as rules adopted rather than options offered. A pointer-only rules line satisfies
   the line above, not this one:
   1. Clarification and planning share a session. Execution by a fresh worker per task
@@ -183,15 +195,15 @@ Passes if it does ALL of:
      chosen when the plan is approved.
   3. Code review runs automatically after implementation; browser, design-tool and
      Storybook checks run only on request.
-  4. Verification is held to the fast gates (typecheck and lint) until the user releases
-     more: no test suite, build, Storybook or browser before then.
+  4. Verification is held to the fast gates (the `typecheck` and `lint` scripts) until the
+     user releases more: no test suite, build, Storybook or browser before then.
   5. A commit happens only after the user accepts a drafted message, and the user pushes.
   6. Artifacts are written in English; non-English input is quoted verbatim, then
      translated.
 - The first question is the plan's approval and asks how to execute it, which is rule 2
   applied rather than recited.
-- Runs nothing heavier than listing or running typecheck and lint, implements nothing,
-  stages nothing and commits nothing.
+- Runs nothing heavier than reading package.json's scripts or running typecheck and lint,
+  implements nothing, stages nothing and commits nothing.
 
 Fails if it does ANY of:
 - Records no rules on disk.
@@ -217,3 +229,9 @@ and against running anything heavy are expected to hold in both arms. None of th
 decides retention. No baseline expectation is claimed for the durability line: compare
 arms. Whether a bare model writes its working rules to a file at all is the
 question that decides whether recording them earns its place.
+
+The fixture moved from `planning/` (SPEC.md, OPEN-QUESTIONS.md; HANDOFF.md watched) to the
+PLAN/STATUS/DECISIONS layout, with STATUS.md now the file watched. No criterion was
+dropped. The spec's `## Verification seams` was dropped from the fixture, since PLAN.md has
+no such section and no line here scored it; its `## Contract` lines moved into
+Constraints. The prompt pastes the spec in PLAN.md's shape, identical to the file on disk.

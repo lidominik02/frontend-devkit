@@ -12,12 +12,12 @@ around it instead of stopping. Capability.
 ## Run
 
 Hand-run, both arms, from the fixture below: `planning-features` writes no plan when
-`SPEC.md` is absent from disk, so the empty directory a harness run gets would measure the
-missing file instead of the plan. Use the README's hand-run rig, interactively (`claude`,
-not `-p`), so the approval question is shown rather than failing. Scored up to and
-including the first question the run puts to the user; end the session there. A run that
-hands back on a SPEC gap other than the owned open question is void, not a fail: record
-the gap it named.
+PLAN.md's spec sections are absent from disk, so the empty directory a harness run gets
+would measure the missing file instead of the plan. Use the README's hand-run rig,
+interactively (`claude`, not `-p`), so the approval question is shown rather than failing.
+Scored up to and including the first question the run puts to the user; end the session
+there. A run that hands back on a spec gap other than the owned open question is void, not
+a fail: record the gap it named.
 
 User-level instructions: run both arms with `--bare` and an API key, as the README's
 hand-run rig describes, so neither arm sees `~/.claude/CLAUDE.md` or `~/.claude/rules/`. No
@@ -145,58 +145,66 @@ export function totalRevenue(invoices: Invoice[]): number {
 }
 ```
 
-After the commit, outside git, under `temp/multi-currency/planning/`:
+After the commit, outside git, under `temp/multi-currency/`:
 
-- `SPEC.md` — exactly the first markdown block the prompt pastes.
-- `OPEN-QUESTIONS.md` — exactly the second markdown block the prompt pastes.
+- `PLAN.md` — exactly the first markdown block the prompt pastes: the spec sections, no
+  `## Tasks`.
 - `DECISIONS.md`:
 
   ```
-  - **D1** · 2026-09-18 · support EUR, USD and GBP only
+  # Decisions: multi-currency
+
+  ## Open questions
+  - OQ1 · Does a credit note use the rate of the invoice it credits, or the rate on its own issue date? · owner: product owner · blocks: the credit-note rate (PLAN Business rules)
+
+  ## Decisions
+  - D1 · 2026-09-18 · support EUR, USD and GBP only
     - Rejected: every ISO currency
     - Source: the product owner: "those three cover every customer we bill"
-  - **D2** · 2026-09-18 · a failed rates request blocks issuing, with the error copy in SPEC States
+  - D2 · 2026-09-18 · a failed rates request blocks issuing, with the error copy in PLAN States
     - Rejected: fall back to EUR
-    - Source: SPEC States
-  - **D3** · 2026-09-18 · show today's rate beside each option in the currency selector
+    - Source: PLAN States
+  - D3 · 2026-09-18 · show today's rate beside each option in the currency selector
     - Rejected: plain currency codes
     - Source: the user accepted it as an extra
   ```
 
-- `HANDOFF.md`:
+- `STATUS.md`:
 
   ```
-  # Handoff: multi-currency — temp/multi-currency/planning/PLAN.md
+  # Status: multi-currency
 
-  ## Stage
-  clarify — owner: clarifying-features
-  Execution mode: not chosen
+  Stage: clarify — owner: clarifying-features
   Rules: the default rules block
+  Mode: not chosen
 
-  ## Status
-  SPEC.md confirmed by the user on 2026-09-18. One open question with the product owner, in OPEN-QUESTIONS.md.
+  ## Tasks
+  none
+
+  ## Verified
+  none
+
+  ## Closed findings
+  none
+
+  ## Log
+  - 2026-09-18 · spec confirmed by the user; one open question with the product owner (OQ1)
 
   ## Next action
   Write the plan — planning-features.
 
   ## Kickoff prompt
-  Resume the feature multi-currency with the planning-features skill, in resume mode.
-  Read first, in order:
-  1. temp/multi-currency/planning/HANDOFF.md
-  2. temp/multi-currency/planning/SPEC.md
-  3. temp/multi-currency/planning/DECISIONS.md, the entries SPEC.md cites: D2, D3
-  4. temp/multi-currency/planning/OPEN-QUESTIONS.md, the open entries
-  Stage: clarify — owner: clarifying-features.
-  Next action: write the plan.
-  Rules: the default rules block of planning-features.
+  Resume the feature multi-currency with the planning-features skill, in resume mode. Read first:
+  temp/multi-currency/STATUS.md, then temp/multi-currency/PLAN.md, then DECISIONS.md's D2, D3
+  and OQ1. Next action: write the plan. Rules: the default rules block.
   ```
 
 Dependencies need not be installed; the plan lists the gates, it does not run them.
 
-Rig check before each run: `git status --short` prints nothing, and
-`ls temp/multi-currency/planning` lists `DECISIONS.md`, `HANDOFF.md`, `OPEN-QUESTIONS.md`
-and `SPEC.md`, and no `PLAN.md`. Record whether both arms ran with `--bare` and an API key,
-or without it and with user-level instructions present.
+Rig check before each run: `git status --short` prints nothing, `ls temp/multi-currency`
+lists `DECISIONS.md`, `PLAN.md` and `STATUS.md`, and `grep -c '^## Tasks' temp/multi-currency/PLAN.md`
+prints `0`. Record whether both arms ran with `--bare` and an API key, or without it and
+with user-level instructions present.
 
 ## Scripted answers
 
@@ -207,9 +215,9 @@ plugin that question is the plan's approval.
 
 Passes if it does ALL of:
 - Writes the plan to a file a later session can find, before the first question — any
-  path in the repository counts; with the plugin, `temp/multi-currency/planning/PLAN.md`. A
-  plan presented only through the harness's plan mode or task list, with no file, fails
-  this line.
+  path in the repository counts; with the plugin, the `## Tasks` section of
+  `temp/multi-currency/PLAN.md`. A plan presented only through the harness's plan mode or
+  task list, with no file, fails this line.
 - The plan is a list of named tasks, each delivering one behaviour a user can observe,
   built through every layer it needs — for example, choosing the currency on a new invoice
   covers the rates call, the form and the stored rate. Tasks split by layer ("all API
@@ -231,12 +239,12 @@ Passes if it does ALL of:
   determine, such as the rounding. An exact signature or type shape is an interface, not
   code, wherever the plan writes it.
 - No task has a step to commit, stage, push or open a merge request.
-- Every task's done condition names the repository's fast gates — typecheck and lint, as
-  `package.json` declares them — and no task's done condition requires the test suite or
-  the build.
-- The credit-note work is planned as a task and carries the open question as what blocks
-  it; the other tasks are planned without waiting for it. A credit-note split in which only
-  the rate task is blocked passes.
+- Every task's done condition names the repository's fast gates — the `typecheck` and
+  `lint` scripts `package.json` declares, by name — and no task's done condition requires
+  the test suite or the build.
+- The credit-note work is planned as a task and carries the open question (`OQ1`) as what
+  blocks it; the other tasks are planned without waiting for it. A credit-note split in
+  which only the rate task is blocked passes.
 - Leaves the open question open: neither rate is chosen for credit notes as if settled. A
   provisional choice — "use the invoice's rate until the product owner answers" — counts as
   choosing it; a task that waits for the answer, or plans both outcomes, does not.
@@ -267,3 +275,9 @@ verbatim values, the review concerns assigned to tasks, the blocked task planned
 than the plan stopped, and the absence of a commit step. Record whether the baseline arm
 reached for the harness's own plan mode or task list; the first line scores what that
 produced.
+
+The fixture moved from `planning/` (SPEC.md, OPEN-QUESTIONS.md, HANDOFF.md) to the
+PLAN/STATUS/DECISIONS layout. No criterion was dropped. The spec's `## Verification seams`
+was dropped from the fixture, since PLAN.md has no such section and no line here scored it;
+its `## Contract` lines moved into Constraints. The prompt pastes the spec in PLAN.md's
+shape, identical to the file on disk.

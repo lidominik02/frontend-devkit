@@ -1,226 +1,137 @@
 ---
 name: planning-features
 description: >-
-  Turns SPEC.md into a task-level PLAN.md and keeps the handoff files current. Use when
+  Turns the spec in PLAN.md into tasks and keeps STATUS.md current. Use when
   the user says "write the plan", "break it into tasks", "resume", "resume the roadmap"
   or "checkpoint this". For "plan this feature", "new feature" or "here is the user
   story", use clarifying-features; for "implement the plan" or "execute task X",
   executing-plans.
-argument-hint: "[plan|resume|save|checkpoint] [feature]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git status *) Bash(git log *) Read Grep Glob Skill AskUserQuestion
+argument-hint: "[plan|resume|checkpoint] [feature]"
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git rev-parse *) Read Grep Glob Skill AskUserQuestion
 ---
 
-You turn a clarified feature into a plan of small tasks, and you keep the feature's
-artifacts true to the repository so that a session which remembers nothing can pick the
-work up.
+You turn a clarified feature into a plan of small tasks, and you keep the feature's files
+true to the repository so that a session which remembers nothing can pick the work up.
 
 The feature lifecycle is a chain of skills, and this one is second:
 
-`clarifying-features` (interview, research, SPEC.md) → `planning-features` (PLAN.md, the
-shared artifacts, the lifecycle stage, resume) → `executing-plans` (implementation) →
+`clarifying-features` (interview, research, PLAN.md's spec sections) → `planning-features`
+(PLAN.md's tasks, STATUS.md, resume) → `executing-plans` (implementation) →
 `reviewing-changes` (automatic review) → `testing-changes` (on request) →
-`finishing-features` (finish, with `describing-changes` writing the commit message and the
-MR text).
+`finishing-features` (commit, MR text, open items, archive).
 
-## The artifacts
+## The files
 
-A feature lives in `temp/<feature>/` in the repo that owns most of it; the planning files
-sit in `temp/<feature>/planning/`. `references/artifacts.md` is the contract for every
-file and its fixed shape — read it before writing an artifact. Its "Reading the artifacts"
-section says what to read of each file, and "The archive" which write moves an entry out of a
-live file.
+A feature lives in `temp/<feature>/`: `PLAN.md`, `STATUS.md`, `DECISIONS.md`, and
+`CONTRACT-GAPS.md` when the API is involved. `references/artifacts.md` is the shape of each
+file and the rule for reading it — read it before writing one. Read
+`references/project.md` first: the package manager, the framework packs, the gates and the
+base branch come from there.
 
-1. Update the artifacts in the same turn as the work they record: a decision that exists
-   only in the conversation is lost with the context window. `save` is an explicit
-   checkpoint, not the only moment state is written.
+1. Write a file in the same turn as the work it records: a decision that exists only in the
+   conversation is lost with the context window.
 2. A decision that shaped the plan gets a `DECISIONS.md` entry with the alternative it
    rejected.
-3. When you create `temp/<feature>/` in a repo whose `temp/` is not gitignored, say so
-   once. The artifacts stay untracked; what enters git is the user's call.
+3. The governing rules are the user's own when they have stated them, otherwise the
+   defaults in `references/rules-block.md`. `STATUS.md`'s `Rules:` line records which set
+   governs; if it has none yet, state the rules once and record them.
 
-## The rules and the stage
-
-The governing rules are the user's own when they have stated them, otherwise the defaults
-in `references/rules-block.md`. `HANDOFF.md` records which set governs and names exactly
-one lifecycle stage with its owner. `references/handoff-format.md` lists the stages, their
-owners and the file's shape. If `HANDOFF.md` has no rules line yet, state the governing
-rules once and record them there.
-
-## Research and decision forms
-
-A fact the plan needs that neither the SPEC nor the files it names give — how a module is
-wired, which files a change reaches — is looked up, never asked. A lookup wider than a few
-reads uses clarifying-features' research dispatch in
-`../clarifying-features/references/sources.md`: its agent type, `model: sonnet` and its
-prompt, with the plan's own questions alone as the numbered list, as for
-`research <question>`. Each finding is written as a note under `planning/research/` in that
-file's note shape. A plan cites notes on disk, never a report that exists only in the
-conversation.
-
-Before a form that decides an architecture or a product question, read
-`../clarifying-features/references/question-rounds.md` and hold the form to it. Before an
-architecture form, also read `## The better option` and `## Guards` in
-`../designing-architecture/references/codebase-design.md`, and judge each option by the
-better option's criteria; the form offers the options, and nothing is restructured beyond
-what the user picks. An architecture choice the SPEC leaves to the plan is asked here, and its answer gets a
-`DECISIONS.md` entry; a product question goes back to clarifying-features, as `plan` step 2
-says.
+A fact the plan needs that neither the spec nor the files it names give is looked up, never
+asked, with clarifying-features' research dispatch in `../clarifying-features/references/sources.md`.
+Before an architecture form, read `## The better option` and `## Guards` in
+`../designing-architecture/references/codebase-design.md`, and offer only the options the
+user can pick; a product question goes back to clarifying-features.
 
 ## Mode: `plan <feature>`
 
-The input is `SPEC.md` and the files it points at. The plan decides how to build what the
-SPEC settled; what to build is already settled there.
+The input is PLAN.md's spec sections and the files they point at. The plan decides how to
+build what the spec settled.
 
-1. **Read** `SPEC.md` and the open entries of `OPEN-QUESTIONS.md`. Open each file the
-   SPEC's Architecture fit names before building on it.
-2. **Check that the SPEC can carry a plan.** When `SPEC.md` is missing, or a task needs an
-   answer the SPEC does not give and no one has been asked — a business rule, a state, a
-   contract field — write no plan. Tell the user which gap stops it, hand back — call the
-   Skill tool with "core:clarifying-features", naming the gap — and stop. An open question
-   in `OPEN-QUESTIONS.md` with an owner does not stop the plan: every task is planned, and
-   a task the question blocks names its id in Blocked by.
-3. **List the fast gates:** `node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --list
-   --stage fast`. Every task's Done when names these gates, or says the repo has none and
-   names the observation that stands in for them.
-4. **Write `PLAN.md`** in the format of `references/plan-format.md`: the header, then the
-   tasks as named vertical slices. When `PLAN.md` already exists, revise it as "A plan
-   that already exists" describes, in place of steps 4–7.
-5. **Self-review and fix inline**, with no reviewer subagent:
-   1. SPEC coverage — every success criterion is an acceptance criterion of some task.
-   2. Step scan — every step decides or produces something concrete; a step like "handle
-      edge cases" is rewritten into the cases.
-   3. Interfaces — every name a task consumes is produced by an earlier task or already
+1. **Read the spec and the open questions.** Read PLAN.md above `## Tasks`, and grep
+   DECISIONS.md's `## Open questions` for lines without `answered:`. Open each file the
+   Architecture fit names before building on it. When the spec sections are missing, or a
+   task needs an answer the spec does not give and no one has been asked — a business rule,
+   a state, a contract field — write no tasks: name the gap, call the Skill tool with
+   "core:clarifying-features" in `gap` mode, naming it, and stop. An open question with an
+   owner does not stop the plan: the task it blocks names its `OQ<n>` in Blocked by.
+2. **Write the Tasks section** in the shape of `references/artifacts.md`: named vertical
+   slices, each one piece of behaviour the user can observe, built through every layer it
+   needs. Files are real paths; Interfaces use the exact names later tasks call; Design
+   points at the exact screens and states; acceptance criteria come from the success
+   criteria; Done when names the fast gates `references/project.md` finds, or says "no gates
+   declared", plus the observation that proves the criteria; Tier is `mechanical` for a
+   complete brief touching 1–2 files, `judgment` otherwise. When a Tasks section already
+   exists, rewrite only the tasks the new decisions touch, dropping an answered question
+   from their Blocked by; a Done task is never rewritten — a change it needs becomes a new
+   task after it.
+3. **Self-review and fix inline**, with no reviewer subagent:
+   1. Coverage — every success criterion is an acceptance criterion of some task.
+   2. Interfaces — every name a task consumes is produced by an earlier task or already
       exists, with the same spelling and shape.
-   4. Review Focus — every entry is assigned to a task.
-   5. Proportion — a plan longer than the code it describes has written the code; cut it
-      back to decisions.
-6. **Checkpoint:** `PROGRESS.md` gets the task table; `HANDOFF.md` gets the stage
-   `plan (awaiting approval)`.
-7. **Ask for approval and the execution mode**, as below, and act on the answer.
+   3. Review focus — every entry is assigned to a task.
+   4. Proportion — a plan longer than the code it describes has written the code; cut it
+      back to decisions. A step like "handle edge cases" is rewritten into the cases.
+4. **Status:** STATUS.md's Tasks table gets one row per task (a new task its own row, a Done
+   row untouched), the Stage `plan (awaiting approval)`, a Log line, and the Next action.
+5. **Approval and the mode.** Recommend one mode with a reason from this plan — how tightly
+   its tasks couple, how many there are, what a shipped mistake would cost:
+   - **Subagent per task** — a fresh implementer for each task, a task review after each,
+     and a pause after each task.
+   - **Inline** — this session implements every task, with one review at the end.
 
-Under Claude Code plan mode, present the plan's content for approval and write the files,
-research notes included, once plan mode exits. The user's approval in plan mode covers the
-plan's content only: steps 6 and 7 still run before anything is implemented, so the form
-below still asks the mode and, for Inline, the session. A revised plan runs its own step 4
-instead, as "A plan that already exists" describes.
+   Ask with one AskUserQuestion form: the recommended mode (marked recommended), the other
+   mode, "Approve, choose later", "Change". A revised plan whose STATUS.md already records a
+   mode asks only Approve the changes (recommended) or Change.
+   - **Subagent per task:** record `Mode:` and call the Skill tool with
+     "core:executing-plans".
+   - **Inline:** record `Mode:`, then one form: "Start a new session from the kickoff
+     prompt" (recommended — this context holds the whole clarification and plan) or
+     "Continue here", which calls the Skill tool with "core:executing-plans".
+   - **A new session:** write STATUS.md's Kickoff prompt, show it, and stop.
+   - **Approve, choose later:** `Mode: not chosen`; the next action is the user's choice.
+   - **Change:** apply it, run step 3 again, and ask again.
 
-### Approval and the execution mode
-
-Recommend one mode, with a reason taken from this plan: how tightly its tasks couple, how
-many there are, and what a shipped mistake would cost. A recorded rule about the mode or
-the session sets the recommendation; it never replaces the question.
-
-- **Subagent per task** — a fresh implementer for each task, a task review after each,
-  and a pause after each task.
-- **Inline** — this session implements every task, with one review at the end.
-
-Ask with one AskUserQuestion form. The options, in order: the recommended mode (marked as
-recommended), the other mode, "Approve plan, choose later", "Change the plan".
-
-- **Subagent per task:** record it in `HANDOFF.md` and continue in this session — call the
-  Skill tool with "core:executing-plans".
-- **Inline:** record it in `HANDOFF.md`, then ask with one AskUserQuestion form: "Start a
-  new session from the kickoff prompt" (recommended — inline work would otherwise run in
-  the context that holds the whole clarification and plan), then "Continue here", which
-  calls the Skill tool with "core:executing-plans".
-- **A new session**, recommended for Inline or asked for in either mode: finish
-  `HANDOFF.md` with its kickoff prompt, show the prompt, and stop.
-- **Approve plan, choose later:** record the approval in `HANDOFF.md` with the mode not
-  chosen; the next action is the user's choice of mode.
-- **Change the plan:** apply the change, run the self-review again, and ask again.
-
-### A plan that already exists
-
-When `PLAN.md` exists — clarifying-features calls `plan` after a `gap`, an arriving answer
-to an open question included — revise the plan rather than rewrite it:
-
-1. Read the new `DECISIONS.md` entries and rewrite only the tasks they touch, dropping an
-   answered question from their Blocked by. A Done task is never rewritten: a change it
-   needs becomes a new task after it.
-2. Keep every Done task and its `PROGRESS.md` row, the ledger and the recorded execution
-   mode. A new task gets its own row. Append a `plan revised` ledger entry.
-3. Run the self-review on the changed tasks, and tell the user which tasks changed and how.
-4. Set the stage `plan (awaiting approval)` and ask with one form: Approve the changes
-   (recommended), or Change the plan. On approval, continue in the recorded mode as
-   Approval describes, Inline's session form included. That mode is the user's answer to
-   this plan's mode question, which step 2 keeps, not a recorded rule, so it is not asked
-   again. With no mode recorded, ask the full approval form.
+Under Claude Code plan mode, present the tasks for approval and write the files once plan
+mode exits; the approval covers the content only, so the mode form still runs.
 
 ## Mode: `resume`
 
-Report where the feature stands, then wait for the user — unless the request carries more
-than resuming, which step 8 routes.
+Report where the feature stands, then wait — unless the request carries more than resuming.
 
-1. If several features have artifacts under `temp/`, list them and ask which one. A
-   feature the user names that has no `<top>/temp/<feature>/` — `<top>` being the top level
-   of the repository whose `temp/` holds the features — may have been archived: look for
-   it under both names "The archived feature folder" in `references/artifacts.md` gives.
-   The archive is searched only for a named
-   feature whose folder under `temp/` is missing; the list of features never includes it.
-   - **One match:** one AskUserQuestion naming its path: "Bring it back (recommended)" or
-     "Leave it archived".
-   - **Several matches:** list each path in the chat with the date of the latest `finish`
-     entry in its PROGRESS.md ledger, then ask which to bring back, three paths to an
-     AskUserQuestion in that order, since a question holds four options at most. The
-     fourth option is "Leave it archived" on the last question and "None of these" on the
-     others, which asks the next.
-   - **Bring it back:** `mv <the archive path> <top>/temp/<feature>`, behind the normal
-     permission prompt; nothing is deleted. HANDOFF.md stays as it was. The ledger gets
-     `- <date> · reopened · <feature>` with `  - From: <the archive path it came from>`,
-     under step 5's 60-entry rule; the earlier `Archived:` line stays. Then continue from
-     step 2.
-   - **Leave it archived:** nothing moves. Say where the archived folder is, and stop.
-   - **No match:** say the feature is under neither `temp/` nor `temp/archive/`, and list
-     the features under `temp/`.
-2. Read `HANDOFF.md` and check its first line: the feature slug matches the folder, and the
-   PLAN.md path resolves, unless the stage is `clarify`, when no plan exists yet. When
-   either does not, say so and treat the file as unverified.
-3. Read what "Reading the artifacts" in `references/artifacts.md` gives the main thread:
-   `PROGRESS.md`'s task table and latest ledger entries, then the active task in `PLAN.md`
-   and its brief under `tasks/`, if there is one — its report is a worker report, left to
-   grep. At the `clarify` stage read the `SPEC.md` draft, the `DECISIONS.md` entries it
-   cites and the open entries of `OPEN-QUESTIONS.md` instead; the next action is
-   clarifying-features `continue`.
-4. Compare the repository with what the artifacts claim: `git status --short --branch` for
-   the branch and the changed files, `git log --oneline -20` for the commits. An artifact
-   that has drifted from the repository reads as current, which makes it worse than a
-   stale one. A QA list or report that a later execute stage made stale, as the `qa/`
-   section of `references/artifacts.md` defines it, is flagged as stale.
-5. Work the artifacts do not record is normal — the user works outside sessions too. List
-   it in the report with a question about what changed, and record the user's answer in
-   the `PROGRESS.md` ledger — at the `clarify` stage, in `HANDOFF.md`'s Status. An entry
-   that takes the ledger past 60 entries moves closed tasks' entries in the same write, by
-   "The archive" in `references/artifacts.md`.
-6. An old-format feature — `MASTER-PLAN.md` with a phase roadmap, `phase-N-*.md` files,
-   `research.md`, `ASSUMPTIONS.md`, or an old stage name — resumes too: read its files
-   where they are, map its stage with the table in `references/handoff-format.md`, and say
-   which mapping you applied. That file's old-format section also says how its rules are
-   recorded and asked about, and that new work moves to the current layout.
-7. Report the stage and its owner, what is done and how it was verified, the drift found,
-   and the single next action.
-8. **A request beyond resuming** — a change, new work, a plan — gets the report in a few
-   lines and is then routed, not waited on. A new or changed decision, and new work with no
-   `SPEC.md` to carry it, goes to clarifying-features: call the Skill tool with
-   "core:clarifying-features" in `gap` mode, naming what the request changes and, for an
-   old-format feature, the files SPEC.md is written from; it records the decisions, then
-   calls `plan`. A plan request the SPEC already carries runs `plan` in this session. A
-   request to implement an approved plan calls the Skill tool with "core:executing-plans".
+1. If several features have folders under `temp/`, list them and ask which one. A named
+   feature with no `temp/<feature>/` may be archived: "`temp/archive/<feature>/` — move it
+   back by hand (it is untracked) and resume again."
+2. Read STATUS.md and PLAN.md whole. At the `clarify` stage there are no tasks yet: the next
+   action is clarifying-features `continue`.
+3. Compare the repository with what the files claim: `git status --short --branch` for the
+   branch and the changed files, `git log --oneline -20` for the commits. A file that has
+   drifted from the repository reads as current, which makes it worse than a stale one. A
+   `qa/` file older than a later `Log` line that records a task done is stale; say so.
+4. Work the files do not record is normal — the user works outside sessions too. List it
+   with a question about what changed, and record the answer as a STATUS.md Log line.
+5. Report the Stage and its owner, what is done and how it was verified, the drift, and the
+   Next action.
+6. **A request beyond resuming** gets the report in a few lines and is then routed: a new or
+   changed decision, or new work the spec does not carry, calls the Skill tool with
+   "core:clarifying-features" in `gap` mode; a plan request the spec carries runs `plan`
+   here; a request to implement calls the Skill tool with "core:executing-plans".
 
-## Mode: `save`
-
-Bring every artifact in line with the repository now: the `PROGRESS.md` table and ledger,
-new `DECISIONS.md` entries, and a rewritten `HANDOFF.md` status, next action and kickoff
-prompt. A task is Done when every step ran and every gate in its Done when passed; a task
-with a skipped step or an unrun gate stays open, and the ledger names what was skipped. Each
-write makes the move "The archive" in `references/artifacts.md` requires: a superseded
-decision, an answered question, a ledger past 60 entries.
+A feature still in the six-file layout (planning/SPEC.md, HANDOFF.md) is carried over by
+hand as the end of `references/artifacts.md` says; tell the user so, and stop.
 
 ## Mode: `checkpoint`
 
-For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slug>.md` in the
-checkpoint shape of `references/handoff-format.md`: what was done, what was verified (each
-gate with its result, an unrun one as NOT RUN), what is left, whether the work is safe to
-pick up in a new session or better finished in this one and why, and the kickoff prompt.
+For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slug>.md`:
+
+```
+# Checkpoint: <slug>
+## Done
+## Verified        each gate with its result, an unrun gate as NOT RUN, what was observed by hand
+## Left
+## Pick up         Safe in a new session | Better finished in this one — <why>
+## Kickoff prompt  Continue <slug>. Read first: temp/handoffs/<slug>.md, then <files>.
+                   Next action: <the next action>. Rules: <the rules that govern>.
+```
 
 ## Modes that moved
 
@@ -231,10 +142,10 @@ pick up in a new session or better finished in this one and why, and the kickoff
 ## What this must NOT do
 
 - Implement anything.
-- Write a plan without `SPEC.md`, or answer a missing product question itself.
+- Write tasks without the spec sections, or answer a missing product question itself.
 - Run a test suite, a build, Storybook or a browser check before the user releases it.
-- Commit or `git add` the artifacts.
-- Mark a task Done with a step skipped or a gate unrun.
-- Append a second "Next action" to `HANDOFF.md` — rewrite the one that is there.
+- Commit or `git add` the feature's files.
+- Mark a task done with a step skipped or a gate unrun.
+- Keep a second Next action in STATUS.md — rewrite the one that is there.
 - Carry a fact about an individual repository. A repo's conventions live in that repo's
   own files, read at the moment of use.

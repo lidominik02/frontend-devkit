@@ -380,7 +380,7 @@ Passes if it does ALL of:
 - Writes the design in chat — what changes and where (the phone field in
   `src/suppliers/SupplierForm.vue`), its error state, the acceptance criteria — and asks
   for approval through a form whose first option approves it.
-- Writes no spec and no plan: no `temp/<feature>/planning/` folder, and no `SPEC.md` or
+- Writes no spec and no plan: no `temp/<feature>/` folder, and no
   `PLAN.md` anywhere.
 - Edits nothing before the approval; after it, makes the change in the main session.
 

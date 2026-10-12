@@ -6,304 +6,170 @@ description: >-
   task X", "start implementing" or "fix the findings". For "write the plan", "break it
   into tasks" or "resume", use planning-features; for "review this", reviewing-changes.
 argument-hint: "[subagent|inline|fix-findings] [feature] [task]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs *) Bash(git check-ignore *) Bash(git cat-file -e *) Bash(git rev-parse *) Read Grep Glob Agent Skill AskUserQuestion SendMessage
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(git check-ignore *) Bash(git cat-file -e *) Bash(git rev-parse *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion SendMessage
 ---
 
 You carry out an approved plan, one task at a time. In subagent mode `core:implementer`
 workers write the code and a `core:reviewer` reviews each task; in inline mode this session
-writes it. In both, the plan, the gates and the artifacts decide when a task is done. Every
-ledger, decision and question entry follows `../planning-features/references/artifacts.md`,
-and each write makes the move its "The archive" section requires — a ledger entry that takes
-the ledger past 60 entries, a decision that supersedes another. What this skill reads of each
-artifact follows that file's read rule, "Reading the artifacts".
+writes it. In both, the plan, the gates and STATUS.md decide when a task is done. Every file
+you write follows `../planning-features/references/artifacts.md`. Read
+`../planning-features/references/project.md` first: the package manager, the framework
+packs, the gates and the base branch come from there.
 
-In the feature lifecycle this runs after `planning-features`, which writes PLAN.md, takes the
-user's approval and the execution mode, and calls this skill or leaves a kickoff prompt for a
-new session. When every task is done this skill calls `reviewing-changes` for the whole
-feature, unless its rules hold the review, and stops. Once the user has read the code and
-the report, `fix-findings` fixes what the user wants fixed.
+In the lifecycle this runs after `planning-features`, which takes the user's approval and
+the mode. When every task is done this skill calls `reviewing-changes` for the whole
+feature, unless the rules hold the review. Once the user has read the code and the report,
+`fix-findings` fixes what the user wants fixed.
 
 ## 1. Pre-flight
 
-Once per run, in both execution modes. `fix-findings` needs only the feature, the recorded
-mode and, inline, the framework rules: steps 1, 3 and 7.
+Once per run. `fix-findings` needs only steps 1, 2, 3 and, inline, 6.
 
-1. **Feature.** The caller or the user names it. When neither does and `temp/` holds several
-   feature folders, ask with one AskUserQuestion form which one. The planning files are in
-   `temp/<feature>/planning/`. Every `temp/` path in this skill and its reference is under
-   the repository root that `git rev-parse --show-toplevel` prints, whatever the current
-   directory: write each file there, and hand each path on as an absolute one.
-2. **Read the state.** `HANDOFF.md`: the execution mode, the rules, the stage. `PLAN.md`,
-   once: the header's Global Constraints and Review Focus, and every task. `PROGRESS.md`'s
-   task table and latest ledger entries: what is already Done — a restarted run continues at
-   the first task not Done. A task the user names is where the run starts, once every task in
-   its Blocked by is Done and it is not blocked; otherwise name what blocks it and ask. A
-   task whose Blocked by names an open question — by `OQ<n>` or, in an older feature, by its
-   quoted wording, with no `Answered:` sub-item or older free-text answer mark in
-   `OPEN-QUESTIONS.md`, and no answered entry under that id in
-   planning/archive/OPEN-QUESTIONS.md — is blocked this run, and so is every task whose
-   Blocked by names a blocked task: each gets its `PROGRESS.md` row Blocked and a `blocked`
-   ledger entry, and the run continues with the rest. A task not Done whose Blocked by names
-   a question now answered was planned before the answer: read its Steps, Acceptance
-   criteria and Interfaces against the `DECISIONS.md` entry that answered it, and when they
-   contradict that entry, stop before any task runs, name the task, the entry and what
-   contradicts it, and offer planning-features `plan` to revise it.
+1. **Feature.** The caller or the user names it; with several folders under `temp/` and
+   none named, ask with one form. Every `temp/` path is under the repository root
+   `git rev-parse --show-toplevel` prints, written there and handed on as an absolute path.
+2. **Read the state.** STATUS.md and PLAN.md whole. A restarted run continues at the first
+   task not done. From DECISIONS.md read only the `OQ<n>` lines the tasks' `Blocked by` name
+   (grep): an OQ without `answered: D<n>` blocks its task this run, and so does every task
+   whose Blocked by names a blocked task — each gets its row `blocked (OQ<n>)` and a Log
+   line, and the run continues with the rest. A task the user names starts the run once
+   nothing blocks it; otherwise name what blocks it and ask.
 3. **Mode.** A mode named in the arguments is the user's choice. With none there and none
-   recorded, ask with the mode form in the Forms section of `references/dispatch.md`.
-   Record the mode in `HANDOFF.md` (`Execution mode:`).
-4. **Conflict table.** A `## Conflicts` section in `PROGRESS.md`, above the ledger: each file
-   more than one task modifies, with those tasks; each interface a task consumes, with the
-   task that produces it. Tasks run strictly one at a time in one working tree; the table is
-   what each task's diff is checked against.
-5. **Baseline.** Run the fast gates once, and each gate released at this moment once
-   (`--gate test --json`, `--gate build --json`), so a failure that predates the run is
-   never blamed on a task, and take the pre-execution tree — the base the final review diffs
-   from. Each command writes its JSON to its own file in the feature folder, which already
-   exists: `temp/<feature>/baseline-fast.json`, and `baseline-test.json` or
-   `baseline-build.json` for each released gate. Each is written with `>`, so every file
-   holds one JSON document, and a rerun — a corrected call, a retaken baseline, or the
-   rewrite below — overwrites it. A redirect to a file, never a pipe, so each exit code
-   survives, and each failing gate keeps its `output` for the comparison in section 2 step 6. Exit 2 is a
-   usage error in the call, not a gate result: correct the call and run it again. Record
-   the gates, each file's absolute path and the tree in one ledger entry. A restarted run keeps the latest
-   recorded tree. When "The final review's base" in
-   `../planning-features/references/artifacts.md` takes the base from a `sync` entry, or
-   from the merge-base of a `pruned` entry, that settles it for every later run; otherwise
-   check the tree with `git cat-file -e <tree>^{tree}`. A failed check, and any
-   gate run that reports a hung gate or a directory that is not a project root, go by the
-   troubleshooting table in `references/dispatch.md`, never as a task failure.
+   recorded (or `not chosen`), ask: one form, the recommended mode first, with the reason taken from the
+   plan — how tightly its tasks couple, how many there are, what a shipped mistake would
+   cost. Record it as STATUS.md's `Mode:`.
+4. **Baseline.** Run the fast gates once, as `project.md` describes, and write each result
+   to STATUS.md's `Verified` as `baseline:`, so a failure that predates the run is never blamed on
+   a task. Then `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take` and write the tree
+   it prints to `Verified` as `pre-execution tree:`, the base the final review diffs from.
+   A restarted run keeps the recorded tree once `git cat-file -e <tree>^{tree}` confirms it.
+5. **Untracked `temp/`.** When `git check-ignore -q temp/` exits 1, say once that the briefs
+   and diffs land in an untracked `temp/`.
+6. **Inline only: framework rules.** Call the Skill tool with each pack `project.md` finds,
+   in its order. A later pack wins every conflict.
 
-   ```
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json > <abs>/temp/<feature>/baseline-fast.json
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate test --json > <abs>/temp/<feature>/baseline-test.json     # test released only
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --gate build --json > <abs>/temp/<feature>/baseline-build.json   # build released only
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take
-   ```
-
-   **A task left open with a gate failure.** When a task stays open with a gate failure and
-   the run goes on, in either mode, rerun the gate commands above before the next task
-   starts, overwriting the baseline files, so the next task sees the open failure in its
-   baseline and judges it pre-existing. This writes no ledger entry of its own: the next
-   task's `done | open` entry gains a `Baseline files rewritten: after <open task name>`
-   sub-item, because only then is it known that the run went on. It never writes a
-   `baseline retaken` entry and never takes a new pre-execution tree, so the final review's
-   base stays where "The final review's base" puts it.
-
-6. **Untracked `temp/`.** When `git check-ignore -q temp/` exits 1, say once that the briefs,
-   reports and diffs land in an untracked `temp/`.
-7. **Inline only: framework rules.** Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/project-facts.mjs"`
-   and, for each `stack.packs` entry in order, call the Skill tool with that pack's
-   engineering skill. A later pack wins every conflict.
+A task that names a rebase or another history operation goes to `core:syncing-branches`
+before anything else runs; this skill never runs one.
 
 ## 2. Subagent per task
 
-For each task neither Done nor blocked, in plan order — a git history or index task runs by
-section 4 in place of steps 2 to 7:
+For each task neither done nor blocked, in plan order:
 
-1. **Base.** `snapshot.mjs take` prints the task's base tree. `HANDOFF.md`: the stage
-   `execute (task N/M, Subagent per task) — owner: executing-plans`, with Status and Next
-   action naming the task; Status also names each stale `qa/` file, by the `qa/` section of
-   `../planning-features/references/artifacts.md`. The task's `PROGRESS.md` row: In progress.
-2. **Brief.** Write `temp/<feature>/tasks/<NN>-<task-slug>-brief.md`, `<NN>` being the task's
+1. **Base.** `snapshot.mjs take` prints the task's base tree. STATUS.md: the Stage
+   `execute (task N/M, subagent per task) — owner: executing-plans`, and the row
+   `in progress`.
+2. **Brief.** Write `temp/<feature>/tasks/<NN>-<task-slug>-brief.md`, `<NN>` the task's
    position in the plan, from the template in `references/dispatch.md`, every field filled.
-   Fill the row's Brief and Report columns.
-3. **Dispatch** `core:implementer` by that fully-qualified name, in the foreground
-   (`run_in_background: false`), with the prompt and the model `references/dispatch.md` gives.
-4. **Status.** Act on the implementer's status by the table in `references/dispatch.md`. It
-   stops for the user on a `BLOCKED`, on a concern that changes the scope or the product,
-   and on a question `SPEC.md` and `DECISIONS.md` do not answer.
-5. **Check the report against the code.**
+3. **Dispatch** `core:implementer` by that name, in the foreground, with the prompt in
+   `references/dispatch.md`: `sonnet` for a `mechanical` task, the session model otherwise.
+4. **Status.** Act on the implementer's returned status:
 
-   ```
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" diff <task base> --out temp/<feature>/tasks/<NN>-<task-slug>.diff
-   ```
+   | Status | Action |
+   | --- | --- |
+   | `DONE` | Diff the task, then the gates and the task review |
+   | `DONE_WITH_CONCERNS` | Weigh each concern. One that changes the scope or the product is the user's: stop and ask. Otherwise as `DONE`, the concerns in the pause brief |
+   | `NEEDS_CONTEXT` | Answer from PLAN.md or the DECISIONS.md entry by id, citing the line, and send it to the same implementer. When neither answers: one form to the user, the answer a DECISIONS.md entry, then continue the implementer |
+   | `BLOCKED` | Stop, report what blocks it, and ask |
 
-   Every changed file is in the brief's Files or named in the report with a reason. Take the
-   files from the diff's stat lines and grep the report for each file outside the brief's
-   Files: the read rule leaves diffs and worker reports to workers and grep. A file outside
-   both, or one the conflict table gives to another task, is raised to the reviewer and to
-   the user — never silently accepted.
-6. **Task review.** Run the fast gates once, and each released gate once
-   (`--gate test --json`, `--gate build --json`). Exit 2 is a usage error in the call:
-   correct the call and run it again; it is no gate result and no finding. Judge every
-   failure, the ones the report calls pre-existing included, by "Judging a gate failure
-   against the baseline" in `references/dispatch.md`: it is the task's, pre-existing or
-   undecided. An undecided failure never enters the fix loop on its own, and always stops the run after this task, even when the user chose
-   "Continue without pausing": the pause brief and form of step 9 name each with its gate
-   and its location from the `output`, for the user to rule on. Then dispatch
-   `core:reviewer`, `sonnet`, foreground, with the task-review prompt of
-   `references/dispatch.md`: role `two-axis`, the absolute diff path step 5 printed, its
-   intent sources and one gate block per command run.
-7. **Fix loop**, for critical and important findings, and for every gate failure step 6
-   found to be the task's, which joins them as an important finding named by its gate and
-   its error from the `output`: at most three rounds, each run as the Fix rounds section of
-   `references/dispatch.md` says, its decision check first.
-   A critical or important finding still open after round 3 stops the run for the user,
-   unless it is a reversible plan defect, ruled on as section 3's Deviations says. Each
-   minor finding, from any round, gets a `deferred` ledger entry; the final review sees the
-   code again.
-8. **Close the task.** The row is Done only when every step ran and every gate in its Done
-   when passed; otherwise it stays open and the ledger names what was skipped. One ledger
-   entry: the task, the gates, the rounds, the review result. A task left open with a gate
-   failure rewrites the baseline files before the next task's step 1, by pre-flight step 5.
-9. **Pause** after every task, unless the user chose "Continue without pausing" earlier in
-   this run, with the pause brief and form in the Forms section of `references/dispatch.md`.
-   Without pausing, the run still stops and asks wherever a step above says to — step 6
-   on an undecided gate failure among them.
+5. **Diff.**
+   `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" diff <task base> --out temp/<feature>/tasks/<NN>-<task-slug>.diff`.
+   Compare the stat lines with the brief's Files: a changed file outside them that the
+   implementer's message does not name with a reason is raised to the reviewer and to the
+   user — never silently accepted.
+6. **Gates.** Run the fast gates as `project.md` describes, and judge each failure against
+   the baseline in `Verified`:
+   - **the task's** — the gate passed in the baseline, or the baseline lacks this error:
+     fixed, in an untouched file too;
+   - **pre-existing** — the baseline holds the same error: reported, not fixed;
+   - **undecided** — the gate has no comparable baseline result (NOT RUN there, or released
+     after it): reported with its location; the user rules on it, it never enters a fix
+     round on its own, and it stops the run after this task even without pausing.
+7. **Task review.** Dispatch one `core:reviewer`, foreground, `Role: two-axis`, in the
+   dispatch shape of `../reviewing-changes/references/formats.md`, as `references/dispatch.md`
+   fills it: the diff from step 5, the intent sources, the `Packs:` line and the step 6
+   gate block.
+8. **Fix rounds**, for critical and important findings and the task's own gate failures: at
+   most three. Rounds 1 and 2 go to the same implementer with SendMessage; round 3 to a fresh
+   `core:implementer` with the brief and the findings. After every round: a new diff from the
+   tree the previous review saw, the gates, and one `core:reviewer` with `Role: re-review`.
+   A finding that contradicts a recorded decision goes to no implementer: ask Keep D<n>
+   (recommended) or Change it. A critical or important finding still open after round 3
+   stops the run for the user. A minor finding stays in the review's verdict line.
+9. **Close the task.** The row is `done` only when every step ran and every gate in its Done
+   when passed; otherwise it stays `in progress` and the Log line names what was skipped.
+   The row gets its gates and the review verdict; one Log line records the task.
+10. **Pause** after every task, unless the user chose "Continue without pausing" in this run:
+    a short brief — what was built, the review result, the rounds, each undecided gate
+    failure, anything the user must weigh — then one form: Continue (recommended), Continue
+    without pausing, Stop. Stop leaves STATUS.md with the next task as the Next action and
+    the kickoff prompt rewritten to match.
 
 ## 3. Inline
 
-For each task neither Done nor blocked, in plan order — a git history or index task runs by
-section 4 in place of steps 2 and 3:
+For each task neither done nor blocked, in plan order:
 
-1. **Open** the task by reading it in `PLAN.md`, not from memory of the plan, and quoting
-   its `## Task:` heading as read. The run's first task also sets `HANDOFF.md`'s stage,
-   `execute (task N/M, Inline) — owner: executing-plans`, and its Next action to itself.
-2. **Implement** with Edit and Write, since the format-on-write hook runs after those tools
-   and never after a Bash or PowerShell write. A scripted Bash or PowerShell edit is allowed only for conflict hunks and
-   mechanical renames, and the format pass in `references/dispatch.md` follows it, over the
-   files it touched and no others.
-3. **Gates.** `node "${CLAUDE_PLUGIN_ROOT}/scripts/run-gates.mjs" --stage fast --json`, its
-   result read from its exit code and JSON, never through a pipe that drops the exit code.
-   Exit 2 is a usage error in the call: correct the call, not the code. Each failure is
-   judged by "Judging a gate failure against the baseline" in `references/dispatch.md`:
-   the task's failures are fixed before the task closes. Inline no pause follows a task, so an undecided failure
-   stops the run: name each with its gate and location, and ask before the task closes.
-4. **Close** in one combined write: the task's `PROGRESS.md` row, its ledger entry, and
-   `HANDOFF.md`'s stage and Next action moved on to the next task. A task left open with a
-   gate failure rewrites the baseline files first, by pre-flight step 5. Continue with the
-   next task without pausing.
+1. **Open** the task by reading it in PLAN.md, not from memory, quoting its heading as read.
+   STATUS.md: the Stage `execute (task N/M, inline)` and the row `in progress`.
+2. **Implement** with Edit and Write. After a scripted shell edit — conflict hunks or a
+   mechanical rename only — run the project's own formatter on the touched files.
+3. **Gates** as `project.md` describes, each failure judged as section 2 step 6 says. With
+   no pause between inline tasks, an undecided failure stops the run before the task closes.
+4. **Close** in one write: the row, its gates, a Log line, and the Next action moved on.
+   Continue with the next task without pausing.
 
-**Deviations.** A change to what a plan step or a `DECISIONS.md` entry says, or to what an
-option the user picked promised, is asked with the deviation form in the Forms section of
-`references/dispatch.md`. Only a reversible plan defect — a wrong path, a mismatched
-interface name, a task order that cannot work — is ruled on without a form, each with its
-own `DECISIONS.md` entry and a `ruling · plan defect` ledger entry naming it.
+**Deviations.** A change to what a plan step or a DECISIONS.md entry says is asked with one
+form: Keep it as planned (recommended), or Change it, which writes a DECISIONS.md entry
+(`supersedes D<n>` when it replaces one). Only a reversible plan defect — a wrong path, a
+mismatched interface name, an order that cannot work — is ruled on without a form, with its
+own DECISIONS.md entry. Stop and ask on an ambiguity PLAN.md and DECISIONS.md do not answer,
+on a product question, on a gate failure the task caused and cannot fix, and on a
+structural decision the task did not plan — a new module, a new shared abstraction.
 
-Stop and ask on an ambiguity `SPEC.md` and `DECISIONS.md` do not answer, on a product
-question, or on a gate failure the task caused and cannot fix — the baseline files decide
-which failures predate it, as section 2 step 6 judges them. A structural decision the
-task did not plan — a new module, a new shared abstraction, a move across folders — is the
-same stop, answered as the `NEEDS_CONTEXT` row in `references/dispatch.md` answers an
-implementer.
+## 4. End of the run
 
-## 4. A git history or index task
+The run's work stays uncommitted until the user commits it. However the run ends, run
+`snapshot.mjs take` once more and write the tree to `Verified` as `end-of-run tree:`.
 
-A plan task the user approved that names a git history or index operation verbatim — a
-reset, a stash, a rebase, a fast-forward — is the only way this skill runs one. This
-session runs it in either mode, and nothing beyond what the task names. A fast-forward
-runs as `git rebase <target>`; a task that words it as a merge (`git merge --ff-only`, a
-`git pull` without `--rebase`) is handed back to the user with the command, before step 1,
-since the user merges:
+- **Every task done:** call the Skill tool with "core:reviewing-changes", naming the
+  feature and the `pre-execution tree:` as the base. It writes the report and the Stage, and
+  hands a review with nothing open to finishing-features. Then stop.
+- **The rules hold the review until the user asks:** do not call it. Stage
+  `user reads code + findings`, "no review ran" in a Log line, and the base named in the
+  Next action. Then stop.
+- **Only blocked tasks remain:** name each with the question that blocks it, and ask with one
+  form: Review what is built now, or Wait. Recommend Review when no blocked task touches a
+  file a built one changed. Any other open task stops the run: name it and what it lacks.
 
-1. Create a backup ref, a branch named `backup/<branch>/<YYYYMMDD-HHMM>` at
-   `git rev-parse HEAD`, and name it in a `backup ref` ledger entry.
-2. Run the operation as the task words it. The conflicted files it leaves are code, changed
-   before step 3 under the mode's own rules — in subagent mode by an implementer through
-   section 2 steps 2 to 7, with a conflicts brief naming them (`references/dispatch.md`).
-3. Run the fast gates. When HEAD has moved, the gates run as pre-flight step 5 runs them —
-   the fast stage and each gate released at this moment, written to the baseline files — and
-   with a new pre-execution tree are the new baseline: one `baseline retaken` ledger entry
-   naming the task and what the new base
-   leaves out of the final review — every Done task before it, each file its conflicts changed.
-4. Close the task by the mode's close step before any other work, so Next action never
-   names an operation that already ran.
-
-## 5. End of the run
-
-The run's work stays uncommitted until the user commits it. However the run ends — here, or
-at a Stop on the pause form — run `snapshot.mjs take` once more and record the tree id as a
-recovery point: in a `recovery tree` ledger entry and in `HANDOFF.md` Status. That Status
-also names each stale `qa/` file and, for a review from a pre-execution tree, what the
-`baseline retaken` entries leave out of it.
-
-When every task is Done, call the Skill tool with "core:reviewing-changes", naming the
-feature and the base "The final review's base" in
-`../planning-features/references/artifacts.md` gives, with what it leaves out named as
-outside the review — or no base when that is the merge-base, so `reviewing-changes` takes
-the merge-base itself.
-It writes the report and sets the stage `user reads code + findings`. Then stop.
-
-When the rules that govern the feature hold the review until the user asks for it, do not
-call it: write a `review held by rule` ledger entry quoting the rule, set the stage
-`user reads code + findings` with "no review ran" in Status, and name that base — the sync's
-commit, the tree id or the merge-base — in Next action. Then stop.
-
-When the only tasks not Done are blocked ones, do not call it: name each with the question
-that blocks it and ask with the blocked-tasks form in the Forms section of
-`references/dispatch.md`. Any other task still open stops the run before the review: name
-it and what it lacks, and ask.
-
-## 6. Mode: `fix-findings`
+## 5. Mode: `fix-findings`
 
 The user has read the code and the review report and says what to do with each finding.
 
-1. Read the feature's review chain, `temp/<feature>/review/`, from its latest
-   `<NN>-review.md` on, by "An open finding" in
-   `../planning-features/references/artifacts.md`: the latest report — the highest number —
-   and, for a finding it carries from an earlier report, that finding's block in the report
-   its `Re-reviews:` lines lead back to. The findings it leaves open are this mode's. Ask
-   about each one the user has not decided, in the fix-findings forms of the Forms section
-   of `references/dispatch.md`.
-2. Record each finding the user defers or keeps as designed in its `deferred` or `ruling`
-   ledger entry, which names its id and the report so `re-review` sets it aside. A decision
-   the user changes gets a new `DECISIONS.md` entry that supersedes the old one, and the same
-   write moves the old one to planning/archive/DECISIONS.md.
-3. Verify each finding before fixing it: open the cited `file:line` and confirm the failure
-   scenario holds. One that does not is reported back with the evidence, not fixed; one the
-   code cannot settle is reported as "cannot verify without X".
-4. **Triage** each verified finding the user chose to fix whose failure scenario is a wrong
-   outcome — a bug, not a cleanup's cost — by "The triage threshold" in
-   `../fixing-bugs/references/loop.md`, the fix judged from the finding's `fix` line
-   against the code at its location. It is a rule, not a question:
-   - **Evident, one function: fixed at once**, in step 6. It gets a regression test at a
-     correct seam ("A correct seam" in the same file), or none where no correct seam
-     reaches it, and the fix brief says which. The test's one file runs red before the fix
-     and green after, by "Running one test file" there; the suite stays held.
-   - **Evident, wider: sent to `fixing-bugs`** in step 7.
-   - **Unclear, or beyond the frontend: investigated** in step 5.
-
-   Every other finding the user chose to fix — a cleanup — is fixed in step 6 as it stands.
-5. When anything is left to investigate or fix, `HANDOFF.md`: the stage
-   `fix findings — owner: executing-plans`. **Investigate the unclear ones**, when there
-   are any, in this run: group them by area and dispatch the
-   read-only agents of `investigating-bugs`' batch mode, by its steps 2 to 4, with the
-   dispatch prompt in `../investigating-bugs/references/batch.md` — this skill dispatches
-   them and never calls that skill. Then ask the remit ruling — whether each is the user's
-   to fix — with the remit form in the Forms section of `references/dispatch.md`. A finding
-   the user takes goes to `fixing-bugs` in step 7. One not taken gets its
-   `ruling · <id> · not ours` ledger entry, in the shape
-   `../planning-features/references/artifacts.md` gives, which closes it.
-6. Fix in the recorded mode the findings fixed at once and the cleanups; with none, go to
-   step 7. Subagent: one fresh `core:implementer`, foreground, session model, with the fix
-   brief from `references/dispatch.md`, its status handled as in the per-task step 4.
-   Inline: this session fixes.
-7. **End the run.** With findings sent to `fixing-bugs`, say in the chat which go there and
-   why, then call the Skill tool with "core:fixing-bugs" last, naming the feature, as one
-   list. A finding sent from step 4 is handed on as its diagnosis: owning layer the
-   frontend, root cause its cited `file:line` and failure scenario, confidence Confirmed by
-   the step 3 check. An investigated one goes with its short report, and one whose Next step
-   is "fix inline" enters `fixing-bugs` by its evident-cause entry. Its closing `re-review`
-   judges every fix of this run. With none, when step 6 fixed something, call the Skill tool
-   with "core:reviewing-changes" in `re-review` mode for the feature. Either call ends this
-   run.
-
-   When this run leaves nothing to fix, it runs no re-review. When the latest report, with
-   the ledger's `deferred` and `ruling` entries, leaves no finding open and PROGRESS.md's
-   task table shows every task Done or Blocked, call the Skill tool with
-   "core:finishing-features", naming the feature. Otherwise say in the chat which findings
-   stay open and why, and stop.
+1. The open findings are as `../planning-features/references/artifacts.md` defines them. Ask about each one the user has not decided, in forms
+   of at most four findings: Fix, Defer, Keep as designed — Fix recommended for a
+   CONFIRMED finding, Defer for a PLAUSIBLE one, Keep for one that conflicts with a
+   decision.
+2. Defer and Keep each write a `Closed findings` line. A finding whose cause is not the
+   frontend's closes as `not ours (<owner>)`; the user calls
+   `investigating-bugs` if they want it diagnosed. An answer that changes a decision is a new
+   DECISIONS.md entry with `supersedes D<n>`.
+3. Verify each finding to fix: open the cited `file:line` and confirm the failure scenario
+   holds. One that does not is reported back with the evidence, not fixed.
+4. STATUS.md: Stage `fix findings — owner: executing-plans`. Fix in the recorded mode —
+   subagent: one fresh `core:implementer` with the fix brief from `references/dispatch.md`,
+   its status handled as in section 2 step 4; inline: this session fixes.
+5. When something was fixed, call the Skill tool with "core:reviewing-changes" in
+   `re-review` mode for the feature. When nothing is left open and every task is done or
+   blocked, call the Skill tool with "core:finishing-features"; otherwise name what stays
+   open, and stop.
 
 ## What this must NOT do
 
-- Commit or push. Stage or touch the index or refs — plumbing included: `git write-tree`,
-  `git update-index`, `git read-tree`, `git commit-tree` — outside a section 4 task.
-  `snapshot.mjs` builds its tree in a private temporary index and is the exception. The
-  user stages and commits after reading the code.
+- Commit or push, or stage or touch the index or refs — plumbing included. `snapshot.mjs`
+  builds its tree in a private temporary index and is the exception.
 - Edit code on the main thread in subagent mode.
 - Run tests, a build, Storybook or a browser before the user releases them.
 - Decide a product question, or rule on anything but a reversible plan defect.
-- Mark a task Done with a step skipped or a gate unrun.
+- Mark a task done with a step skipped or a gate unrun.
 - Run two implementers at once.
 - Carry a fact about an individual repository. A repo's conventions live in its own files,
   read at the moment of use.

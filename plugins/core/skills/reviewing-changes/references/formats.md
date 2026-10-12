@@ -5,121 +5,76 @@
 Every dispatch to `core:reviewer` has this shape:
 
 ```
-Role: two-axis | lens <name> | verify | re-review
+Role: two-axis | verify | re-review
 Diff file: <path>
 Intent sources: <paths, the approved in-chat design pasted verbatim> | none — the spec axis is NOT RUN
+Packs: <each framework pack, in order> | none
 Gates (already run — report as given, do not re-run):
-<the run-gates.mjs JSON output, verbatim, one block per command run>
+<each gate with its result: pass · FAIL with the quoted error lines · NOT RUN (<reason>)>
 Released: test released | held · build released | held
 <role material>
 ```
 
-The role material:
+A task review adds `Implementer message:` and `Raised by the dispatcher:` after Released.
+The role material: `two-axis` — none. `re-review` — `Prior findings:` and each open finding
+block as the report prints it. `verify` — the candidates, each with these fields only:
 
-- `two-axis` — none. For the gap sweep: `Restrict the review to these files:` and the paths.
-- `lens <name>` — `Lens:` followed by that section of `lenses.md`, verbatim.
-- `verify` — the candidates, each with these fields and nothing else:
-
-  ```
-  <id, or every id a merged candidate absorbs> — <file:line> — <category> — <severity>
-  summary: <one sentence>
-  failure scenario: <inputs or state → wrong outcome>
-  ```
-
-- `re-review` — the prior findings the user has not set aside, each block as the report
-  prints it.
+```
+<id> — <file:line> — <category> — <severity> [— conflicts with D<n>]
+summary: <one sentence>
+failure scenario: <inputs or state → wrong outcome>
+```
 
 ## The report
 
 ```
 # Review: <branch> — <date>
-
 Scope: <the stat summary line> · base <base> · snapshot tree <tree>
 Diff: <diff file path>
-Tier: small | large
 Intent sources: <paths> | none
 Gates: <gate> pass | FAIL | NOT RUN (<reason>) · ...
-Framework packs: <packs applied, in order> | none — stack.packs is empty
-Reviewers: <each dispatch, by role> · did not return: <role> | none
+Framework packs: <packs applied, in order> | none
 NOT RUN: <each item, with the reason>
-
-Overall: CONFIRMED <n> critical · <n> important · <n> minor — PLAUSIBLE <n> — conflicts with a decision <n> — PREDATES_CHANGE <n> — REFUTED <n>
-
-## Spec findings
-## Quality findings
-## Conflicts with a decision
-## Predates the change
-## Refuted
-## Declined to judge
-## Runtime-only
-## Clean
-## Inconclusive
+Overall: CONFIRMED <n> critical · <n> important · <n> minor — PLAUSIBLE <n> — PREDATES_CHANGE <n> — REFUTED <n>
+## Spec findings · ## Quality findings · ## Predates the change · ## Refuted
+## Declined to judge · ## Runtime-only · ## Clean · ## Inconclusive
 ```
 
-1. **NOT RUN** lists the spec axis when there was no intent source, each held gate, and a
-   lens or reviewer that did not return.
-2. **Spec findings** and **Quality findings** hold CONFIRMED findings first, then PLAUSIBLE,
-   each group from critical to minor. Each is the verifier's block for that finding — its
-   verdict, its severity and the evidence it quoted — with the finder's `fix` line, in the
-   reviewer's finding format:
+**Spec findings** and **Quality findings** hold CONFIRMED findings first, then PLAUSIBLE,
+each group from critical to minor, each the verifier's block with the finder's `fix` line:
 
-   ```
-   #### <id> — <summary, one sentence>
-   - axis: spec | quality
-   - category: <category>
-   - severity: critical | important | minor
-   - location: <file:line>
-   - failure scenario: <inputs or state → wrong outcome; for a cleanup, its cost>
-   - verdict: CONFIRMED | PLAUSIBLE
-   - evidence: <the verifier's evidence line, verbatim>
-   - fix: <the finder's suggestion>
-   ```
+```
+#### <id> — <summary, one sentence>
+- axis: spec | quality
+- category: <category>
+- severity: critical | important | minor
+- location: <file:line>
+- failure scenario: <inputs or state → wrong outcome; for a cleanup, its cost>
+- verdict: CONFIRMED | PLAUSIBLE [— conflicts with D<n>, the user decides]
+- evidence: <the verifier's evidence line, verbatim>
+- fix: <the finder's suggestion>
+```
 
-3. **Conflicts with a decision** holds each finding that contradicts a DECISIONS.md entry or
-   an EXTRA-tagged criterion, in the same block, headed by the line
-   `conflicts with D<n> — the user decides`.
-4. **Predates the change** holds the PREDATES_CHANGE blocks. They are not blocking.
-5. **Refuted** holds one line each: `<id> — <summary> — guard: <the quoted line> (<file:line>)`.
-6. **Clean** lists each changed file that no CONFIRMED or PLAUSIBLE finding touches. The
-   other closing sections merge what every reviewer returned, without duplicates.
-7. A section with nothing in it says `none`.
+**Predates the change** holds the PREDATES_CHANGE blocks; they are not blocking. **Refuted**
+holds one line each: `<id> — <summary> — guard: <the quoted line> (<file:line>)`. **Clean**
+lists each changed file no CONFIRMED or PLAUSIBLE finding touches. A section with nothing in
+it says `none`.
 
 ### A re-review report
 
 ```
 # Re-review: <branch> — <date>
-
 Re-reviews: <path of the earlier report>
 Scope: <the fix diff's stat summary line> · base <the earlier snapshot tree> · snapshot tree <tree>
 Diff: <fix diff path>
-Gates: ...
-Framework packs: ...
-NOT RUN: ...
-
-Overall: ADDRESSED <n> — NOT ADDRESSED <n> — set aside by the user <n> — new findings <n>
-
-## Prior findings
-## Set aside by the user
-## New findings
-## Out of scope
-## Runtime-only
-## Clean
-## Inconclusive
+Gates: ... · Framework packs: ... · NOT RUN: ...
+Overall: ADDRESSED <n> — NOT ADDRESSED <n> — closed by the user <n> — new findings <n>
+## Prior findings · ## Closed by the user · ## New findings
+## Out of scope · ## Runtime-only · ## Clean · ## Inconclusive
 ```
 
-**Prior findings** holds one block per finding as the reviewer returns it: the id, ADDRESSED
-or NOT ADDRESSED, the `file:line`, the three evidence lines, and `untested` where it
-applies. **Set aside by the user** holds one entry per prior finding left out of the
-dispatch, `- <id> — <summary>`, with the PROGRESS.md ledger entry that set it aside pasted
-verbatim beneath it, one level deeper; without a feature it says `none`:
-
-```
-- Q3 — the empty list shows no message
-  - 2026-10-01 · deferred · Q3 minor
-    - Finding: the empty list shows no message (src/list.ts:42)
-    - Report: temp/cart/review/01-review.md
-```
-
+**Prior findings** holds one block per finding as the reviewer returns it. **Closed by the
+user** holds `- <id> — <summary>` with its STATUS.md `Closed findings` line beneath it.
 **New findings** are unverified — no `verify` runs in `re-review` — so their verdict stays
 empty.
 
@@ -132,5 +87,4 @@ NOT RUN: <each item> | none
 Report: <path>
 ```
 
-One line per critical and important finding. After a re-review, one line per NOT ADDRESSED
-finding and per new finding instead.
+One line per critical and important finding; after a re-review, per NOT ADDRESSED and new finding.
