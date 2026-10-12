@@ -25,7 +25,7 @@ packs, the gates and the base branch come from there.
 ## 1. Scope
 
 1. **Feature.** The caller or the user names it. When neither does and `temp/` holds feature
-   folders, ask with one form which one applies, "none" included.
+   folders — even one — ask with one form which one applies, "none" included.
 2. **Base.** A base the caller or the user names — a commit, a tag or a tree id; "the last
    commit" is `HEAD~1`. Otherwise the base branch rule in `project.md`. Otherwise ask. On
    the base branch itself the scope is the commits not yet pushed plus the uncommitted work.
@@ -45,8 +45,9 @@ packs, the gates and the base branch come from there.
    report, because `re-review` diffs from it. The reviewers read the diff; this thread takes
    only its header and stat lines, by grep.
 5. **Empty diff** — the header line and no stat: say there is nothing to review and stop.
-6. **Untracked `temp/`.** When `git check-ignore -q <top>/temp/` exits 1, say once that the
-   diff and the report land in an untracked `temp/`.
+6. **Untracked `temp/`.** `git check-ignore -q <top>/temp/` exits 0 when `temp/` is ignored:
+   say nothing. Only when it exits 1, say once that the diff and the report land in an
+   untracked `temp/`.
 
 ## 2. Intent sources
 
@@ -87,7 +88,8 @@ important finding on one line, the NOT RUN items and the report path.
 
 ## 6. STATUS.md
 
-With a feature, once the diff is non-empty, the Stage `review — owner: reviewing-changes`.
+With a feature whose STATUS.md exists — this skill never creates one — once the diff is
+non-empty, the Stage `review — owner: reviewing-changes`.
 When the report is written: the gate block into `Verified` as `latest:`, the Stage
 `user reads code + findings — owner: the user`, the Next action "the user reads the code and
 the review report" with its path, a Log line `<date> · review · <overall line>`, and the

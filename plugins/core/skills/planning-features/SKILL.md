@@ -34,7 +34,8 @@ base branch come from there.
    rejected.
 3. The governing rules are the user's own when they have stated them, otherwise the
    defaults in `references/rules-block.md`. `STATUS.md`'s `Rules:` line records which set
-   governs; if it has none yet, state the rules once and record them.
+   governs; if it has none yet, record it and write the rules out in full, each one, in the
+   Kickoff prompt — a name for the set is a pointer, not the rules.
 
 A fact the plan needs that neither the spec nor the files it names give is looked up, never
 asked, with clarifying-features' research dispatch in `../clarifying-features/references/sources.md`.
@@ -129,7 +130,7 @@ For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slu
 ## Done
 ## Verified        each gate with its result, an unrun gate as NOT RUN, what was observed by hand
 ## Left
-## Pick up         Safe in a new session | Better finished in this one — <why>
+## Pick up         <Safe in a new session | Better finished in this one> — <why, for either>
 ## Kickoff prompt  Continue <slug>. Read first: temp/handoffs/<slug>.md, then <files>.
                    Next action: <the next action>. Rules: <the rules that govern>.
 ```

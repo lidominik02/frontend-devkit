@@ -8,7 +8,7 @@ description: >-
   wrong", or asks whether a visual change actually works. For a QA list or a run against
   acceptance criteria, use testing-changes.
 disallowed-tools: mcp__*__evaluate_script, mcp__*__upload_file, mcp__*__browser_evaluate, mcp__*__browser_file_upload
-allowed-tools: Bash(git diff *) mcp__chrome-devtools__take_snapshot mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__list_console_messages mcp__chrome-devtools__get_console_message mcp__chrome-devtools__list_network_requests mcp__chrome-devtools__get_network_request mcp__chrome-devtools__navigate_page mcp__chrome-devtools__new_page mcp__chrome-devtools__list_pages mcp__chrome-devtools__select_page mcp__chrome-devtools__resize_page mcp__chrome-devtools__emulate mcp__chrome-devtools__wait_for mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_console_messages mcp__playwright__browser_network_requests mcp__playwright__browser_navigate mcp__playwright__browser_resize mcp__playwright__browser_wait_for Read Grep Glob
+allowed-tools: Bash(git diff *) mcp__chrome-devtools__take_snapshot mcp__chrome-devtools__take_screenshot mcp__chrome-devtools__list_console_messages mcp__chrome-devtools__get_console_message mcp__chrome-devtools__list_network_requests mcp__chrome-devtools__get_network_request mcp__chrome-devtools__navigate_page mcp__chrome-devtools__new_page mcp__chrome-devtools__list_pages mcp__chrome-devtools__select_page mcp__chrome-devtools__resize_page mcp__chrome-devtools__emulate mcp__chrome-devtools__wait_for mcp__chrome-devtools__close_page mcp__playwright__browser_snapshot mcp__playwright__browser_take_screenshot mcp__playwright__browser_console_messages mcp__playwright__browser_network_requests mcp__playwright__browser_navigate mcp__playwright__browser_resize mcp__playwright__browser_wait_for mcp__playwright__browser_close Read Grep Glob
 ---
 
 **The hold comes first.** Verification does not run until it is released. If the turn
@@ -64,7 +64,9 @@ failure modes, both ending with you looking at the wrong page and believing it:
    one? (Y/n)") rather than exiting, which hangs a background shell with no visible error.
 
 Start it in the background, wait for the ready line, and take the URL from there. When
-you are done, stop the server you started — and only that one.
+you are done, stop the server you started — and only that one — then load its URL once
+more. A page that still answers means the server outlived its shell (observed on Windows):
+never claim it stopped — tell the user the port still answers, for them to end.
 
 **Hot reload is not a guarantee that what you see is what you wrote.** Edits to the
 build config, plugins, route definitions, environment files or anything read at server

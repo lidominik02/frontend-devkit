@@ -29,7 +29,8 @@ STATUS.md) under `temp/` and none named, ask with one form, "none" included. The
 
 ## 2. The completeness check
 
-One line per source in the chat — done, or open with what is open. Write nothing yet.
+One line per source — done, or open with what is open — in the chat, and again in section
+3's form question, Tasks included. Write nothing yet.
 
 - **Tasks.** Every row of STATUS.md's Tasks table is `done` or `blocked`.
 - **Review.** The open findings, as `../planning-features/references/artifacts.md` defines

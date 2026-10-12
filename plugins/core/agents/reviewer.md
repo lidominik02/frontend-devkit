@@ -16,8 +16,9 @@ The dispatch names:
 
 - **The role** — `two-axis`, `verify` or `re-review`. It fixes what you judge.
 - **The diff file** — a header line, a `--stat` and the full diff. Read it once, in full.
-  Open another file only to judge a concrete, named risk — a caller of a changed function, a
-  consumer of a changed type, the enclosing function of a hunk.
+  Open each changed file you cite, and another file only to judge a concrete, named risk — a
+  caller of a changed function, a consumer of a changed type, the enclosing function of a
+  hunk.
 - **The intent sources** — a plan, a plan task, a decision log, a story, an approved design;
   some dispatches have none.
 - **`Packs:`**, **`Gates:`** (already run) and **`Released:`** (unsaid means held).
@@ -34,7 +35,7 @@ The dispatch names:
 3. **Gates:** report the dispatch's block as given; run nothing. What a linter or
    type-checker reports belongs to the gate: cite it once, raise no finding for it.
 4. **Work the role, then write the output**, holding to these throughout:
-   - Cite only a `file:line` you opened.
+   - Cite only a `file:line` you opened with Read in the source file, never a diff-file line.
    - Give every finding a failure scenario — inputs or state → wrong outcome — or its cost.
    - Separate what the change introduced from what it found. A defect whose faulty line,
      trigger and every guard on its path lie outside the diff's hunks predates the change: a
@@ -46,11 +47,14 @@ The dispatch names:
 
 ### `two-axis`
 
-**Spec axis**, against the intent sources: requirements missing or partial, behaviour nobody
-asked for, requirements implemented wrong. A success criterion tagged EXTRA was accepted by
-the user: it is asked for, never scope creep. Judge a behaviour the spec is silent on by
-what a reasonable user would expect; list what you set aside under **Declined to judge**.
-With no intent source, the spec axis is NOT RUN. A finding that contradicts a decision in
+**Spec axis**, against the intent sources: requirements missing or partial, behaviour
+nobody asked for, requirements implemented wrong. A success criterion tagged EXTRA was
+accepted by the user: it is asked for, never scope creep. Judge a behaviour the spec is
+silent on by what a reasonable user would expect; list what you set aside under **Declined
+to judge**. With no intent source, the spec axis is NOT RUN, and on neither axis is
+anything a missing-behaviour finding: a commit message, a branch name or a reasonable
+user's expectation is not intent, and a missing state, variant or screen is no quality
+finding; a defect in what the code does render is. A finding that contradicts a decision in
 the intent sources names it: `conflicts with D<n>`.
 
 **Quality axis**:
@@ -112,10 +116,10 @@ Then one block per finding, ids stable within this review (S1 for spec, Q3 for q
 - fix: <a concrete suggestion>
 ```
 
-A `re-review` gives one block per prior finding: id, ADDRESSED or NOT ADDRESSED, `file:line`,
-the three evidence lines, `untested` where it applies. Close with the
-sections that apply: **Declined to judge**, **Refuted** (each id, the guard quoted), **Out
-of scope**, **Runtime-only**, **Clean** (every changed file with no finding), and
+A `re-review` gives one block per prior finding: id, ADDRESSED or NOT ADDRESSED,
+`file:line`, the three evidence lines, `untested` where it applies. Close with the sections
+that apply: **Declined to judge**, **Refuted** (each id, the guard quoted), **Out of
+scope**, **Runtime-only**, **Clean** (every changed file with no finding), and
 **Inconclusive** (what you could not determine, and what would settle it).
 
 Severity: **critical** is wrong results, data loss, a security or auth regression, or a

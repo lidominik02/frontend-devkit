@@ -50,8 +50,9 @@ packs, the gates and the base branch come from there.
 
 ## Round 1 — classification and sources
 
-Round 1 settles what the work is and what it is built from. Say the classification out
-loud, each part with its reason, then confirm it in the round-1 form:
+Round 1 settles what the work is and what it is built from. The round-1 form's question
+states the classification, each part with its reason, and asks to confirm it; a part
+without its reason, or a classification only in your reasoning, has not been said:
 
 - **Size.** `bounded`: one surface, a few files, no new API need, no open product question,
   and small enough that one in-chat design covers it — a validation rule, a copy or state
@@ -76,7 +77,7 @@ nothing written, draft the requirements from the design and the repository.
 `references/sources.md` holds the lookup order, what counts as found, and the draft.
 
 **Code research runs in parallel.** Before the round-1 form, dispatch it with
-`run_in_background: true`. It covers the repository's conventions, the reusable assets, the
+`run_in_background: true`, however small the repository looks. It covers the repository's conventions, the reusable assets, the
 closest existing feature, and the API contract the feature touches. Use the built-in
 `Explore` agent type where the host offers it (observed in Claude Code 2.1.283), else
 `general-purpose` told to stay read-only; name `model: sonnet`. The dispatch prompt and the
@@ -90,7 +91,9 @@ frames are read on the main thread, through the design tool's read tools.
 No PLAN.md.
 
 1. Write an in-chat design: what changes, where, the states, the acceptance criteria, and
-   what it reuses. Approve it with one form: Build it (recommended), Change something.
+   what it reuses — the whole design, word for word, as the `preview` of the Build it option.
+   Approve it with one form: Build it (recommended), Change something. A design drafted only
+   in your reasoning has not been shown, and cannot be approved.
 2. **Framework rules.** Call the Skill tool with each framework pack `project.md` finds, in
    its order. A later pack wins every conflict.
 3. **Base.** Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take` and keep the tree
@@ -115,10 +118,15 @@ No PLAN.md.
      entry marks it `superseded by D<m>` in place. Every assumption goes into the spec
      sections tagged ASSUMED, and each section is updated as it settles.
    - Probe every business rule for its rationale; a rule with no rationale stays ASSUMED.
+     A reason a source gives for a control as a whole is the reason of each rule that
+     implements it: quote it, word for word, on each such rule — a pointer to it is not the
+     reason. A reason no source and no answer gave is your own: never tag it SAID.
    - Cross-check what the user states against the code and the research ("the list already
-     paginates" → open it). A contradiction becomes a question carrying the evidence.
-   - Sources that conflict are always a question; the recommendation follows the authority
-     order in `references/question-rounds.md`.
+     paginates" → open it). A contradiction becomes a question
+     carrying the evidence at its `path:line`.
+   - Sources that conflict are always a question, even when one side is an owner's rule the
+     user relays; the recommendation follows the authority order in
+     `references/question-rounds.md`.
    - No design for a UI task: propose one from the repository's own patterns as a decision
      form. The approved proposal becomes the design source: a DECISIONS.md entry, and
      PLAN.md's Design names it.

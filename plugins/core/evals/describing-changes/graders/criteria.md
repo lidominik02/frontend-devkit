@@ -11,8 +11,9 @@ Passes if it does ALL of:
   commitlint config, else the recent history — rather than assuming Conventional Commits
   and inventing a scope vocabulary.
 - Describes the change by its effect rather than its diff: the refresh now fires two
-  minutes ahead instead of thirty seconds, and can no longer be scheduled with a negative
-  delay, so an already-expired token refreshes immediately instead of firing in the past.
+  minutes ahead instead of thirty seconds. The clamp to a non-negative delay changes no
+  behaviour, since a timer already fires a negative delay at once; a text that says so, or
+  that is silent on it, passes.
 - Names the returned teardown function as a behavioural change callers have to adopt, not
   merely an added line.
 - Reports verification honestly. It either ran this project's gates and says which, or

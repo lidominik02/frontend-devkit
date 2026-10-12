@@ -45,10 +45,11 @@ frontend code only, runs only the one test file it writes, and hands on to `revi
    confidence.
    - A diagnosis whose owning layer is not the frontend goes to section 4 at once, with no
      test written.
-   - An evident frontend cause whose fix touches one function — a bug the user reports
-     inside a feature, or a diagnosis whose Next step is "fix inline" — goes to the
-     evident-cause entry in section 2.
-   - Any other frontend diagnosis that is Confirmed or Likely goes to section 2.
+   - A bug the user reports inside a feature, with no diagnosis, whose cause is evident and
+     whose fix touches one function, goes to the evident-cause entry in section 2; so does a
+     diagnosis whose Next step says "fix inline" in those words.
+   - Every other frontend diagnosis that is Confirmed or Likely goes to section 2 and its
+     revert proof, however small the fix.
    - With no diagnosis, or an Inconclusive one, ask for one: call the Skill tool with
      "core:investigating-bugs", then return here with its report.
 
@@ -147,8 +148,9 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
 3. **Review**, when a fix or an approved guard went in. Outside a feature, call the Skill
    tool with "core:reviewing-changes", naming no feature and the base tree from section 1
    as the base. Inside a feature whose final review has run, call it in `re-review` mode
-   for the feature. The call ends this skill's run. Before the final review, and on every
-   other path, this skill stops after step 2.
+   for the feature. The call ends this skill's run. Inside a feature whose final review has
+   not run yet, stop after step 2: that review covers the fix. With no fix and no guard,
+   stop after step 2.
 
 ## What this must NOT do
 
@@ -162,8 +164,8 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
   and the tree equal to the one taken before the revert.
 - **Take a fix out with git.** No `git stash`, `git checkout` or `git restore`; no staging,
   no commit, nothing that touches the index. The user commits after reading the code.
-- **Claim a regression test that never went red with the fix reverted**, or a gate that did
-  not run.
+- **Claim a regression test that never went red** — with the fix reverted, or on the
+  evident-cause entry before the fix — or a gate that did not run.
 - **Decide a product question.** The expected behaviour comes from the report, the
   diagnosis or the user.
 - **Carry a fact about an individual repository.** A repo's conventions live in its own

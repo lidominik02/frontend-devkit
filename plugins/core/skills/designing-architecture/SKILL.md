@@ -77,7 +77,8 @@ Facts are looked up, never asked.
   (observed in Claude Code 2.1.283), else `general-purpose` told to stay read-only;
   `model: sonnet`. Primary sources first. Every claim it returns carries its URL.
 
-Then say in a few lines what the evidence settled, with the counts.
+Then say in a few lines what the evidence settled, with the counts, as chat text; step 5's
+form question repeats the counts.
 
 ## 3. The options
 
@@ -116,11 +117,11 @@ speaks for it.
 
 Write the detail to `ARCHITECTURE-<slug>.md` in the session's scratchpad (else the system
 temp directory), in step 6's shape with "Decision: pending". In chat: one line per option,
-the recommendation, and the draft's path.
+the recommendation, and the draft's absolute path, which step 5's form names too.
 
 ## 5. The decision
 
-One form, naming the draft's path, the recommended option first. A free-text answer asking
+One form, naming the draft's path and repeating step 2's counts, the recommended option first. A free-text answer asking
 for more evidence returns to step 2, for another option to step 3; the draft is updated and
 the form comes again. On cancel nothing is written into the repository or `temp/`.
 

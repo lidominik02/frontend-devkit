@@ -111,7 +111,7 @@ baseline: <gate> <result> · latest: <gate> <result> · pre-execution tree: <id>
 ## Kickoff prompt
 Resume the feature <slug> with the planning-features skill, in resume mode. Read first:
 temp/<slug>/STATUS.md, then temp/<slug>/PLAN.md, the task "<name>", then <any file the next
-action needs>. Next action: <the action>. Rules: <the rules line>.
+action needs>. Next action: <the action>. Rules: <each governing rule, written out>.
 ```
 
 ## The rules of these files

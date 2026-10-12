@@ -339,8 +339,8 @@ option picked.
 ## Arm A
 
 Passes if it does ALL of:
-- Before its first question, states the classification with a reason for each part taken
-  from this work: the larger route rather than a small change — two screens and a rule
+- Before or in its first question — chat text or the round-1 form's question — states the
+  classification with a reason for each part taken from this work: the larger route rather than a small change — two screens and a rule
   whose edges are open, for example — a change with UI, and whether the API is involved.
   Any API verdict passes when its reason is drawn from the repository, such as what
   `openapi.yaml` offers for `/suppliers` and `/orders`.
@@ -375,11 +375,13 @@ Fails if it does ANY of:
 ## Arm B
 
 Passes if it does ALL of:
-- Before its first question, states the classification as a small, contained change with
-  its reasons: one form, one field, no API need, no open product question.
-- Writes the design in chat — what changes and where (the phone field in
-  `src/suppliers/SupplierForm.vue`), its error state, the acceptance criteria — and asks
-  for approval through a form whose first option approves it.
+- Before or in its first question — chat text or the form's question — states the
+  classification as a small, contained change with its reasons: one form, one field, no API
+  need, no open product question.
+- Shows the design — in chat, or as the `preview` of the option that approves it: what
+  changes and where (the phone field in `src/suppliers/SupplierForm.vue`), its error state,
+  the acceptance criteria — and asks for approval through a form whose first option
+  approves it.
 - Writes no spec and no plan: no `temp/<feature>/` folder, and no
   `PLAN.md` anywhere.
 - Edits nothing before the approval; after it, makes the change in the main session.

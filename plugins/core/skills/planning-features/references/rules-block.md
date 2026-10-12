@@ -19,7 +19,7 @@ stated rules of their own.
 ```
 
 State the governing rules once, when the feature's STATUS.md is first written, and record
-there whether the defaults or the user's own rules govern; every kickoff prompt carries them.
+there whether the defaults or the user's own rules govern; every kickoff prompt carries them written out, never by name alone.
 A rules block from the user replaces the defaults entirely; when it is silent on one of the
 defaults, ask whether that default holds. An override that holds for the rest of the feature
 gets a DECISIONS.md entry with the default it replaced under Rejected, for example
