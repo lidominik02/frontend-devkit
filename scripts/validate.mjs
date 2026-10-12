@@ -62,9 +62,10 @@ const KNOWN_AGENT = [
   'maxTurns', 'skills', 'mcpServers', 'hooks', 'memory', 'background', 'omitClaudeMd',
   'effort', 'isolation', 'color', 'initialPrompt', 'experimental',
 ];
-// `permissionMode: plan` held a project agent in plan mode and not a plugin agent (2.1.283).
-// `hooks` and `mcpServers` stay accepted: unobserved for a plugin agent.
-const IGNORED_IN_PLUGIN_AGENT = ['permissionMode'];
+// Documented on the plugins/components page, read 2026-10-12; the CLI 2.1.292 validator does
+// not flag them. `permissionMode: plan` held a project agent in plan mode and not a plugin
+// agent (observed on 2.1.283).
+const IGNORED_IN_PLUGIN_AGENT = ['permissionMode', 'hooks', 'mcpServers', 'initialPrompt'];
 
 // 1024 is the Agent Skills spec's hard limit: past it a skill cannot be packaged
 // or uploaded, even though Claude Code itself tolerates roughly 1536.
@@ -172,7 +173,7 @@ export function checkFrontmatter(files, root = ROOT) {
     const known = isSkill ? KNOWN_SKILL : KNOWN_AGENT;
     for (const [k, value] of frontmatterValues(text)) {
       if (!isSkill && IGNORED_IN_PLUGIN_AGENT.includes(k)) {
-        if (inPlugin) bad.push(`${rel(root, p)} -> '${k}' is ignored in a plugin agent; only a project agent honours it (observed on 2.1.283)`);
+        if (inPlugin) bad.push(`${rel(root, p)} -> '${k}' is ignored in a plugin agent; only a project agent honours it`);
       } else if (!known.includes(k)) {
         bad.push(`${rel(root, p)} -> unknown frontmatter field '${k}'; it will be ignored at load time`);
       }
@@ -294,69 +295,11 @@ export function checkReferences(root = ROOT) {
   return { name: 'references', findings: bad, ok: bad.length === 0 };
 }
 
-// --- blocked MCP names match their reference table ---------------------------
-
-// A blocked MCP tool is the one enforcement rule here that rests on a string
-// match against a name the server chooses. Nothing errors when a server renames
-// a tool: the block silently matches nothing and the table documenting it
-// quietly goes stale.
-//
-// Scans every skill with a `disallowed-tools` line, not just verifying-ui: a
-// second skill (testing-changes) blocks a second server's tools on the same
-// reasoning, and a check that only ever looked at verifying-ui would let that
-// second list drift with nothing to catch it.
-export function checkMcpNames(root = ROOT) {
-  const { list, findings: bad } = loadPacks(root);
-  let totalBlocked = 0;
-  const skillsRoots = list
-    .map((pack) => r(root, pack.dir, 'skills'))
-    .filter((d) => fs.existsSync(d));
-
-  for (const skillsRoot of skillsRoots) {
-    for (const name of fs.readdirSync(skillsRoot)) {
-      const dir = path.join(skillsRoot, name);
-      const skill = path.join(dir, 'SKILL.md');
-      if (!fs.existsSync(skill)) continue;
-      const body = read(skill);
-      const line = (body.match(/^disallowed-tools:(.*)$/m) || [, ''])[1];
-      const blocked = line.split(',').map((s) => s.trim()).filter((s) => s.startsWith('mcp__'));
-      if (!blocked.length) continue;
-      totalBlocked += blocked.length;
-
-      // The name may be documented anywhere under this skill's own directory —
-      // its main body or any of its references — not only one fixed file.
-      const docs = [skill];
-      const refsDir = path.join(dir, 'references');
-      if (fs.existsSync(refsDir)) {
-        for (const f of fs.readdirSync(refsDir)) if (f.endsWith('.md')) docs.push(path.join(refsDir, f));
-      }
-      const docText = docs.map((f) => read(f)).join('\n');
-
-      for (const full of blocked) {
-        const bare = full.split('__').pop();
-        if (!docText.includes('`' + bare + '`')) {
-          bad.push(`${rel(root, skill)}: ${full} is blocked but "${bare}" is undocumented anywhere under ${rel(root, dir)}`);
-        }
-      }
-    }
-  }
-
-  if (!totalBlocked && list.length) bad.push('no mcp__ names blocked anywhere — did every disallowed-tools field move?');
-  return { name: 'mcp-names', findings: bad, ok: bad.length === 0, count: totalBlocked };
-}
-
 // --- every script parses, every hook target exists ---------------------------
 
-// A repo-local skill keeps its scripts in its own scripts/; the rest of .claude/ holds none.
+// The packs and the repository's own tooling; .claude/ holds no script.
 export function scriptRoots(root = ROOT) {
-  const skills = r(root, '.claude', 'skills');
-  const local = fs.existsSync(skills)
-    ? fs.readdirSync(skills, { withFileTypes: true })
-        .filter((e) => e.isDirectory())
-        .map((e) => path.join(skills, e.name, 'scripts'))
-        .filter((p) => fs.existsSync(p))
-    : [];
-  return [r(root, 'plugins'), r(root, 'scripts'), ...local];
+  return [r(root, 'plugins'), r(root, 'scripts')];
 }
 
 // A script with a syntax error and a script that deliberately blocks are
@@ -557,112 +500,6 @@ export function checkPluginRoot(root = ROOT) {
   return { name: 'plugin-root', findings: bad, ok: bad.length === 0 };
 }
 
-// --- documentation links resolve ----------------------------------------------
-
-// Code fences are neither links nor headings, so they are blanked line by line to keep
-// line numbers for the finding; inline code is blanked too unless `keepInline`.
-function proseLines(text, keepInline = false) {
-  let fence = null;
-  return text.split('\n').map((line) => {
-    const open = line.match(/^\s*(`{3,}|~{3,})/);
-    if (fence) {
-      if (open && open[1][0] === fence[0] && open[1].length >= fence.length) fence = null;
-      return '';
-    }
-    if (open) { fence = open[1]; return ''; }
-    return keepInline ? line : line.replace(/(`+)[\s\S]*?\1/g, '');
-  });
-}
-
-// GitHub's heading ids: lowercase, punctuation dropped, spaces to hyphens, a repeat
-// suffixed -1, -2. Explicit `id`/`name` anchors count too.
-export function anchors(text) {
-  const seen = new Map();
-  const out = new Set();
-  const lines = proseLines(text, true);
-  lines.forEach((line, i) => {
-    for (const m of line.matchAll(/<a\s+(?:id|name)="([^"]+)"/g)) out.add(m[1]);
-    const prev = lines[i - 1] ?? '';
-    const setext = /^ {0,3}(=+|-+)\s*$/.test(line) && prev.trim() && !/^\s*([#>|*+-]|\d+\.)/.test(prev);
-    const h = setext ? [line, prev.trim()] : line.match(/^#{1,6}\s+(.*?)\s*#*\s*$/);
-    if (!h) return;
-    const slug = h[1]
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-      .replace(/\s/g, '-');
-    const n = seen.get(slug) ?? 0;
-    seen.set(slug, n + 1);
-    out.add(n ? `${slug}-${n}` : slug);
-  });
-  return out;
-}
-
-// An inline link `](target "title")`, the target optionally in <…> where it may hold
-// spaces, and a reference definition `[label]: target`.
-const LINK = /\]\(\s*(?:<([^>\n]*)>|([^)\s]+))(?:\s+(?:"[^"]*"|'[^']*'))?\s*\)/g;
-// A footnote definition `[^1]: text` is prose, not a link.
-const DEFINITION = /^ {0,3}\[(?!\^)[^\]]+\]:\s*(?:<([^>\n]*)>|(\S+))/;
-
-const linkTargets = (line) => [
-  ...[...line.matchAll(LINK)].map((m) => m[1] ?? m[2]),
-  ...[line.match(DEFINITION)].filter(Boolean).map((m) => m[1] ?? m[2]),
-];
-
-export function checkDocsLinks(root = ROOT) {
-  const { config, findings: bad } = loadConfig(root);
-  const roots = config?.docs?.roots;
-  if (config && !(Array.isArray(roots) && roots.length && roots.every((s) => typeof s === 'string' && s))) {
-    bad.push(`${CONFIG}: docs.roots must be a non-empty list of paths`);
-  }
-  if (bad.length) return { name: 'docs-links', findings: bad, ok: false };
-
-  const files = new Set();
-  for (const entry of roots) {
-    const p = r(root, entry);
-    const stat = fs.statSync(p, { throwIfNoEntry: false });
-    if (!stat) bad.push(`${CONFIG}: docs.roots entry ${entry} does not exist`);
-    else if (stat.isDirectory()) markdownUnder(p).forEach((f) => files.add(f));
-    else files.add(p);
-  }
-  const { list, findings: unread } = loadPacks(root);
-  bad.push(...unread);
-  for (const pack of list) {
-    for (const f of ['README.md', 'evals/README.md']) {
-      const p = r(root, pack.dir, f);
-      if (fs.existsSync(p)) files.add(p);
-    }
-  }
-
-  const anchorCache = new Map();
-  const anchorsOf = (p) => {
-    if (!anchorCache.has(p)) anchorCache.set(p, anchors(read(p)));
-    return anchorCache.get(p);
-  };
-
-  for (const file of [...files].sort()) {
-    proseLines(read(file)).forEach((line, i) => {
-      for (const raw of linkTargets(line)) {
-        if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('//')) continue;
-        const [target, rawAnchor] = raw.split('#', 2);
-        const decode = (s, fn) => { try { return fn(s); } catch { return s; } };
-        const decoded = decode(target.split('?')[0], decodeURI);
-        const anchor = rawAnchor && decode(rawAnchor, decodeURIComponent);
-        const where = `${rel(root, file)}:${i + 1} -> ${raw}`;
-        const dest = !decoded ? file
-          : decoded.startsWith('/') ? r(root, decoded) : path.resolve(path.dirname(file), decoded);
-        // A link that leaves the repository resolves on one machine and nowhere else.
-        if (dest !== root && !dest.startsWith(root + path.sep)) { bad.push(`${where}: resolves outside the repository`); continue; }
-        if (!fs.existsSync(dest)) { bad.push(`${where}: no such file`); continue; }
-        if (anchor && dest.endsWith('.md') && !anchorsOf(dest).has(anchor)) {
-          bad.push(`${where}: no heading with that anchor in ${rel(root, dest)}`);
-        }
-      }
-    });
-  }
-  return { name: 'docs-links', findings: bad, ok: bad.length === 0 };
-}
-
 // --- runner -----------------------------------------------------------------
 
 export const CHECKS = {
@@ -670,12 +507,10 @@ export const CHECKS = {
   'skill-dirs': checkSkillDirs,
   budget: checkBudget,
   references: checkReferences,
-  'mcp-names': checkMcpNames,
   scripts: checkScripts,
   'plugin-root': checkPluginRoot,
   versions: checkVersions,
   changelog: checkChangelog,
-  'docs-links': checkDocsLinks,
 };
 
 export function runChecks(names = Object.keys(CHECKS), root = ROOT) {

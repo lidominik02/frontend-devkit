@@ -1,0 +1,25 @@
+# The merge gate (`validate.yml`) runs a pinned CLI; this run watches the latest release;
+# a red run is the signal to run `/cli-upgrade-check`.
+name: canary
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  latest-cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: '22' }
+      - run: npm install -g @anthropic-ai/claude-code@latest
+      - name: Validate marketplace and plugins
+        run: |
+          set -e
+          claude plugin validate . --strict
+          for src in $(node -e 'for (const p of JSON.parse(require("fs").readFileSync(".claude-plugin/marketplace.json","utf8")).plugins) console.log(p.source)'); do
+            claude plugin validate "$src" --strict
+          done

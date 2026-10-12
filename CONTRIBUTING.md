@@ -58,10 +58,8 @@ file is its full description.
 | You changed an artifact shape — a ledger entry, brief field, HANDOFF section or script output | [`contract-auditor`](.claude/agents/contract-auditor.md) |
 | You are adding support for a new framework | [`/new-pack`](.claude/skills/new-pack/SKILL.md) |
 | You are adding or changing an eval case | [`/eval-case`](.claude/skills/eval-case/SKILL.md), then [`eval-grader`](.claude/agents/eval-grader.md) on its criteria |
-| You want to see an unreleased change work end to end | [`/try-unreleased`](.claude/skills/try-unreleased/SKILL.md) — a real `claude -p` run, billed to your quota |
 | You want to know why past sessions went wrong | [`/diagnosing-sessions`](.claude/skills/diagnosing-sessions/SKILL.md) |
-| A Claude Code release shipped, or CI turned red with no change | [`/cli-upgrade-check`](.claude/skills/cli-upgrade-check/SKILL.md) |
-| A release that changes `plugins/` is coming, on Windows | [`/windows-check`](.claude/skills/windows-check/SKILL.md) |
+| A Claude Code release shipped, or the weekly canary turned red | [`/cli-upgrade-check`](.claude/skills/cli-upgrade-check/SKILL.md) |
 | The work is ready to release | [`/release`](.claude/skills/release/SKILL.md) |
 
 ### The repository's hooks
@@ -96,20 +94,11 @@ mid-edit can fail to parse, and a Node hook that throws exits 1 and fails open, 
 trial runs without the guarantee it is meant to exercise. Leave the hooks unedited while it
 runs.
 
-For a scripted trial instead — a non-interactive session in a scratch repository, its forms
-answered from a scenario and its outcome checked against the scenario's expectations — run
-`/try-unreleased`.
-
 ## Tests
 
-A test that launches a script does so through `runScript` in `scripts/test/helpers.mjs`
-where it can, which runs `node --check` on the script first and fails with a syntax error
-of its own. A script with a syntax error and a script that deliberately blocks can share an
-exit code, so without that check a broken script reads as a block. Tests that import a
-module, or spawn `node` with flags of their own, skip that check, so
-`scripts/test/parse.test.mjs` parses every `.mjs` under `plugins/`, `scripts/` and each
-`.claude/skills/<skill>/scripts/` on its own — the same files `validate.mjs`'s `scripts`
-check covers.
+A test that launches a script does so through `runScript` in `scripts/test/helpers.mjs`.
+`validate.mjs`'s `scripts` check parses every `.mjs` under `plugins/` and `scripts/`, so a
+script with a syntax error fails the gate before any behaviour test is read.
 
 The ablation cases that decide whether a component earns its cost are in
 `plugins/*/evals/`; the methodology is in

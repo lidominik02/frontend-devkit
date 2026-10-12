@@ -19,11 +19,31 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Tag matches every plugin version
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          for m in plugins/*/.claude-plugin/plugin.json; do
+            pv=$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).version)' "$m")
+            [ "$pv" = "$v" ] || { echo "::error::$m is $pv, tag is $v"; exit 1; }
+          done
+
+      # The same pinned CLI as validate.yml; /cli-upgrade-check raises both pins together.
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code@2.1.292
+
       - name: Marketplace checks
         run: node scripts/validate.mjs
 
       - name: Test suite
         run: node --test "scripts/test/*.test.mjs"
+
+      - name: Validate marketplace and plugins
+        run: |
+          set -e
+          claude plugin validate . --strict
+          for src in $(node -e 'for (const p of JSON.parse(require("fs").readFileSync(".claude-plugin/marketplace.json","utf8")).plugins) console.log(p.source)'); do
+            claude plugin validate "$src" --strict
+          done
 
       # The release notes are the tagged version's CHANGELOG.md section, from its
       # `## X.Y.Z - YYYY-MM-DD` heading up to the next `## `; validate.mjs's changelog check

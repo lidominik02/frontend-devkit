@@ -78,7 +78,8 @@ The gates need Node 22.18, or 24.2 on the 24 line; on an older Node `validate.mj
 `scripts/validate.mjs` is the one implementation of every check
 `claude plugin validate --strict` does not perform; CI, the hooks and the release check
 run that same file. `--strict` does **not** read component frontmatter, which is why the
-frontmatter allowlist lives there. What each check catches, and the `devkit.config.json`
+frontmatter allowlist lives there. CI runs a pinned CLI; `canary.yml` watches the latest
+weekly. What each check catches, and the `devkit.config.json`
 keys the checks read, are in `docs/contributing/validation.md`.
 
 The first two are the gate; run both before pushing. `pack-graph.mjs` reports the
@@ -110,8 +111,6 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 | `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
 | `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
 | `/release` | Bump the shared version, write the CHANGELOG section, commit; the user pushes `dev`, then `main` once CI is green, then the tag, whose push creates the GitHub Release |
-| `/try-unreleased` | Run the working tree's plugins through a scripted `claude -p` session in a scratch repository, checked against a scenario |
-| `/windows-check` | The pre-release Windows check: gates, missing-binary probes per shell, a real Stop hook |
 | `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
 | `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |
 | `component-reviewer` | Reviews a changed component against the invariants above |

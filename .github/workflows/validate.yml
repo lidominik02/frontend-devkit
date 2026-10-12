@@ -4,9 +4,6 @@ on:
   push:
     branches: [main, dev]
   pull_request:
-  # Weekly, so a new CLI release that changes the validator surfaces on a quiet week.
-  schedule:
-    - cron: '0 6 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -61,20 +58,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      # Full history and tags, so the release warning can find the latest `v*` tag.
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
-      # Unpinned on purpose: CI checks against the latest release. Validator behaviour
-      # moves between releases, so a red build on a commit that changed nothing is the
-      # signal to run /cli-upgrade-check.
+      # Pinned: the merge gate runs one known CLI, so a red build means the commit changed
+      # something. canary.yml runs the same validation on the latest release weekly; a red
+      # canary is the signal to run /cli-upgrade-check, which raises this pin and the one
+      # in release.yml.
       - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code@latest
+        run: npm install -g @anthropic-ai/claude-code@2.1.292
 
       - name: Claude Code version
         run: claude --version
@@ -84,11 +79,12 @@ jobs:
       # unknown fields at load time, so without --strict the component silently never
       # loads and nothing fails. It does NOT check component frontmatter; validate.mjs
       # owns that. The targets come from marketplace.json, so a new pack cannot go
-      # unvalidated.
+      # unvalidated. The exit code is the gate: on 2.1.292 --strict exits 1 on a warning
+      # (observed 2026-10-12).
       - name: Validate marketplace and plugins
-        run: node scripts/ci/plugin-validate.mjs
-
-      # Unreleased commits are not an error: a release is a deliberate bump, so this
-      # only reminds that plugins/ or .claude-plugin/ changed since the latest `v*` tag.
-      - name: Release warning
-        run: node scripts/ci/release-warning.mjs
+        run: |
+          set -e
+          claude plugin validate . --strict
+          for src in $(node -e 'for (const p of JSON.parse(require("fs").readFileSync(".claude-plugin/marketplace.json","utf8")).plugins) console.log(p.source)'); do
+            claude plugin validate "$src" --strict
+          done

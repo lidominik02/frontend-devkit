@@ -8,7 +8,7 @@ description: >-
   it prints the push of dev, the push that moves main once CI is green, and the tag
   command the user runs on main, whose push creates the GitHub Release.
 disable-model-invocation: true
-allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-current), PowerShell(git branch --show-current), Bash(git describe *), PowerShell(git describe *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *), Bash(git status *), PowerShell(git status *), Bash(node .claude/skills/release/scripts/release-check.mjs), PowerShell(node .claude/skills/release/scripts/release-check.mjs), Bash(node scripts/ci/release-warning.mjs), PowerShell(node scripts/ci/release-warning.mjs)
+allowed-tools: Read, Edit, Write, AskUserQuestion, Bash(git branch --show-current), PowerShell(git branch --show-current), Bash(git describe *), PowerShell(git describe *), Bash(git log *), PowerShell(git log *), Bash(git diff *), PowerShell(git diff *), Bash(git status *), PowerShell(git status *), Bash(node scripts/validate.mjs), PowerShell(node scripts/validate.mjs)
 ---
 
 # Release the devkit
@@ -31,9 +31,8 @@ git describe --tags --match 'v*' --abbrev=0
 
 - **A tag exists:** list `git log --oneline <tag>..HEAD`. **No commits: say there is
   nothing to release since `<tag>` and stop.** Then run
-  `node scripts/ci/release-warning.mjs`, the check CI runs, which owns the list of shipped
-  paths; output ending in "unchanged since `<tag>`" means the commits touch nothing a
-  user installs, so say "nothing shipped changed since `<tag>`" before step 2.
+  `git diff --quiet <tag> HEAD -- plugins .claude-plugin`; exit 0 means the commits touch
+  nothing a user installs, so say "nothing shipped changed since `<tag>`" before step 2.
 - **No `v*` tag:** nothing is released yet. List `git log --oneline` and release the
   version the manifests already carry, unbumped — skip step 2.
 
@@ -42,10 +41,10 @@ If `git status` shows uncommitted changes to `CHANGELOG.md` or a
 would carry them. Uncommitted changes anywhere else: name them; they are not part of this
 release, which contains only the commits listed, and they do not stop it.
 
-When the commits change something shipped — `release-warning.mjs` did not end in
-"unchanged since `<tag>`" — ask in one form whether `/windows-check` and `/try-unreleased`
-ran on this code. Each that did not run is named NOT RUN in the message that hands the push
-to the user. Neither stops the release.
+When the commits change something shipped — the `git diff --quiet` exited 1 — ask in one
+form whether the manual release smoke at the end of this skill ran on this code. If it did
+not, it is named NOT RUN in the message that hands the push to the user. It does not stop
+the release.
 
 ## 2. The level
 
@@ -73,16 +72,15 @@ stops the run. The user approves or changes it. Do not write anything before the
    dated today, with `### Added`, `### Changed` and `### Fixed` groups, omitting an empty
    one. Each entry says what a user of the devkit notices, in plain words — not a copy
    of a commit subject.
-3. Validate what the release commit will hold, not the working tree. Run, without asking:
+3. Validate the working tree. First `git status --porcelain` must show only `CHANGELOG.md`
+   and `plugins/*/.claude-plugin/plugin.json`; anything else changed means the tree is not
+   what the release commit will hold, so name it and stop. Then run, without asking:
 
    ```
-   node .claude/skills/release/scripts/release-check.mjs
+   node scripts/validate.mjs
    ```
 
-   It checks out HEAD into a temporary directory without touching the index, copies the
-   release files over it and runs that tree's `validate.mjs`. A non-zero exit, a finding
-   or a run that did not report every check as passed, fails it: report the output and
-   stop. No commit, no tag.
+   A non-zero exit or a finding fails it: report the output and stop. No commit, no tag.
 
 ## 4. Commit
 
@@ -107,8 +105,8 @@ git commit -F "<message file>" -- CHANGELOG.md "plugins/*/.claude-plugin/plugin.
 ```
 
 Create no tag here. `CHANGELOG.md` is the readable history. Never merge. End by asking the
-user to push in three steps, and push nothing yourself; that message names as NOT RUN each
-of `/windows-check` and `/try-unreleased` that section 1 found had not run. First `dev`,
+user to push in three steps, and push nothing yourself; that message names the manual release smoke NOT RUN
+when section 1 found it had not run. First `dev`,
 which runs CI on the release commit:
 
 ```
@@ -131,3 +129,28 @@ git push origin vX.Y.Z
 ```
 
 If CI is red, `main` stays where it is and no tag is made; the fix is a new release.
+
+## Manual release smoke
+
+Two sessions in a scratch repository, run by the user with the working tree's plugins loaded
+(`claude --plugin-dir plugins/core`, and the same for a pack the scenario needs). Each passes
+when the listed observations hold.
+
+**A bounded change.** A tiny repository with a `.gitignore` holding `temp/`, a
+`package.json` whose `lint` script prints `lint: ok`, and `src/format.js` exporting
+`formatPrice(cents)` that returns `(cents / 100).toFixed(2)`. Ask, naming the skill in words:
+"Use the core:clarifying-features skill for this change: formatPrice should put a dollar sign
+in front of the amount, so formatPrice(1999) returns "$19.99". Nothing else changes." Answer
+the approval form with Build it. Observe: `clarifying-features` is called, an approval form
+appears, `src/format.js` returns a `$`-prefixed string, the lint gate is reported by name,
+and `reviewing-changes` runs.
+
+**An open task, then continue.** The same kind of repository, with a `lint` script that exits
+1 while `src/greeting.js` exists, and an approved two-task feature under `temp/greet/`
+(`PLAN.md` with the tasks "Add the greeting module" — create `src/greeting.js` exporting
+`greet(name)` → "Hello, <name>!" — and "Add the version export" — `src/index.js` exports
+`version = '1.0.0'`; `STATUS.md` at execute, task 1/2, subagent per task). Ask: "Use the
+core:executing-plans skill to run the approved plan of the feature greet, from its first task.
+If the run stops for me after a task, continue." Observe: an implementer subagent runs, the
+first task stays open with the lint gate FAIL quoted, the run continues, `src/greeting.js`
+exists and `src/index.js` exports `version`.

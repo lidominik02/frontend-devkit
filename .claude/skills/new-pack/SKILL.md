@@ -71,8 +71,7 @@ Write the version table before the guidance, not after.
 
 - `node scripts/validate.mjs` — a new listed description always adds to the always-on
   total; the `budget` check fails past `budget.ceiling` in `devkit.config.json`. Raise the
-  ceiling only with the user's approval. `docs-links` catches a link the new README gets
-  wrong.
+  ceiling only with the user's approval.
 - `node scripts/pack-graph.mjs` — confirm the new pack appears with the base you intended.
   A pack that reports no base when it should have one has its dependency wrong, and
   `/pack-parity` will silently never check it.

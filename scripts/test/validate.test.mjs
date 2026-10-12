@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 
 import { REPO_ROOT, hookEvent, runScript, tempDir } from './helpers.mjs';
-import { CHECKS, anchors, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
+import { CHECKS, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
 
 const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const GUIDE = 'plugins/core/skills/demo/references/guide.md';
@@ -67,7 +67,6 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
     }),
     [SKILL]: skillText({
       extraField: defect === 'frontmatter' ? 'disable-model-invokation: true' : '',
-      blocked: defect === 'mcp-names' ? 'mcp__srv__tool_a, mcp__srv__tool_b' : 'mcp__srv__tool_a',
       cite: defect === 'references' ? 'references/missing.md' : 'references/guide.md',
       script: defect === 'plugin-root' ? 'missing.mjs' : 'ok.mjs',
     }),
@@ -80,7 +79,7 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
     'plugins/core/hooks/hooks.json': JSON.stringify({
       hooks: { PostToolUse: [{ hooks: [{ type: 'command', command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/scripts/ok.mjs'] }] }] },
     }),
-    'README.md': defect === 'docs-links' ? `${README}\nSee [the guide](docs/missing.md).\n` : README,
+    'README.md': README,
     'devkit.config.json': configText({ ceiling: defect === 'budget' ? 100 : 2000 }),
     'CHANGELOG.md': defect === 'changelog' ? CHANGELOG.replace('1.0.0', '0.9.0') : CHANGELOG,
   };
@@ -125,13 +124,11 @@ describe('validate.mjs checks run against the root they are given', () => {
     frontmatter: /plugins\/core\/skills\/demo\/SKILL\.md -> unknown frontmatter field 'disable-model-invokation'/,
     budget: /^always-on listing is \d+ chars, over the 100-char ceiling in devkit\.config\.json/,
     references: /plugins\/core\/skills\/demo\/SKILL\.md -> references\/missing\.md: no such file/,
-    'mcp-names': /mcp__srv__tool_b is blocked but "tool_b" is undocumented anywhere under plugins\/core\/skills\/demo$/,
     scripts: /^plugins\/core\/scripts\/broken\.mjs -> SyntaxError/,
     versions: /^plugins\/core\/\.claude-plugin\/plugin\.json -> version "1\.0" is not X\.Y\.Z$/,
     'skill-dirs': /^plugins\/core\/skills\/orphan -> no SKILL\.md$/,
     'plugin-root': /^plugins\/core\/skills\/demo\/SKILL\.md -> \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/missing\.mjs does not resolve inside plugins\/core$/,
     changelog: /^CHANGELOG\.md has no "## 1\.0\.0 - YYYY-MM-DD" section/,
-    'docs-links': /^README\.md:5 -> docs\/missing\.md: no such file$/,
   };
 
   for (const [name, finding] of Object.entries(defects)) {
@@ -211,6 +208,10 @@ describe('validate.mjs frontmatter rules', () => {
       override: { [AGENT]: agentText({ extraField: 'permissionMode: plan' }) },
       finding: /^plugins\/core\/agents\/helper\.md -> 'permissionMode' is ignored in a plugin agent/,
     },
+    'hooks in a plugin agent': {
+      override: { [AGENT]: agentText({ extraField: 'hooks: {}' }) },
+      finding: /^plugins\/core\/agents\/helper\.md -> 'hooks' is ignored in a plugin agent/,
+    },
     'an unknown field in a repo-local skill': {
       override: { [LOCAL_SKILL]: ['---', 'name: local', `description: ${LOCAL_DESCRIPTION}`, 'disable-model-invokation: true', '---', ''].join('\n') },
       finding: /^\.claude\/skills\/local\/SKILL\.md -> unknown frontmatter field 'disable-model-invokation'/,
@@ -289,23 +290,10 @@ describe('the scripts check reads every listed pack\'s hooks.json, every arg ins
   });
 });
 
-describe('the scripts check parses a repo-local skill\'s own scripts', () => {
-  const scripts = (t, override) => byName(runChecks(['scripts'], fixture(t, { override }))).scripts.findings;
-
-  test('a skill-local script that does not parse is a finding', (t) => {
-    const findings = scripts(t, { '.claude/skills/tool/scripts/broken.mjs': 'export const x = ;\n' });
-    assert.equal(findings.length, 1);
-    assert.match(findings[0], /^\.claude\/skills\/tool\/scripts\/broken\.mjs -> SyntaxError/);
-  });
-
-  test('a skill-local script that parses, and a skill with no scripts/, are no finding', (t) => {
-    assert.deepEqual(scripts(t, { '.claude/skills/tool/scripts/ok.mjs': 'export const ok = true;\n' }), []);
-  });
-
-  // Only a skill's scripts/ is walked: a broken .mjs elsewhere under .claude/ is not a script the devkit runs.
-  test('a .mjs outside a skill\'s scripts/ is not parsed', (t) => {
-    assert.deepEqual(scripts(t, { '.claude/skills/tool/notes/broken.mjs': 'export const x = ;\n' }), []);
-  });
+// The scripts check is the one reading of the core hooks.json; a renamed file is a dead hook.
+test('the core hooks.json exists and every arg names a file inside its pack', () => {
+  assert.ok(fs.existsSync(path.join(REPO_ROOT, 'plugins', 'core', 'hooks', 'hooks.json')), 'no hooks.json to check');
+  assert.deepEqual(byName(runChecks(['scripts'], REPO_ROOT)).scripts.findings, []);
 });
 
 // Partway through adding a pack, its directory exists before its marketplace entry does.
@@ -476,99 +464,15 @@ describe('devkit.config.json holds the values the checks read', () => {
     'a config that is not JSON': ['{ "budget": ', /^devkit\.config\.json is not a JSON object$/],
   };
   for (const [label, [text, finding]] of Object.entries(broken)) {
-    test(`${label} fails budget and docs-links instead of passing them unchecked`, (t) => {
-      const results = byName(runChecks(['budget', 'docs-links'], fixture(t, { override: { 'devkit.config.json': text } })));
-      for (const name of ['budget', 'docs-links']) {
-        assert.ok(results[name].findings.some((f) => finding.test(f)), `${name}: ${results[name].findings.join(' | ')}`);
-      }
+    test(`${label} fails budget instead of passing it unchecked`, (t) => {
+      const { budget: result } = byName(runChecks(['budget'], fixture(t, { override: { 'devkit.config.json': text } })));
+      assert.ok(result.findings.some((f) => finding.test(f)), `budget: ${result.findings.join(' | ')}`);
     });
   }
 
-  test('a ceiling that is not a positive integer, and docs.roots that is not a list, are findings', (t) => {
-    const config = JSON.stringify({ budget: { ceiling: '6,500' }, docs: { roots: 'README.md' } });
-    const results = byName(runChecks(['budget', 'docs-links'], fixture(t, { override: { 'devkit.config.json': config } })));
+  test('a ceiling that is not a positive integer is a finding', (t) => {
+    const config = JSON.stringify({ budget: { ceiling: '6,500' } });
+    const results = byName(runChecks(['budget'], fixture(t, { override: { 'devkit.config.json': config } })));
     assert.deepEqual(results.budget.findings, ['devkit.config.json: budget.ceiling must be a positive integer']);
-    assert.deepEqual(results['docs-links'].findings, ['devkit.config.json: docs.roots must be a non-empty list of paths']);
-  });
-});
-
-describe('docs-links', () => {
-  const run = (t, files, roots = ['README.md', 'docs']) =>
-    byName(runChecks(['docs-links'], fixture(t, { override: { 'devkit.config.json': configText({ roots }), ...files } })))['docs-links'];
-
-  test('resolves a link from the file citing it, and an anchor against the target headings', (t) => {
-    const result = run(t, {
-      'docs/guide.md': '# Guide\n\n## Run `node` here\n\nBack to [the readme](../README.md#demo) or [this](#run-node-here).\n',
-      'docs/sub/deep.md': '# Deep\n\nSee [the guide](../guide.md#guide) and [the root](/README.md).\n',
-    });
-    assert.deepEqual(result.findings, []);
-  });
-
-  test('a missing file and a missing anchor are findings with file and line', (t) => {
-    const result = run(t, {
-      'docs/guide.md': '# Guide\n\n[gone](missing.md)\n[wrong anchor](../README.md#nope)\n',
-    });
-    assert.deepEqual(result.findings, [
-      'docs/guide.md:3 -> missing.md: no such file',
-      'docs/guide.md:4 -> ../README.md#nope: no heading with that anchor in README.md',
-    ]);
-  });
-
-  test('links in code, external links and a link to a directory are not findings', (t) => {
-    const result = run(t, {
-      'docs/guide.md': [
-        '# Guide', '', '```md', '[fenced](missing.md)', '```', '',
-        'Inline `[code](missing.md)` text.', '[site](https://example.com/x.md) [mail](mailto:a@b.c) [dir](../plugins/core)', '',
-      ].join('\n'),
-    });
-    assert.deepEqual(result.findings, []);
-  });
-
-  test('every listed pack README and evals README is checked without being configured', (t) => {
-    const result = run(t, {
-      'plugins/core/README.md': '# core\n\n[gone](docs/missing.md)\n',
-      'plugins/core/evals/README.md': '# Evals\n\n[gone](missing.md)\n',
-    }, ['README.md']);
-    assert.deepEqual(result.findings, [
-      'plugins/core/README.md:3 -> docs/missing.md: no such file',
-      'plugins/core/evals/README.md:3 -> missing.md: no such file',
-    ]);
-  });
-
-  test('angle-bracket targets, reference definitions, queries, encoded anchors and setext headings are read', (t) => {
-    const result = run(t, {
-      'docs/my guide.md': 'Café\n====\n\nSection\n-------\n',
-      'docs/guide.md': [
-        '# Guide', '',
-        '[spaced](<my guide.md#café>) [query](my%20guide.md?plain=1#section) [encoded](<my guide.md#caf%C3%A9>)',
-        '[gone](<missing file.md>)', '',
-        '[ref]: missing.md',
-        '[ok]: <my guide.md>',
-        '[^1]: See the release notes.', '',
-      ].join('\n'),
-    });
-    assert.deepEqual(result.findings, [
-      'docs/guide.md:4 -> missing file.md: no such file',
-      'docs/guide.md:6 -> missing.md: no such file',
-    ]);
-  });
-
-  test('a link that leaves the repository is a finding even when the target exists', (t) => {
-    const root = fixture(t, { override: { 'devkit.config.json': configText({ roots: ['README.md', 'docs'] }) } });
-    fs.writeFileSync(path.join(path.dirname(root), 'outside.md'), '# Outside\n');
-    fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'docs/guide.md'), `# Guide\n\n[out](../../${path.basename(path.dirname(root))}/outside.md) [root](/../outside.md)\n`);
-    const findings = byName(runChecks(['docs-links'], root))['docs-links'].findings;
-    assert.equal(findings.length, 2, findings.join(' | '));
-    for (const f of findings) assert.match(f, /resolves outside the repository$/);
-  });
-
-  test('a docs.roots entry that does not exist is a finding', (t) => {
-    assert.deepEqual(run(t, {}, ['README.md', 'docs/nowhere']).findings, ['devkit.config.json: docs.roots entry docs/nowhere does not exist']);
-  });
-
-  test('anchors() follows the heading ids GitHub generates', () => {
-    const ids = anchors('# Install\n## Why Vue and Nuxt are separate packs\n## `run-gates.mjs`\n## Install\n<a id="custom"></a>\n```\n# not a heading\n```\n');
-    assert.deepEqual([...ids].sort(), ['custom', 'install', 'install-1', 'run-gatesmjs', 'why-vue-and-nuxt-are-separate-packs']);
   });
 });

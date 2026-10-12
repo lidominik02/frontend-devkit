@@ -19,15 +19,14 @@ breaks a check, and the document cannot be restructured freely.
   check run that file rather than a copy.
 - Every value the tooling reads lives in `devkit.config.json` at the repository root:
   today the always-on description ceiling, the paths the `Stop` hook watches, and the
-  documentation roots whose links are checked. No script parses a value out of prose.
+  documentation roots it watches too. No script parses a value out of prose.
 - A missing or malformed value is a finding, never a silent pass.
 - A platform constant, such as the 1,024-character description cap, stays in code beside
   the comment that records where it comes from.
 
 ## Consequences
 
-- Documentation can be reorganised without touching the tooling, and the `docs-links`
-  check keeps its links resolving.
+- Documentation can be reorganised without touching the tooling.
 - Documentation does not publish figures the tooling owns; it says how to query them
   (`node scripts/validate.mjs --checks=budget`).
 - The keys are described in [Validation](../contributing/validation.md#devkitconfigjson).

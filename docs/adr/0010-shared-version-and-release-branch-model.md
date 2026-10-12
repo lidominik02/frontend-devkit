@@ -28,8 +28,8 @@ mismatch warning.
 
 ## Consequences
 
-- Unreleased work reaches no installed session; it is tried with `--plugin-dir` or
-  `/try-unreleased` ([Contributing](../../CONTRIBUTING.md#trying-an-unreleased-change)).
+- Unreleased work reaches no installed session; it is tried with `--plugin-dir`
+  ([Contributing](../../CONTRIBUTING.md#trying-an-unreleased-change)).
 - A red CI leaves `main` where it is, and the fix is a new release.
 - Packs can still be left behind by the CLI after a release
   ([Installation](../installation.md#known-update-behaviour)).

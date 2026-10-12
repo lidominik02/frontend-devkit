@@ -249,9 +249,9 @@ describe('on-stop.mjs', () => {
     assert.doesNotMatch(res.stderr, /Marketplace validation failed/);
   });
 
-  // The suite reads repo-local skill files beyond scripts — try-unreleased's scenarios and
-  // the SKILL.md files that cite them — so a change there must run it.
-  for (const rel of ['.claude/skills/try-unreleased/scenarios/demo.md', '.claude/skills/local/SKILL.md']) {
+  // The suite may read repo-local skill files beyond scripts — a skill's own data and the
+  // SKILL.md files that cite it — so a change there must run it.
+  for (const rel of ['.claude/skills/local/scenarios/demo.md', '.claude/skills/local/SKILL.md']) {
     test(`runs the test suite when ${rel} changed`, (t) => {
       const fx = committed(t, { ceiling: 2000 }, { ...GREEN, 'scripts/test/fail.test.mjs': FAILING_TEST });
       write(fx.root, { [rel]: '# Changed\n' });
