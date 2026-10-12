@@ -1,6 +1,6 @@
 # Reading the project
 
-Four facts every lifecycle skill needs, read from files the project already keeps, at the
+The facts every lifecycle skill needs, read from files the project already keeps, at the
 moment a step needs them. Nothing is cached between steps.
 
 ## Package manager
@@ -24,6 +24,12 @@ no file. Report each gate as exactly one of: `pass` (exit 0) · `FAIL` (non-zero
 lines quoted) · `NOT RUN (<reason>)` — no such script, held, a script that watches, a
 package.json that is not valid JSON, a tool the shell reports not found or not recognized. NOT RUN is never a pass, and a gate that did not run is
 never implied passed. Never run a script whose body contains --watch, --fix, --write or --apply.
+
+## Formatter
+The one the project configures — Prettier, Biome, or the tool its `format` script runs — on
+the touched files only: the script's tool and flags with the touched paths in place of its
+glob (`<pm> exec prettier --write <paths>`), never the whole tree, never the `format` script
+itself. None configured: say so once.
 
 ## Base branch
 `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` → `origin/<base>`. Without a

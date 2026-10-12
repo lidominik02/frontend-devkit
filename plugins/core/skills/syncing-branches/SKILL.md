@@ -61,7 +61,9 @@ merge deny rule blocks it here), then the rebase, or stopping.
    credential paths. It is the pre-sync state: the overlap scan's and the review's base.
    With an operation in progress, the gates are NOT RUN (operation in progress) — its
    markers break them — and the pre-sync state is the tip it started from; the tree, taken
-   as the in-progress tree, records each file the user resolved by hand, which an abort discards.
+   as the in-progress tree, records each file the user resolved by hand, which an abort
+   discards — except a credential path or a file under `temp/`, which it leaves out: name
+   each such unmerged path for the user to copy before any abort.
 
 LOG.md:
 
@@ -95,7 +97,9 @@ commands verbatim and in order. It names:
 - the branch, the target and its commit as fetched;
 - the commits to replay (`git log --oneline <merge-base>..HEAD`) and how many main brought;
 - the files both sides changed since the merge-base: where the conflicts will be;
-- the uncommitted work `git status --porcelain` lists — any listed stops the plan there;
+- the uncommitted work `git status --porcelain` lists, apart from this skill's `temp/` folder
+  and, in an operation in progress, the paths that operation holds unmerged or staged as
+  resolutions — anything else listed stops the plan there;
 - each stack operation (`references/stacks.md`) and each rewritten branch's backup ref;
 - for a lockfile conflict, the install of the manager that owns that lockfile, run in the
   lockfile's directory, by "regenerate" in `references/conflicts.md`;
@@ -128,8 +132,8 @@ before the answer; each runs after it, behind the normal permission prompt.
    trivial, semantic, or rename (a rename or file-location conflict).
 3. **Resolve** in the working tree only — with Edit and Write, a side taken whole with
    `git checkout --ours | --theirs <path>`, or the regeneration command. Nothing writes the
-   index yet. A side taken whole with a shell command then goes through the project's own
-   formatter, that file alone, the command in the entry's Evidence (no formatter: say so).
+   index yet. A side taken whole with a shell command then goes through the project's
+   formatter, by `project.md`, that file alone, the command in the entry's Evidence.
    A regenerated file stays as its tool wrote it. A semantic conflict keeps both intents
    wherever both can hold; only a true conflict is a question, in batched forms of up to
    four, each giving both sides' intent with evidence, labelled with the swap, and a
@@ -192,8 +196,10 @@ After every sync onto main, conflicts or not, find what main brought that the br
 - **During an operation**, `git rebase --abort` — `git cherry-pick --abort` for a
   cherry-pick — puts HEAD back where the operation started. It discards every resolution
   in the working tree: this skill's, which LOG.md keeps, and, for an operation the user
-  started, the files resolved by hand, which the in-progress tree keeps (`git show
-  <tree>:<path>`). The log form's stop option names them and that tree; choosing it confirms.
+  started, the files resolved by hand: the in-progress tree keeps those it holds (`git show
+  <tree>:<path>`), never a credential path or `temp/`. The log form's stop option names
+  each, that tree, and each resolved path the tree lacks as lost unless the user copies it
+  first; choosing it confirms.
 - **After a finished sync**, restoring is a destructive reset, discarding the rebased
   commits and every resolution and consolidation since. Only after a confirmation form
   naming what it discards, "Keep the sync (recommended)" first, and by "Restoring the

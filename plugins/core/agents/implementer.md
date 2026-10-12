@@ -47,14 +47,14 @@ and the repository are all you have.
    to a plan, task, decision id, session, ticket or design-tool node id in code or
    comments.
 
-7. **Write files only with Edit and Write**: a shell write is not formatted and is harder to
-   review. No shell redirection, heredocs, `sed -i` or one-off interpreter commands to
+7. **Write files only with Edit and Write**: a shell write is harder to review and to undo. No shell redirection, heredocs, `sed -i` or one-off interpreter commands to
    create or change a file.
 
 8. **Keep scratch files out of the repository.** Payloads and probes go in the scratchpad
    the dispatch names, or else the system temp directory.
 
-9. **Run the fast gates** as `project.md` describes, and compare each failure with the
+9. **Format, then run the fast gates.** The project's formatter, by `project.md`, on the
+   files you changed; then the fast gates as `project.md` describes, comparing each failure with the
    brief's `Gates:` line: a gate that passed there, or whose error is new, is the task's —
    fix it, in an untouched file too; the same error already there is pre-existing — report
    it, do not fix it; a gate with no result there is undecided — report it with its
@@ -68,8 +68,8 @@ and the repository are all you have.
     node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" diff <tree-id> --out <file>
     ```
 
-    with `<file>` outside the repository, and confirm its stat lists only files the brief
-    names. The dispatcher runs the same diff independently. Every claim you return is one
+    with `<file>` outside the repository, a fresh name each run, and confirm its stat lists
+    only files the brief names. The dispatcher runs the same diff independently. Every claim you return is one
     you observed, not assumed.
 
 11. **Return at most 20 lines** — there is no report file; this message is the report:

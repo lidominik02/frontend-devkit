@@ -96,10 +96,14 @@ Flush timing matters when you read the DOM:
 Anything you start in a component must stop when it unmounts: intervals,
 listeners, observers, subscriptions. `watch` and `watchEffect` return a stop
 handle and auto-stop when created during setup — but a watcher created inside an
-async callback after an `await` is outside the setup scope and will leak.
+async callback, or after an `await` in a plain `async setup()` function, is outside
+the setup scope and will leak.
 
-Lifecycle hooks registered after an `await` in `<script setup>` never fire, for
-the same reason. Register them synchronously.
+A lifecycle hook registered there never fires, for the same reason: register it
+synchronously. A top-level `await` in `<script setup>` is the exception — the compiler
+restores the component instance after it, as the SFC docs state for `<script setup>`
+(stable since Vue 3.2) — so a hook or watcher after that `await` works under the
+`<Suspense>` ancestor such a component needs; flag a missing `<Suspense>`, not the hook.
 
 For cleanup tied to a watcher's own re-run, prefer `onWatcherCleanup()` (3.5+)
 over the `onCleanup` callback argument — it works from nested functions too.

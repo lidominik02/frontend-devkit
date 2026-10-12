@@ -69,13 +69,15 @@ It shows the test fails without the fix, and ends with the fix in place. Edits u
 state is read with `snapshot.mjs` as the set-up runs it, and git never takes a fix out.
 
 1. With the fix in and the repro green, run `snapshot.mjs take`: tree F.
-2. `snapshot.mjs diff <base tree> --out <work folder>/fix.diff`: each hunk's original text.
+2. `snapshot.mjs diff <base tree> --out <work folder>/fix.diff` — `fix-2.diff`, `fix-3.diff` on
+   a later pass from step 4, a taken name being refused: each hunk's original text.
 3. Revert each hunk of the fix — not the test — with Edit, fixed text → original.
 4. Run the repro file: red, on the same assertion as the first red run. Green means the test
    does not depend on the fix: restore it, strengthen the test, start again at step 1.
 5. Restore each hunk with Edit, original → fixed text.
 6. Run the repro file: green. `snapshot.mjs take` again must equal F; when it differs,
-   `snapshot.mjs diff F --out <work folder>/restore.diff` names what did not come back.
+   `snapshot.mjs diff F --out <work folder>/restore.diff` (`restore-2.diff` when taken) names
+   what did not come back.
 
 ## The owner report
 

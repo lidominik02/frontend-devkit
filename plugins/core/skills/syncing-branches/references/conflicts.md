@@ -145,7 +145,9 @@ entry names the commit and shows main holding its change.
 - The files the user already resolved by hand live only in the working tree, and an abort
   discards them. `snapshot.mjs take` works with the index still unmerged and records them,
   leaving the index as it was: observed, a file resolved mid-rebase read back with
-  `git show <tree>:<path>` after `git rebase --abort`, with nothing staged.
+  `git show <tree>:<path>` after `git rebase --abort`, with nothing staged. A credential path
+  or a file under `temp/` is not in that tree: a resolution there survives an abort only
+  when the user copies it first.
 
 ### Restoring the backup
 

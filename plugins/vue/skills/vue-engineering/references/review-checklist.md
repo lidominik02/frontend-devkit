@@ -44,8 +44,11 @@ when the request failed is worse than an error, because it is confidently wrong.
 
 **Prop mutation.** A component assigning to its own prop.
 
-**Lifecycle or watcher registered after an `await`** in `<script setup>` — it is outside
-the setup scope, so hooks never fire and watchers leak.
+**Lifecycle or watcher registered after an `await`** in a plain `async setup()` or inside
+an async callback — outside the setup scope, so hooks never fire and watchers leak. Not a
+top-level `await` in `<script setup>` under `<Suspense>`, which keeps the instance (documented
+for `<script setup>`, stable since Vue 3.2); a top-level `await` with no `<Suspense>`
+ancestor is the finding instead.
 
 **No cleanup.** An interval, listener, observer or subscription started in a component
 with no matching teardown.

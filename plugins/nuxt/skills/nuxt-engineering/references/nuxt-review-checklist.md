@@ -90,10 +90,6 @@ findings here, or misses real ones.
   finding.
 - **A page component imported statically rather than as a dynamic import.** `app/pages/`
   is already split per file. A hand-written `() => import(...)` has nothing to do.
-- **A top-level `await` before a lifecycle hook in a page.** Pages are
-  `<Suspense>`-wrapped, so `await useAsyncData(...)` at the top of a page is idiomatic.
-  Only hooks and watchers registered *after* the await are the defect the `vue` rule
-  describes.
 
 Conversely, one item the `vue` list explicitly excuses is Critical here: module-scope
 state. It is listed as "NOT a finding" there because an SPA is client-only. Do not carry

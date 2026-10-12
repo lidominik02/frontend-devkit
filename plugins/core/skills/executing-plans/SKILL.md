@@ -73,7 +73,9 @@ For each task neither done nor blocked, in plan order:
 
 5. **Diff.**
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" diff <task base> --out temp/<feature>/tasks/<NN>-<task-slug>.diff`.
-   Compare the stat lines with the brief's Files: a changed file outside them that the
+   A name already taken — a restarted run, a retried round — gets the next free `-2`, `-3`
+   before `.diff`, the fix-round diffs of step 8 included; the path the script prints is the
+   one every dispatch carries. Compare the stat lines with the brief's Files: a changed file outside them that the
    implementer's message does not name with a reason is raised to the reviewer and to the
    user — never silently accepted.
 6. **Gates.** Run the fast gates as `project.md` describes, and judge each failure against
@@ -110,8 +112,8 @@ For each task neither done nor blocked, in plan order:
 
 1. **Open** the task by reading it in PLAN.md, not from memory, quoting its heading as read.
    STATUS.md: the Stage `execute (task N/M, inline)` and the row `in progress`.
-2. **Implement** with Edit and Write. After a scripted shell edit — conflict hunks or a
-   mechanical rename only — run the project's own formatter on the touched files.
+2. **Implement** with Edit and Write — a scripted shell edit only for conflict hunks or a
+   mechanical rename — then run the project's formatter, by `project.md`, on the touched files.
 3. **Gates** as `project.md` describes, each failure judged as section 2 step 6 says. With
    no pause between inline tasks, an undecided failure stops the run before the task closes.
 4. **Close** in one write: the row, its gates, a Log line, and the Next action moved on.

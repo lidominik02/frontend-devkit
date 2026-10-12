@@ -116,7 +116,7 @@ Route by what is actually happening, not by which API you suspect.
 - `v-for` keyed by index → `references/reactivity.md`
 
 **Lifecycle hooks never fire, or a watcher leaks**
-- Registered after an `await` in `<script setup>` → `references/reactivity.md`
+- Registered after an `await` in a plain `async setup()` or in a callback → `references/reactivity.md`
 
 **Navigation does nothing, or a guard loops**
 - `references/routing.md`

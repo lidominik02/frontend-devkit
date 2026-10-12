@@ -72,10 +72,6 @@ Three more, in one line each, with the detail in the reference file:
   does not apply here.** Access control goes in `app/middleware/`; `app/pages/` is
   already split per file and there is no router file to edit.
   → `references/middleware-and-plugins.md`
-- **"A lifecycle hook after an `await` in `<script setup>` never fires" — true, but
-  narrower here.** Pages are `<Suspense>`-wrapped, so a top-level
-  `await useAsyncData(...)` is correct; only hooks registered *after* it break. Do not
-  flag the await itself.
 
 ## The rules that prevent most bugs
 
