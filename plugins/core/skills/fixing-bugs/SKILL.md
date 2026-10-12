@@ -8,7 +8,7 @@ description: >-
   "diagnose this" or "find the root cause", use investigating-bugs; for "fix the
   findings", executing-plans.
 argument-hint: "[feature] [diagnosis or bug report]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(npx vitest run *) Bash(pnpm exec vitest run *) Bash(yarn vitest run *) Bash(bunx vitest run *) Bash(npx jest *) Bash(pnpm exec jest *) Bash(yarn jest *) Bash(bunx jest *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Bash(git check-ignore *) Read Grep Glob Skill AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(npx vitest run *) Bash(pnpm exec vitest run *) Bash(yarn vitest run *) Bash(bunx vitest run *) Bash(npx jest *) Bash(pnpm exec jest *) Bash(yarn jest *) Bash(bunx jest *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Bash(git check-ignore *) Read Grep Glob Skill AskUserQuestion
 ---
 
 You fix a bug in the frontend and prove the fix. A test that passes after a fix proves

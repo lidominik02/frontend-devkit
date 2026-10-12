@@ -151,6 +151,9 @@ and `reviewing-changes` runs.
 `greet(name)` → "Hello, <name>!" — and "Add the version export" — `src/index.js` exports
 `version = '1.0.0'`; `STATUS.md` at execute, task 1/2, subagent per task). Ask: "Use the
 core:executing-plans skill to run the approved plan of the feature greet, from its first task.
-If the run stops for me after a task, continue." Observe: an implementer subagent runs, the
-first task stays open with the lint gate FAIL quoted, the run continues, `src/greeting.js`
-exists and `src/index.js` exports `version`.
+If the run stops for me after a task, continue." Observe: the run never changes
+`scripts/lint.mjs` on its own — it asks, before or after building task 1, how to resolve the
+plan's contradiction (observed 2026-10-12: a form before the task); answered with the lint
+change allowed, an implementer subagent runs each task, a reviewer follows it, the pause
+offers Continue, Continue without pausing and Stop, `src/greeting.js` exists and
+`src/index.js` exports `version`.

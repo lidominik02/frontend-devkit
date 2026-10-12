@@ -27,10 +27,9 @@ Then run `/reload-plugins`.
 
 ## Permissions and attribution
 
-The devkit ships no hook. A plugin cannot install permission rules — from a plugin's
-settings only `agent` and `subagentStatusLine` take effect (docs, read 2026-10-12) — so
-without the settings below nothing stops a credential read or a push. Add them to your user
-settings next to the marketplace:
+The devkit ships no hook, and a plugin cannot install permission rules (docs, read
+2026-10-12), so without these settings nothing stops a credential read or a push. Add them
+to your user settings next to the marketplace:
 
 ```json
 {
@@ -52,28 +51,29 @@ settings next to the marketplace:
 
 What these rules cover, and what they do not:
 
-- A `Read` deny applies to the file tools, to Grep and Glob, to an `@file` reference, and to
-  the file commands Claude Code recognises in Bash (`cat`, `head`, `tail`, `sed`, `tee`)
-  and the targets of Bash redirections (docs, read 2026-10-12). It does not apply to a
-  command that does not name the file (`grep -r KEY .`) or to a script that opens the file
-  itself; for those, the sandbox (macOS, Linux, WSL2) and the OS are the boundary.
-- An `Edit(...)` rule covers the `Write` tool too; a `Write(...)` rule is accepted and never
-  consulted (docs, read 2026-10-12).
-- `attribution: false` gives the same result in one value on a CLI newer than 2.1.281 (docs,
-  read 2026-10-12).
+- A `Read` deny applies to the file tools, Grep, Glob, `@file`, the file commands Claude Code
+  recognises in Bash and Bash redirections. It does not apply to a command that does not
+  name the file (`grep -r KEY .`) or to a script that opens the file itself; for those, the
+  sandbox (macOS, Linux, WSL2) and the OS are the boundary (docs, read 2026-10-12).
+- An `Edit(...)` rule covers `Write` too; a `Write(...)` rule is never consulted. On a CLI
+  newer than 2.1.281, `attribution: false` does what the object does (docs, read 2026-10-12).
 - `git -C . push` is not matched by the deny rules; the devkit's skills never write it.
-- No native rule covers an upload (`curl -d @.env`), an environment dump (`printenv`) or a
-  download piped into a shell (`curl | sh`). The sandbox covers the network on macOS and
-  Linux; on native Windows nothing does.
-- Whether the `Read` deny covers PowerShell's `Get-Content`, `gc` and `type` is not
-  documented; it is row 6 of the observation below.
+- No native rule covers an upload (`curl -d @.env`), `printenv` or `curl | sh`; the sandbox
+  covers the network on macOS and Linux, and nothing does on native Windows.
+- **The PowerShell tool is not covered:** `Get-Content`, `gc` and `type` read `.env` despite
+  the deny (observed, below). On native Windows, prefer WSL2 if credentials must stay unread.
 
-**Observation.** Not observed: rows 1–12 of the verification matrix (`Read .env` denied,
-`.env.example` allowed, Grep and `@.env`, Bash `cat`/`head`/redirect, Bash `grep KEY .env`,
-PowerShell `Get-Content`/`gc`/`type`, `Write`/`Edit` of a lockfile, `git push` in Bash and
-PowerShell, `git merge-base` under the merge rule, `git pull --rebase`, `snapshot.mjs take`
-under `Edit(.git/**)`, a commit with the object-form `attribution`) have not been run in a
-session yet. Until they are, every claim above is from the documentation only.
+**Observed on 2.1.292, Windows 10 Pro 10.0.19045, 2026-10-12** — `claude -p` in a throwaway
+repository with this snippet passed through `--settings`, user settings and hooks left out
+(`--setting-sources project`), each row checked against a run without the snippet, where
+every call went through. Denied: `Read .env` (1); Grep on `.env`, and `@.env` not attached —
+a Grep over the directory returns no dotenv match, `.env.example` included (3); Bash
+`cat`, `head -1`, `wc -l <` and `grep KEY` on `.env` (4, 5); `Write` and `Edit` of
+`package-lock.json` (7); `git push` and `npm test && git push` in Bash, `git push` in
+PowerShell (8); `git pull --rebase` (10). Allowed: `Read .env.example` (2); `git merge-base`
+under the merge rule (9); `snapshot.mjs take` under `Edit(.git/**)` (11). Not covered:
+PowerShell `Get-Content`, `gc`, `type` on `.env` (6). A commit carried no `Co-Authored-By`
+trailer, where the control added one (12).
 
 ## Choosing packs
 

@@ -6,7 +6,7 @@ description: >-
   task X", "start implementing" or "fix the findings". For "write the plan", "break it
   into tasks" or "resume", use planning-features; for "review this", reviewing-changes.
 argument-hint: "[subagent|inline|fix-findings] [feature] [task]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(git check-ignore *) Bash(git cat-file -e *) Bash(git rev-parse *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion SendMessage
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Bash(git cat-file -e *) Bash(git rev-parse *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion SendMessage
 ---
 
 You carry out an approved plan, one task at a time. In subagent mode `core:implementer`

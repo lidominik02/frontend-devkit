@@ -8,7 +8,7 @@ description: >-
   plan", use planning-features; for "implement the plan", executing-plans; for a root
   cause, investigating-bugs.
 argument-hint: "[new|gap|continue|research] [feature|question]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(git check-ignore *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion
 ---
 
 You settle what a feature must do before anyone plans how to build it. Facts — what the

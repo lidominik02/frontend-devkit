@@ -57,20 +57,23 @@ run.
 
 ## 4. Commit, MR text, open items
 
-Three steps, in this order, each with its own form; the user may skip any.
+Three steps, in this order, each with its own form; the user may skip any. A text the user
+approves travels in its form: the whole text, word for word, is the `preview` of the option
+that accepts it. A question that only names the text shows nothing, and a text drafted only in
+your reasoning has not been shown.
 
 1. **Commit.** `git status --porcelain` lists what changed. Call the Skill tool with
    "core:describing-changes" with "Text only. Use these gate results and run no gate: …" and
    the `Verified` lines; its shape follows
-   `../describing-changes/references/shaping-commits.md`. Show the message;
-   on acceptance, write it with the Write tool to a file outside the repository — never in
-   quotes on a command line — then `git add -- <files>` and
-   `git commit -F <message file> -- <files>`, the files named one by one, nothing under
-   `temp/`.
+   `../describing-changes/references/shaping-commits.md`. The form's question names the files
+   it covers, and its accepting option previews the message. On acceptance, write it with the
+   Write tool to a file outside the repository — never in quotes on a command line — then
+   `git add -- <files>` and `git commit -F <message file> -- <files>`, the files named one by
+   one, nothing under `temp/`.
 2. **MR description.** `git fetch origin <base>`; when `git rev-list --count
    HEAD..origin/<base>` is above 0, say the branch is behind and offer
-   `core:syncing-branches`. The text follows the repository's merge request template, shown
-   in a copyable block.
+   `core:syncing-branches`. The text follows the repository's merge request template; its
+   form's accepting option previews it, and the chat brief repeats it in a copyable block.
 3. **Open items.** The open questions, the contract gaps, the open findings, each NOT RUN
    gate, and `git branch --list 'backup/*'` — listed for the user, nothing deleted.
 
