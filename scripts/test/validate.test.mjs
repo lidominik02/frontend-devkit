@@ -1,4 +1,4 @@
-// validate.mjs is the gate CI, the Stop hook and two PostToolUse hooks share. Each check
+// validate.mjs is the gate CI and the release workflow run. Each check
 // must catch the defect it exists for, report a CRLF checkout exactly as an LF one, and
 // print `/` paths on every OS.
 
@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, test } from 'node:test';
 
-import { REPO_ROOT, hookEvent, runScript, tempDir } from './helpers.mjs';
-import { CHECKS, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
+import { REPO_ROOT, runScript, tempDir } from './helpers.mjs';
+import { BUDGET_CEILING, CHECKS, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
 
 const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const GUIDE = 'plugins/core/skills/demo/references/guide.md';
@@ -51,10 +51,6 @@ function agentText({ name = 'helper', description = AGENT_DESCRIPTION, extraFiel
 
 const README = '# Demo\n\nSee [the changelog](CHANGELOG.md) and [this page](#demo).\n';
 
-function configText({ ceiling = 2000, roots = ['README.md'] } = {}) {
-  return JSON.stringify({ budget: { ceiling }, stopHook: { watch: ['plugins'] }, docs: { roots } });
-}
-
 // A minimal marketplace on which every check passes; `defect` names the one to break, and
 // `override` replaces or (with null) removes single files.
 function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
@@ -68,7 +64,7 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
     [SKILL]: skillText({
       extraField: defect === 'frontmatter' ? 'disable-model-invokation: true' : '',
       cite: defect === 'references' ? 'references/missing.md' : 'references/guide.md',
-      script: defect === 'plugin-root' ? 'missing.mjs' : 'ok.mjs',
+      script: 'ok.mjs',
     }),
     [GUIDE]: '# Guide\n',
     [AGENT]: agentText(),
@@ -77,11 +73,16 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
     [LOCAL_SKILL]: ['---', 'name: local', `description: ${LOCAL_DESCRIPTION}`, 'argument-hint: "<target>"', '---', '', 'Local.', ''].join('\n'),
     'plugins/core/scripts/ok.mjs': 'export const ok = true;\n',
     'README.md': README,
-    'devkit.config.json': configText({ ceiling: defect === 'budget' ? 100 : 2000 }),
     'CHANGELOG.md': defect === 'changelog' ? CHANGELOG.replace('1.0.0', '0.9.0') : CHANGELOG,
   };
   if (defect === 'scripts') files['plugins/core/scripts/broken.mjs'] = 'export const x = ;\n';
-  if (defect === 'skill-dirs') files['plugins/core/skills/orphan/notes.md'] = '# Notes\n';
+  if (defect === 'structure') files['plugins/core/skills/orphan/notes.md'] = '# Notes\n';
+  // Seven listed skills of 1000 characters each take the listing past the ceiling.
+  if (defect === 'budget') {
+    for (let k = 0; k < 7; k++) {
+      files[`plugins/core/skills/long-${k}/SKILL.md`] = ['---', `name: long-${k}`, `description: ${'Long. '.repeat(166)}word`, '---', '', 'Body.', ''].join('\n');
+    }
+  }
   Object.assign(files, override);
 
   for (const [rel, text] of Object.entries(files)) {
@@ -101,9 +102,8 @@ function copyScript(root, rel) {
   return dest;
 }
 
-// validate.mjs imports pack-graph.mjs and ci/release-notes.mjs, so a runnable copy needs all three.
+// validate.mjs imports ci/release-notes.mjs, so a runnable copy needs both.
 function copyValidate(root) {
-  copyScript(root, 'scripts/pack-graph.mjs');
   copyScript(root, 'scripts/ci/release-notes.mjs');
   return copyScript(root, 'scripts/validate.mjs');
 }
@@ -119,12 +119,11 @@ describe('validate.mjs checks run against the root they are given', () => {
 
   const defects = {
     frontmatter: /plugins\/core\/skills\/demo\/SKILL\.md -> unknown frontmatter field 'disable-model-invokation'/,
-    budget: /^always-on listing is \d+ chars, over the 100-char ceiling in devkit\.config\.json/,
+    budget: new RegExp(`^always-on listing is \\d+ chars, over the ${BUDGET_CEILING}-char ceiling\\.`),
     references: /plugins\/core\/skills\/demo\/SKILL\.md -> references\/missing\.md: no such file/,
     scripts: /^plugins\/core\/scripts\/broken\.mjs -> SyntaxError/,
     versions: /^plugins\/core\/\.claude-plugin\/plugin\.json -> version "1\.0" is not X\.Y\.Z$/,
-    'skill-dirs': /^plugins\/core\/skills\/orphan -> no SKILL\.md$/,
-    'plugin-root': /^plugins\/core\/skills\/demo\/SKILL\.md -> \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/missing\.mjs does not resolve inside plugins\/core$/,
+    structure: /^plugins\/core\/skills\/orphan -> no SKILL\.md$/,
     changelog: /^CHANGELOG\.md has no "## 1\.0\.0 - YYYY-MM-DD" section/,
   };
 
@@ -167,7 +166,7 @@ describe('validate.mjs checks run against the root they are given', () => {
   });
 
   // statSync threw ENOENT on such an entry, and no later check reported.
-  test('a dangling link under .claude/skills is a skill-dirs finding, not a crash', (t) => {
+  test('a dangling link under .claude/skills is a structure finding, not a crash', (t) => {
     const root = fixture(t);
     const gone = path.join(tempDir(t), 'gone');
     fs.mkdirSync(gone);
@@ -179,7 +178,7 @@ describe('validate.mjs checks run against the root they are given', () => {
     }
     fs.rmdirSync(gone);
     const results = byName(runChecks(undefined, root));
-    assert.deepEqual(results['skill-dirs'].findings, ['.claude/skills/gone -> a link to nothing']);
+    assert.deepEqual(results.structure.findings, ['.claude/skills/gone -> a link to nothing']);
   });
 });
 
@@ -241,20 +240,20 @@ describe('validate.mjs frontmatter rules', () => {
   });
 });
 
-test('plugin-root fails on a path that leaves its pack through .., even when the target exists', (t) => {
+test('structure fails on a plugin-root path that leaves its pack through .., even when the target exists', (t) => {
   const root = fixture(t, { override: { 'plugins/vue/scripts/ok.mjs': 'export const ok = true;\n' } });
   const skill = fs.readFileSync(path.join(root, SKILL), 'utf8').replace('scripts/ok.mjs', '../vue/scripts/ok.mjs');
   fs.writeFileSync(path.join(root, SKILL), skill);
-  const result = byName(runChecks(['plugin-root'], root))['plugin-root'];
+  const result = byName(runChecks(['structure'], root)).structure;
   assert.deepEqual(result.findings, [
     'plugins/core/skills/demo/SKILL.md -> ${CLAUDE_PLUGIN_ROOT}/../vue/scripts/ok.mjs does not resolve inside plugins/core',
   ]);
 });
 
 // A reference is followed at runtime as the body is, so its paths are checked too.
-test('plugin-root fails on a dead path in a reference file', (t) => {
+test('structure fails on a dead plugin-root path in a reference file', (t) => {
   const root = fixture(t, { override: { [GUIDE]: '# Guide\n\nRun `node "${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs"`.\n' } });
-  assert.deepEqual(byName(runChecks(['plugin-root'], root))['plugin-root'].findings, [
+  assert.deepEqual(byName(runChecks(['structure'], root)).structure.findings, [
     'plugins/core/skills/demo/references/guide.md -> ${CLAUDE_PLUGIN_ROOT}/scripts/gone.mjs does not resolve inside plugins/core',
   ]);
 });
@@ -272,7 +271,7 @@ test('an unlisted plugins/ directory is a versions finding, and none of its comp
   assert.equal(budget(root).listed, DESCRIPTION.length + AGENT_DESCRIPTION.length);
 });
 
-describe('validate.mjs reports a marketplace pack-graph cannot follow as a finding', () => {
+describe('validate.mjs reports a marketplace it cannot follow as a finding', () => {
   const cases = {
     'a missing plugin.json': {
       override: { 'plugins/core/.claude-plugin/plugin.json': null },
@@ -363,79 +362,11 @@ describe('validate.mjs from the command line', () => {
   });
 });
 
-describe('the PostToolUse hooks that import validate.mjs', () => {
-  function hookFixture(t, opts) {
-    const root = fixture(t, opts);
-    copyValidate(root);
-    return {
-      root,
-      frontmatterHook: copyScript(root, 'scripts/hooks/frontmatter-on-write.mjs'),
-      budgetHook: copyScript(root, 'scripts/hooks/budget-on-write.mjs'),
-    };
-  }
-
-  test('importing validate.mjs never runs its command line', (t) => {
-    const { root, frontmatterHook, budgetHook } = hookFixture(t);
-    for (const hook of [frontmatterHook, budgetHook]) {
-      const res = runScript(hook, { cwd: root, input: hookEvent('Write', {}) });
-      assert.deepEqual(res, { code: 0, stdout: '', stderr: '' });
-    }
-  });
-
-  const hooks = {
-    'frontmatter-on-write': {
-      key: 'frontmatterHook',
-      defect: 'frontmatter',
-      finding: /plugins\/core\/skills\/demo\/SKILL\.md -> unknown frontmatter field 'disable-model-invokation'/,
-    },
-    'budget-on-write': {
-      key: 'budgetHook',
-      defect: 'budget',
-      finding: new RegExp(`always-on listing is ${DESCRIPTION.length + AGENT_DESCRIPTION.length} chars, over the 100-char ceiling in devkit\\.config\\.json`),
-    },
-  };
-
-  for (const [name, { key, defect, finding }] of Object.entries(hooks)) {
-    const run = (t, opts) => {
-      const fx = hookFixture(t, opts);
-      return runScript(fx[key], { cwd: fx.root, input: hookEvent('Write', { file_path: path.join(fx.root, SKILL) }) });
-    };
-
-    test(`${name} reports a CRLF component exactly as an LF one`, (t) => {
-      const sound = run(t, { crlf: false });
-      assert.deepEqual(sound, { code: 0, stdout: '', stderr: '' });
-      assert.deepEqual(run(t, { crlf: true }), sound);
-
-      const broken = run(t, { defect, crlf: false });
-      assert.equal(broken.code, 2);
-      assert.match(broken.stderr, finding);
-      assert.deepEqual(run(t, { defect, crlf: true }), broken);
-    });
-  }
-});
-
-describe('devkit.config.json holds the values the checks read', () => {
+describe('the budget ceiling is a constant in validate.mjs', () => {
   test('the budget passes under the ceiling whatever any prose says, and reports the total', (t) => {
     const root = fixture(t, { override: { 'README.md': 'Listing cost: **9.9k characters**. The ceiling is 1 character.\n' } });
     const { budget: result } = byName(runChecks(['budget'], root));
     assert.deepEqual(result.findings, []);
-    assert.equal(result.detail, `${DESCRIPTION.length + AGENT_DESCRIPTION.length}/2000 chars always-on`);
-  });
-
-  const broken = {
-    'a missing config': [null, /^devkit\.config\.json is missing$/],
-    'a config that is not JSON': ['{ "budget": ', /^devkit\.config\.json is not a JSON object$/],
-  };
-  for (const [label, [text, finding]] of Object.entries(broken)) {
-    test(`${label} fails budget instead of passing it unchecked`, (t) => {
-      const { budget: result } = byName(runChecks(['budget'], fixture(t, { override: { 'devkit.config.json': text } })));
-      assert.ok(result.findings.some((f) => finding.test(f)), `budget: ${result.findings.join(' | ')}`);
-    });
-  }
-
-  test('a ceiling that is not a positive integer is a finding', (t) => {
-    const config = JSON.stringify({ budget: { ceiling: '6,500' } });
-    const results = byName(runChecks(['budget'], fixture(t, { override: { 'devkit.config.json': config } })));
-    assert.deepEqual(results.budget.findings, ['devkit.config.json: budget.ceiling must be a positive integer']);
+    assert.equal(result.detail, `${DESCRIPTION.length + AGENT_DESCRIPTION.length}/${BUDGET_CEILING} chars always-on`);
   });
 });

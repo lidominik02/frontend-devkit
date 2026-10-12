@@ -19,7 +19,7 @@ Each pack's README lists its components: [`core`](../plugins/core/README.md),
 | --- | --- |
 | [Contributing](../CONTRIBUTING.md) | Setting up, running the gates, trying an unreleased change, releasing |
 | [Authoring](contributing/authoring.md) | Writing or changing a skill, an agent or a reference file |
-| [Validation](contributing/validation.md) | A static check failed, or a value in `devkit.config.json` needs changing |
+| [Validation](contributing/validation.md) | A static check failed, or the budget ceiling needs changing |
 | [Evals](../plugins/core/evals/README.md) | Deciding whether a component earns its cost |
 
 ## Decisions

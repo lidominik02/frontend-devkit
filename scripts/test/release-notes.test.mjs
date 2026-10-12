@@ -49,7 +49,7 @@ describe('release-notes from the command line', () => {
   function copy(t, changelog) {
     const root = tempDir(t);
     write(root, { 'CHANGELOG.md': changelog });
-    for (const rel of ['scripts/ci/release-notes.mjs', 'scripts/pack-graph.mjs']) {
+    for (const rel of ['scripts/ci/release-notes.mjs']) {
       write(root, { [rel]: fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8') });
     }
     return { root, script: path.join(root, 'scripts', 'ci', 'release-notes.mjs'), out: path.join(root, 'notes.md') };

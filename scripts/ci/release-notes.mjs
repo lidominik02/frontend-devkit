@@ -10,8 +10,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { runAsEntry } from '../pack-graph.mjs';
-
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /** The one heading a version's section may carry. @param {string} version */
@@ -47,4 +45,4 @@ function cli() {
   fs.writeFileSync(out, `${notes}\n`);
 }
 
-runAsEntry(import.meta.main, cli, 'release-notes.mjs');
+if (import.meta.main) cli();

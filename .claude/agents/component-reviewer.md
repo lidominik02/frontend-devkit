@@ -20,7 +20,7 @@ it is confidently inapplicable.
 
 Run `node scripts/validate.mjs` first and report nothing it already catches.
 Frontmatter fields, the description cap, dead references, literal repo names, the
-always-on budget ceiling and blocked MCP names are mechanically enforced. Your job
+always-on budget ceiling are mechanically enforced. Your job
 starts where that stops — including a description that grows while the total stays
 under the ceiling.
 
@@ -58,6 +58,12 @@ body says so.
 **6. Version claims.** Both packs claim to be version-gated. A behavioural claim
 about a framework with no version attached is a claim that will silently rot. Flag
 any new assertion that does not say which versions it holds for.
+
+**7. Prose contracts.** A shape one file writes and another reads must agree on both
+sides: the PLAN.md and STATUS.md section names in `planning-features/references/artifacts.md`,
+the dispatch fields (`Role:`, `Diff file:`, `Intent sources:`, `Packs:`, `Gates:`,
+`Released:`) and the review-report fields. The settings snippet in `docs/installation.md` and
+in `preparing-a-repo` is identical. Name both sides as `file:line` with the failing case.
 
 ## Output
 

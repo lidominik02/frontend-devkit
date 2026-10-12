@@ -1,24 +1,16 @@
 #!/usr/bin/env node
-// Static validation for this marketplace: one implementation, three callers.
+// Static validation for this marketplace: the checks `claude plugin validate --strict` does
+// not perform. CI and the release workflow run it; so does a contributor before pushing.
 //
-// CI calls it, the Stop hook calls it, and the two PostToolUse hooks call
-// single checks out of it. It was extracted from .github/workflows/validate.yml,
-// where the same logic lived as inline heredocs and could not be run from a
-// terminal at all — so nothing caught a bad frontmatter field or a dead
-// reference until a push had already happened.
+// Pure Node against the working tree: no dependencies, no CLI, no network.
 //
-// Pure Node against the working tree: no dependencies, no CLI, no network, so
-// the Stop hook costs a few milliseconds of fs reads.
-//
-// Exit 0 = every requested check passed. Exit 1 = at least one failed. Callers
-// that need to *block* translate that themselves; see scripts/hooks/.
+// Exit 0 = every requested check passed. Exit 1 = at least one failed.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-import { packs, runAsEntry } from './pack-graph.mjs';
 import { releaseNotes } from './ci/release-notes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,19 +20,39 @@ const rel = (root, p) => (path.relative(root, p) || p).split(path.sep).join('/')
 // A CRLF checkout must report exactly what an LF one does, so every text read normalises here.
 const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
-// Every value this tooling reads lives here; a figure in prose is never parsed.
-export const CONFIG = 'devkit.config.json';
+// Repo policy, see ADR 0007; the only machine check on the always-on tier; query it with
+// `--checks=budget`.
+export const BUDGET_CEILING = 6500;
 
-/** @returns {{ config: Record<string, any> | null, findings: string[] }} */
-export function loadConfig(root = ROOT) {
-  let text;
-  try { text = fs.readFileSync(r(root, CONFIG), 'utf8'); }
-  catch { return { config: null, findings: [`${CONFIG} is missing`] }; }
-  try {
-    const config = JSON.parse(text);
-    if (config && typeof config === 'object' && !Array.isArray(config)) return { config, findings: [] };
-  } catch { /* reported below */ }
-  return { config: null, findings: [`${CONFIG} is not a JSON object`] };
+const MARKETPLACE = '.claude-plugin/marketplace.json';
+
+// Thrown when a marketplace entry cannot be followed; the message names the entry or the file.
+const unfollowable = (message) => Object.assign(new Error(message), { code: 'ERR_PACK_UNFOLLOWABLE' });
+
+/** @param {string} file */
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return undefined; }
+}
+
+// The packs marketplace.json lists, each with its version and its skill directories. A pack
+// it does not list ships nothing; `versions` reports it.
+export function packs(root = ROOT) {
+  const list = readJson(r(root, MARKETPLACE))?.plugins;
+  if (!Array.isArray(list)) throw unfollowable(`${MARKETPLACE} is missing, not valid JSON, or has no plugins list`);
+  return list.map((entry) => {
+    if (typeof entry?.source !== 'string') {
+      throw unfollowable(`${MARKETPLACE} -> entry "${entry?.name}" has a non-path source`);
+    }
+    const dir = r(root, entry.source);
+    const manifest = path.join(dir, '.claude-plugin/plugin.json');
+    const meta = readJson(manifest);
+    if (meta === null || typeof meta !== 'object') throw unfollowable(`${rel(root, manifest)} is missing or not valid JSON`);
+    const skillsDir = path.join(dir, 'skills');
+    const skills = fs.existsSync(skillsDir)
+      ? fs.readdirSync(skillsDir).map((name) => ({ name, dir: rel(root, path.join(skillsDir, name)) }))
+      : [];
+    return { name: meta.name, version: meta.version, skills, dir: rel(root, dir) };
+  });
 }
 
 // --- frontmatter ------------------------------------------------------------
@@ -210,16 +222,11 @@ export function checkBudget(root = ROOT) {
   const unread = loadPacks(root).findings;
   // With no pack read, a total of 0 against the ceiling is not news.
   if (unread.length) return { name: 'budget', findings: unread, ok: false, unread: true, listed, packs };
-  const { config, findings: bad } = loadConfig(root);
-  const ceiling = config?.budget?.ceiling;
-  if (config && !(Number.isInteger(ceiling) && ceiling > 0)) {
-    bad.push(`${CONFIG}: budget.ceiling must be a positive integer`);
-  }
-  // No usable ceiling: the total cannot be judged, and shortening a description fixes nothing.
-  if (bad.length) return { name: 'budget', findings: bad, ok: false, unusableConfig: true, listed, packs };
+  const bad = [];
+  const ceiling = BUDGET_CEILING;
   if (listed > ceiling) {
     bad.push(
-      `always-on listing is ${listed} chars, over the ${ceiling}-char ceiling in ${CONFIG}. ` +
+      `always-on listing is ${listed} chars, over the ${ceiling}-char ceiling. ` +
       `Per pack: ${Object.entries(packs).map(([k, v]) => `${k} ${v}`).join(', ')}`
     );
   }
@@ -337,11 +344,10 @@ export function checkScripts(root = ROOT) {
 // An existing install updates only when `version` changes, and a pack without one updates
 // on every commit to the installed branch. One number, plugin.json only: it overrides a
 // marketplace entry's, and setting both draws a validator mismatch warning (plugins
-// reference, read for CLI 2.1.283). Unreleased commits are not a finding; CI warns on them.
+// reference, read for CLI 2.1.283). Unreleased commits are not a finding.
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
-const MARKETPLACE = '.claude-plugin/marketplace.json';
 
-// The raw entries, for the fields pack-graph's packs() does not carry.
+// The raw entries, for the fields packs() does not carry.
 function marketplaceEntries(root) {
   try {
     const list = JSON.parse(read(r(root, MARKETPLACE))).plugins;
@@ -351,7 +357,7 @@ function marketplaceEntries(root) {
   }
 }
 
-// packs() is the one walk from a marketplace entry to its pack, shared with pack-graph.mjs.
+// packs() is the one walk from a marketplace entry to its pack.
 // It throws on the first entry it cannot follow, naming the entry or the file; that becomes a finding.
 function loadPacks(root) {
   try {
@@ -423,7 +429,7 @@ export function checkChangelog(root = ROOT) {
 
 // --- every skill directory holds a SKILL.md ------------------------------------
 
-export function checkSkillDirs(root = ROOT) {
+function skillDirFindings(root) {
   const { list, findings: bad } = loadPacks(root);
   const dirs = list.flatMap((pack) => pack.skills.map((s) => r(root, s.dir)));
   const local = r(root, '.claude', 'skills');
@@ -436,7 +442,7 @@ export function checkSkillDirs(root = ROOT) {
       bad.push(`${rel(root, dir)} -> no SKILL.md`);
     }
   }
-  return { name: 'skill-dirs', findings: bad, ok: bad.length === 0 };
+  return bad;
 }
 
 // --- ${CLAUDE_PLUGIN_ROOT} paths resolve inside their own pack ----------------
@@ -456,7 +462,7 @@ function markdownUnder(dir) {
     .sort();
 }
 
-export function checkPluginRoot(root = ROOT) {
+function pluginRootFindings(root) {
   const { list, findings: bad } = loadPacks(root);
   for (const pack of list) {
     const packDir = r(root, pack.dir);
@@ -471,18 +477,25 @@ export function checkPluginRoot(root = ROOT) {
       }
     }
   }
-  return { name: 'plugin-root', findings: bad, ok: bad.length === 0 };
+  return bad;
+}
+
+// The pack's shape: every skill directory holds a SKILL.md, and every
+// ${CLAUDE_PLUGIN_ROOT} path resolves inside its own pack.
+export function checkStructure(root = ROOT) {
+  // Both start from the same pack read, so an unfollowable marketplace is reported once.
+  const bad = [...new Set([...skillDirFindings(root), ...pluginRootFindings(root)])];
+  return { name: 'structure', findings: bad, ok: bad.length === 0 };
 }
 
 // --- runner -----------------------------------------------------------------
 
 export const CHECKS = {
   frontmatter: (root = ROOT) => checkFrontmatter(undefined, root),
-  'skill-dirs': checkSkillDirs,
+  structure: checkStructure,
   budget: checkBudget,
   references: checkReferences,
   scripts: checkScripts,
-  'plugin-root': checkPluginRoot,
   versions: checkVersions,
   changelog: checkChangelog,
 };
@@ -519,4 +532,10 @@ function cli() {
   console.log(`\n${names.length} check(s) passed`);
 }
 
-runAsEntry(import.meta.main, cli, 'validate.mjs');
+// A Node before 22.18 leaves import.meta.main undefined; running nothing there would pass
+// unchecked, so it exits 1 instead.
+if (import.meta.main) cli();
+else if (import.meta.main === undefined) {
+  console.error(`validate.mjs requires Node 22.18+ or 24.2+, this is Node ${process.versions.node}.`);
+  process.exit(1);
+}

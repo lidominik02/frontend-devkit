@@ -16,9 +16,9 @@ model's view of the skill: it can then only run when someone types it.
 
 - Each kind of content goes in the cheapest tier that still works: the trigger in the
   description, guardrails and ordering in the body, lookup material in a reference.
-- The always-on descriptions of all shipped packs together stay under a ceiling, set in
-  `devkit.config.json` ([0012](0012-tooling-values-in-config-not-prose.md)) and checked by
-  the `budget` check and a write hook.
+- The always-on descriptions of all shipped packs together stay under a ceiling, a constant in
+  `scripts/validate.mjs` ([0012](0012-tooling-values-in-config-not-prose.md)), checked by
+  the `budget` check.
 - A skill is typed-only (`disable-model-invocation: true`) when firing on its own would do
   harm or collide with another component: `preparing-a-repo` changes a host repository's
   configuration; `designing-architecture` would drive unasked redesigns — noticing a candidate

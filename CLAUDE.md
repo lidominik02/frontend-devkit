@@ -21,7 +21,7 @@ its layer inverts or adds, and names the base rules that do not apply there. Dup
 text drifts, and a rule correct for the base and wrong for the specialisation
 manufactures confident, wrong output — worse than no rule. A pack's base is its
 non-`core` dependency; `core` is the floor and forms no family. Today that is
-`nuxt` → `vue` → `core`. `node scripts/pack-graph.mjs` reports the current shape, so
+`nuxt` → `vue` → `core`. The manifests' `dependencies` are the shape; read them, and
 never hardcode a pair. (ADR 0004)
 
 **Three tiers of context cost.** Descriptions load always, in every session of every
@@ -33,6 +33,16 @@ a reference. (ADR 0007)
 consumer's permission and attribution settings, the sandbox and the OS; the devkit
 recommends and documents them. A new hook only when no native setting can express it, it
 prevents a reported incident, and the report is in the CHANGELOG. (ADR 0013)
+
+**A skill reads the project's facts at the moment of use, by one shared rule.** No facts
+service, no gate runner, no override schema. A fact two skills would read differently is one
+line in `planning-features/references/project.md`, not a script. (ADR 0013)
+
+**A feature's state lives in files, without a protocol.** `PLAN.md` says what and why;
+`STATUS.md` says where it stands; `DECISIONS.md` and `CONTRACT-GAPS.md` are append-only lists
+read by id. No entry catalogue, no archive protocol, no moves, no format-compatibility layer:
+an older feature is carried over by hand, as the artifact contract says in one sentence.
+(ADR 0013)
 
 **Components live in `skills/`, never `commands/`.** A skill already carries the slash
 invocation, and the checks that read component frontmatter select on `SKILL.md` or
@@ -60,32 +70,26 @@ only at enable time.
 **No runtime dependencies.** Node and the `claude` CLI alone. Do not add a
 `package.json`, a lockfile, or an npm package. (ADR 0002)
 
-**Values the tooling reads live in `devkit.config.json`, never in prose.** A script that
-needed a figure from a Markdown sentence would tie the documentation's wording to a check.
-Documentation says how to query such a value, and does not restate it. (ADR 0012)
+**A value the tooling reads lives in the script that reads it**, and the documentation says
+how to query it, never the number. A script that needed a figure from a Markdown sentence
+would tie the documentation's wording to a check. (ADR 0012)
 
 ## Gates
 
 ```
-node scripts/validate.mjs               # the static checks; also the Stop hook and CI
-node --test "scripts/test/*.test.mjs"   # script and hook behaviour by exit code; also the Stop hook and CI
-node scripts/pack-graph.mjs             # pack layering, derived from the manifests
+node scripts/validate.mjs               # the static checks; also CI
+node --test "scripts/test/*.test.mjs"   # script behaviour by exit code; also CI
 ```
 
-The gates need Node 22.18, or 24.2 on the 24 line; on an older Node `validate.mjs` and
-`pack-graph.mjs` exit 1. The shipped plugins need only Node 22.
+The gates need Node 22.18, or 24.2 on the 24 line; on an older Node `validate.mjs` exits 1. The shipped plugins need only Node 22.
 
 `scripts/validate.mjs` is the one implementation of every check
-`claude plugin validate --strict` does not perform; CI, the hooks and the release check
+`claude plugin validate --strict` does not perform; CI, the release workflow and `/release`
 run that same file. `--strict` does **not** read component frontmatter, which is why the
 frontmatter allowlist lives there. CI runs a pinned CLI; `canary.yml` watches the latest
-weekly. What each check catches, and the `devkit.config.json`
-keys the checks read, are in `docs/contributing/validation.md`.
+weekly. What each check catches is in `docs/contributing/validation.md`.
 
-The first two are the gate; run both before pushing. `pack-graph.mjs` reports the
-layering and is not a gate. The Stop hook runs `validate.mjs` automatically when a path
-listed under `stopHook.watch` or `docs.roots` in `devkit.config.json` has changed, and the
-test suite when a path listed under `stopHook.testWatch` has.
+Both are the gate; run both before pushing.
 
 ## Claims must be observed, not assumed
 
@@ -104,14 +108,8 @@ marketplace. They are not shipped to consumers and are not part of any pack.
 
 | | |
 | --- | --- |
-| `/eval-case` | Scaffold an eval case under the retention methodology |
-| `/new-pack` | Scaffold a framework pack and wire it in everywhere |
-| `/pack-parity` | Check the delta contract for drift, for every family the manifests declare |
-| `/body-vs-reference-audit` | Which parts of a body have earned their place there |
-| `/cli-upgrade-check` | Revalidate against the installed CLI and record the verified-on version |
-| `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
 | `/release` | Bump the shared version, write the CHANGELOG section, commit; the user pushes `dev`, then `main` once CI is green, then the tag, whose push creates the GitHub Release |
-| `trigger-tester` | Would this description fire? Judges descriptions, never bodies |
-| `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |
+| `/cli-upgrade-check` | Revalidate against a newer CLI and raise the pinned version |
+| `/diagnosing-sessions` | Diagnose past sessions into an anonymised report with a devkit-involvement verdict |
 | `component-reviewer` | Reviews a changed component against the invariants above |
-| `contract-auditor` | Finds artifact shapes whose writer and readers no longer agree; on request |
+| `eval-grader` | Dry-run a `criteria.md` before a real run pays for it |

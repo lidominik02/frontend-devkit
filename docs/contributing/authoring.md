@@ -119,6 +119,44 @@ Detail belongs in `references/` — the Agent Skills spec directory, alongside `
 second hop is one more thing that has to go right at the moment the model is furthest from
 the instruction, and nothing is gained by nesting.
 
+## Body versus reference
+
+Moving the wrong thing out is worse than leaving it in: the body stops being followable on
+its own and the model acts before it reads the reference. Keep in the body every guardrail
+(a rule in a reference is not in context when the body is followed), the order of
+operations, the decision that routes to a reference — which one and when — and anything
+that changes the outcome of the first action. Candidates to move are material consulted
+rather than followed: version matrices and compatibility tables, exhaustive enumerations
+where the body needs only the distinction, worked examples beyond the first, per-case detail
+behind a branch most invocations do not take, and background explaining why a rule holds.
+
+## Adding a pack
+
+First establish that it should be a pack: packs split on inversion, not subject matter. If
+the new guidance only adds to an existing pack, it is a reference there. Then touch:
+
+| Place | What |
+| --- | --- |
+| `plugins/<name>/.claude-plugin/plugin.json` | `name`, the shared `version`, `description`, `author`, `repository`, `keywords`, and `dependencies` naming **every** pack it needs, not just the nearest |
+| `.claude-plugin/marketplace.json` | A `plugins[]` entry with `source: ./plugins/<name>` |
+| `plugins/<name>/skills/<name>-engineering/SKILL.md` | The pack's one skill, plus `references/` |
+| `plugins/<name>/README.md` | What it covers, what it depends on, why it is a separate pack, its skill table |
+| `plugins/<name>/evals/` | A README pointing back at `plugins/core/evals/README.md`, and at least one case |
+| `plugins/core/skills/planning-features/references/project.md` | One line in "Framework packs": the dependency that names the framework, and its packs, general first |
+| `README.md`, `docs/installation.md` | The packs table, the install block and "Choosing packs" |
+
+CI takes its validation targets from `marketplace.json`, so the workflows need no edit.
+
+## The delta contract
+
+A specialised pack's base is its non-`core` dependency; the manifests' `dependencies` are the
+shape. After editing either side of a family, read the two checklists and the paired
+references as a pair, and look for four kinds of drift, worst first: **an unanswered
+inversion** — a base rule false under the specialisation, with no counterpart there;
+**a leaked rule** — guidance in the specialisation equally true of the base, which belongs
+in the base; **duplicated text** — the same rule on both sides, which diverges on the first
+edit; **a one-directional pointer** — an inversion named on one side only.
+
 ## Descriptions
 
 **Descriptions are the entire triggering mechanism**, and the cap to author against is
@@ -128,6 +166,13 @@ together — measured against 2.1.276, where cost stops rising at exactly that p
 there is no separate global budget — but a description over 1,024 cannot be packaged.)
 Write them in the third person, front-loaded, using the literal words a user would type.
 Claude undertriggers, so lean pushy.
+
+Check a description yourself in four bands before shipping it: **must-fire** (the component's
+core job, said plainly), **should-fire** (the same job in oblique, lazy or partial wording),
+**must-not-fire** (adjacent work it must stay out of) and **boundary** (genuinely ambiguous;
+record which way it falls and why). Too narrow misses should-fire wording; too broad fires on
+must-not-fire. That is the author's own reading, not a measurement: whether it fires is
+measured by an eval case with the native `tool_used` grader.
 
 **A skill's `name` must match its parent directory**, per the spec.
 

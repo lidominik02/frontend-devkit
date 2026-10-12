@@ -24,8 +24,8 @@ enable time.
   adds, names the base rules that do not apply there, and the base points back at it.
   Nothing is duplicated.
 - A pack's base is its non-`core` dependency; `core` is the framework-agnostic floor and
-  forms no family. Today that is `nuxt` → `vue` → `core`. `scripts/pack-graph.mjs` derives
-  the shape from the manifests, so no pair is written down by hand.
+  forms no family. Today that is `nuxt` → `vue` → `core`. The manifests' `dependencies`
+  are the shape; no pair is written down by hand.
 - Every dependency is declared directly: `nuxt` names both `core` and `vue`.
 - One pack refers to another by skill invocation (`/vue:vue-engineering`), never by path.
 - A skill finds the packs that serve a project from its `package.json`, by the rule in
@@ -37,6 +37,7 @@ enable time.
 - The split is tested by a matched pair of ablation cases:
   `plugins/vue/evals/module-scope-state/` must call the code fine, and
   `plugins/nuxt/evals/ssr-shared-state/` must call the same code Critical.
-- `/pack-parity` checks the contract for drift for every family the manifests declare.
+- `component-reviewer` checks the contract for drift on every change to either side of a
+  family; the four kinds of drift are in [Authoring](../contributing/authoring.md#the-delta-contract).
 - A new framework that only adds to an existing one is a reference file in that pack, not a
   new pack.

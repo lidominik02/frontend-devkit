@@ -21,6 +21,8 @@ repository.
   cross-engine coverage is the point. `preparing-a-repo` offers it as a proposal.
 - Whether a browser is available is never inferred from a repository's files. Only the
   caller's own tool list settles that.
+- This repository's own `.mcp.json` was removed as well (2026-10-12): its author installs the
+  browser server at user scope, as the recommendation says.
 
 ## Consequences
 

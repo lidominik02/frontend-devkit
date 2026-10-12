@@ -193,6 +193,15 @@ arm; note which arm you were in before crediting it to the skill.
 
 ## Writing a case
 
+Answer four questions before writing anything, since a case that cannot fail at baseline
+cannot produce a verdict. **Which claim is under test?** One sentence naming the component
+and the specific distinction, ordering or guardrail. **Capability or efficiency?** Only a
+capability rule is worth paying for; if the model already does it, untidily, the finding is
+that the rule should not exist. **What is the expected baseline?** State it in the criteria
+file, or the run gives a score and not a verdict; a case expected to pass at baseline is kept
+only as a named regression guard. **Where does it live?** Under the pack whose component it
+tests. Scaffold the case with `claude plugin eval init --bare <name>`.
+
 `prompt.md` is the task, and it must be clean: no hints, no TODOs, nothing that suggests
 the shape of the answer. The prompt alone defines the work. If the prompt tells the model
 what to avoid, the eval measures reading comprehension rather than the skill.

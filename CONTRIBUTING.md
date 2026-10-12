@@ -9,8 +9,8 @@ How to change, check and release this marketplace. The rules every change must h
 Node and the `claude` CLI, nothing else: no `package.json`, no `node_modules`, no install
 step ([ADR 0002](docs/adr/0002-no-runtime-dependencies.md)). The development tooling needs
 Node 22.18, or 24.2 on the 24 line — higher than the Node 22 the shipped plugins need. On an
-older Node, `validate.mjs` and `pack-graph.mjs` print the version they need and exit 1, so
-the `Stop` hook fails rather than passing silently.
+older Node, `validate.mjs` prints the version it needs and exits 1 rather than passing
+silently.
 
 ## Branches
 
@@ -21,23 +21,15 @@ session installs `main` ([ADR 0010](docs/adr/0010-shared-version-and-release-bra
 
 ```bash
 node scripts/validate.mjs                       # the static checks CI runs
-node --test "scripts/test/*.test.mjs"           # the tests on the guarantees
-node scripts/pack-graph.mjs                     # pack layering, derived from the manifests
+node --test "scripts/test/*.test.mjs"           # the tests on the scripts
 claude plugin validate . --strict               # marketplace + entries
 claude plugin validate ./plugins/core --strict  # manifest fields
 claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
 claude plugin details core@frontend-devkit      # inventory + token cost
 ```
 
-The first two are the gate; run both before pushing. What each static check catches, and
-the keys of `devkit.config.json` the checks read, are in
+The first two are the gate; run both before pushing. What each static check catches is in
 [Validation](docs/contributing/validation.md).
-
-**`pack-graph.mjs`** derives the layering from the manifests rather than restating it. A
-pack's non-`core` dependency is its base, and that pair is what the delta contract
-governs; `core` is the framework-agnostic floor and forms no family. It reports each
-family's paired reference topics and the ones present on only one side, so adding a pack
-later needs no edit to `/pack-parity` — the relationship is read, not written down.
 
 ## The repository's own tooling
 
@@ -51,29 +43,10 @@ file is its full description.
 | Situation | Run |
 | --- | --- |
 | You changed a skill, an agent or a reference under `plugins/` | [`component-reviewer`](.claude/agents/component-reviewer.md) |
-| You wrote or reworded a description | [`trigger-tester`](.claude/agents/trigger-tester.md) |
-| A body grew, or the always-on cost came up | [`/body-vs-reference-audit`](.claude/skills/body-vs-reference-audit/SKILL.md) |
-| You changed either side of a pack family (`vue`, `nuxt`) | [`/pack-parity`](.claude/skills/pack-parity/SKILL.md) |
-| You changed an artifact shape — a ledger entry, brief field, HANDOFF section or script output | [`contract-auditor`](.claude/agents/contract-auditor.md) |
-| You are adding support for a new framework | [`/new-pack`](.claude/skills/new-pack/SKILL.md) |
-| You are adding or changing an eval case | [`/eval-case`](.claude/skills/eval-case/SKILL.md), then [`eval-grader`](.claude/agents/eval-grader.md) on its criteria |
+| You are adding or changing an eval case | [`eval-grader`](.claude/agents/eval-grader.md) on its criteria |
 | You want to know why past sessions went wrong | [`/diagnosing-sessions`](.claude/skills/diagnosing-sessions/SKILL.md) |
 | A Claude Code release shipped, or the weekly canary turned red | [`/cli-upgrade-check`](.claude/skills/cli-upgrade-check/SKILL.md) |
 | The work is ready to release | [`/release`](.claude/skills/release/SKILL.md) |
-
-### The repository's hooks
-
-`.claude/settings.json` runs three hooks without being asked. All three are Node for the
-reason the shipped hooks are ([ADR 0001](docs/adr/0001-node-hooks-with-version-gate.md)).
-
-| Hook | Event | Speaks when |
-| --- | --- | --- |
-| `scripts/hooks/frontmatter-on-write.mjs` | PostToolUse on a write | The component just written — a pack's, or one under `.claude/skills/` or `.claude/agents/` — fails the frontmatter rules |
-| `scripts/hooks/budget-on-write.mjs` | PostToolUse on a write | After a component or `devkit.config.json` write, the always-on total is over its ceiling, the ceiling is unusable, or no pack could be read |
-| `scripts/hooks/on-stop.mjs` | Stop | A path under `stopHook.watch` or `docs.roots` changed and `validate.mjs` fails, a path under `stopHook.testWatch` changed and the test suite fails, or either watch list is unusable |
-
-`.mcp.json` declares a browser MCP server so `verifying-ui`'s eval can actually run its
-browser arm here; without it that half of the case is untestable in this checkout.
 
 ## Trying an unreleased change
 
@@ -87,11 +60,6 @@ claude --plugin-dir <working tree>/plugins/core --plugin-dir <working tree>/plug
 `--plugin-dir ./plugins/vue` on its own leaves the plugin disabled with an unsatisfied
 dependency; pass both directories. No installed source serves the working tree, so the
 trial reaches no other session.
-
-That session runs each hook from the file on disk at the moment of the call: a hook caught
-mid-edit can fail to parse, and a Node hook that throws exits 1 and fails open, so the
-trial runs without the guarantee it is meant to exercise. Leave the hooks unedited while it
-runs.
 
 ## Tests
 
