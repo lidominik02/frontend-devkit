@@ -3,6 +3,62 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.2.0 - 2026-10-12
+
+### Added
+
+- The installation guide has a "Permissions and attribution" section with a settings
+  snippet. It denies reads and edits of credentials, lockfiles and `.git/`, and denies
+  push, pull, merge and plumbing commits from both Bash and PowerShell. It also leaves
+  commit attribution empty. The guide states what those rules do and do not cover, and
+  `preparing-a-repo` recommends the same snippet.
+- Each pack has a README listing its skills and agents.
+
+### Changed
+
+- **Breaking:** the devkit ships no hooks. Secret blocking, commit hygiene,
+  format-on-write and the verify-before-done Stop hook are gone. Protection now comes
+  from your own permission settings. Without the snippet above, nothing stops a
+  credential read or a push.
+- **Breaking:** a feature's state is kept in up to four plain files in its `temp/`
+  folder: `PLAN.md` (the spec and the tasks), `STATUS.md` (where the feature stands and
+  what comes next), `DECISIONS.md` (append-only), and `CONTRACT-GAPS.md` when an API is
+  involved. The archive and reopen protocol and the separate handoff formats are gone.
+  A feature started on an earlier version is carried over by hand.
+- Skills read the package manager, the framework packs, the gates and the base branch
+  from the project's own files when they need them, and run the project's scripts
+  directly. The gate runner and the facts script are removed.
+- `reviewing-changes` runs one reviewer that checks both the spec and the code, followed
+  by one verification pass, instead of a set of separate reviewers. The reviewer agent
+  has no shell.
+- `designing-architecture` evaluates a design you propose instead of surveying options
+  and drafting alternatives with three agents.
+- `fixing-bugs` asks `investigating-bugs` for a diagnosis instead of ranking hypotheses
+  itself. `investigating-bugs` no longer has a batch mode.
+- `syncing-branches` asks you to commit uncommitted work instead of stashing it
+  automatically, and restores a backup only by reset.
+- The project's formatter runs on the touched files before the gates on every editing
+  path.
+- `optimizing-prompts` is removed.
+
+### Fixed
+
+- `finishing-features` shows the full commit message and merge request text in the form
+  that asks you to accept them.
+- The review diff no longer runs the project's textconv driver, which could hide a
+  source change, and it reads a file marked assume-unchanged as it is on disk.
+- A restarted run or a retried revert proof no longer fails on a diff name that is
+  already taken.
+- `syncing-branches` no longer stops on its own `temp/` folder or on the files of the
+  operation it is finishing. Its abort option promises back only what the in-progress
+  tree holds.
+- The Vue rule about hooks after an `await` names where the component instance is really
+  lost, and exempts a top-level `await` in `<script setup>` under Suspense.
+- A missing tool is reported as NOT RUN. A gate's result is its own exit code, never the
+  exit code of a pipe it ran in.
+- Reviewers cite only lines from files they opened, and without an intent source they
+  report no missing-behaviour findings.
+
 ## 0.1.2 - 2026-10-08
 
 ### Changed
