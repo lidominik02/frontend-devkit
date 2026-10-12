@@ -7,7 +7,7 @@
 | [Installation](installation.md) | Installing, choosing packs, updating, and the plugins worth installing alongside |
 | [The feature lifecycle](feature-lifecycle.md) | Working through a feature, a bug or a branch sync with the `core` skills, and what they write into a repository |
 | [Browser verification](browser-verification.md) | Checking a UI change in a real browser, running a QA list, or setting up a browser MCP server |
-| [Scripts](scripts.md) | Seeing what the devkit detects in a project, how gates are run and classified, or correcting detection |
+| [Scripts](scripts.md) | What `snapshot.mjs`, the one shipped script, does and does not promise |
 | [Architecture](architecture.md) | Understanding how the packs, the settings and the lifecycle fit together |
 
 Each pack's README lists its components: [`core`](../plugins/core/README.md),

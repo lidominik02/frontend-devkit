@@ -42,7 +42,7 @@ wrong in the common case.
 `/core:testing-changes` is the lifecycle's two QA stages — the list, then the run — as one
 skill with two modes.
 
-- `plan <feature>` derives acceptance criteria from SPEC.md or the requirement sources and
+- `plan <feature>` derives acceptance criteria from PLAN.md's success criteria or the requirement sources and
   maps positive, negative and edge cases to each, naming which check verifies it, then
   stops for the user's approval — an unapproved list is not a mandate to run anything, the
   same rule `planning-features`' plans hold.

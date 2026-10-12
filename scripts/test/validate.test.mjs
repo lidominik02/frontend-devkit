@@ -155,7 +155,7 @@ describe('validate.mjs checks run against the root they are given', () => {
     assert.equal(checkFrontmatter(undefined, root).ok, false);
   });
 
-  // The write hook decides by isComponent alone, so it must agree with the walks.
+  // The walks decide by isComponent alone, so it must agree with them.
   test('isComponent() accepts exactly what components() and localComponents() list', (t) => {
     const root = fixture(t, { override: { 'plugins/core/skills/demo/notes.md': '# Notes\n', '.claude/skills/local/notes.md': '# Notes\n' } });
     for (const p of [...components(root), ...localComponents(root)]) assert.equal(isComponent(root, p), true, p);

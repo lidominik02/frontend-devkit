@@ -44,13 +44,11 @@ jobs:
           node-version: ${{ matrix.node }}
 
       # The static checks `claude plugin validate` does not perform; each is described in
-      # docs/contributing/validation.md.
-      # The same script the Stop hook runs locally, so CI and the hook cannot drift apart.
+      # docs/contributing/validation.md. The same script a contributor runs before pushing.
       - name: Marketplace checks
         run: node scripts/validate.mjs
 
-      # Script and hook behaviour by exit code against realistic event JSON, catching a
-      # hook that silently stops blocking and one that blocks everything.
+      # The scripts' behaviour by exit code: validate.mjs, snapshot.mjs and release-notes.mjs.
       - name: Test suite
         run: node --test "scripts/test/*.test.mjs"
 

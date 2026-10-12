@@ -93,10 +93,10 @@ Node 22 or newer on `PATH`; the one shipped script, `snapshot.mjs`, needs nothin
 
 The script and the tooling run on Linux, Windows and macOS, on the Node version above.
 Windows is observed: Windows 10 Pro 10.0.19045 (build 10.0.19045.6466) with Node 22.23.3
-and Claude Code 2.1.292 on 2026-10-10, where `scripts/validate.mjs` and the test suite
-pass ([Known update behaviour](#known-update-behaviour)). Linux is observed: Ubuntu 24.04.5
-LTS (kernel 6.8.0) with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10; the test suite
-runs there. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
+and Claude Code 2.1.292; on 2026-10-12, after the hooks and scripts were removed,
+`scripts/validate.mjs` and the test suite pass there
+([Known update behaviour](#known-update-behaviour)). Linux was observed before that change:
+Ubuntu 24.04.5 LTS (kernel 6.8.0) with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
 every push to `main` and `dev` and on every pull request; it is not observed in a Claude
 Code session.
 
@@ -122,10 +122,9 @@ Packs do not always update together. Observed cases:
   previous version for every pack, and nothing was downloaded. Updating the marketplace
   from the `/plugin` menu then moved `core` to the release while `vue` and `nuxt` stayed
   behind, although their release was already in the cache. In that same session the next
-  skill loaded from the updated `core` folder; hooks were not checked.
+  skill loaded from the updated `core` folder.
 - On 2.1.292 on Windows 10, after `claude plugin update`, the CLI asks for a restart, but
-  the next skill launch in the running session already loaded the updated pack. Whether
-  hooks need the restart was not checked.
+  the next skill launch in the running session already loaded the updated pack.
 
 Whether a new session with `autoUpdate` on brings a release by itself has not been
 observed. Other CLI versions and platforms may behave differently.

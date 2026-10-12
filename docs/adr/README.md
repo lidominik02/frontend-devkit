@@ -17,7 +17,7 @@ why they are that way and what would have to change to revisit it.
 | [0009](0009-feature-lifecycle-as-skill-chain.md) | The feature lifecycle is a chain of skills with an automatic review | Accepted, amended by 0013 |
 | [0010](0010-shared-version-and-release-branch-model.md) | One shared version, and `main` moves only at a release | Accepted |
 | [0011](0011-cross-platform-and-observed-platform-claims.md) | Every platform is supported, and platform claims are observed | Accepted |
-| [0012](0012-tooling-values-in-config-not-prose.md) | Values the tooling reads live in a config file, never in prose | Accepted |
+| [0012](0012-tooling-values-in-config-not-prose.md) | Values the tooling reads live in a config file, never in prose | Accepted, amended by 0013 |
 | [0013](0013-no-hooks-no-facts-service-artifacts-without-a-protocol.md) | No hooks, no facts service, feature files without a protocol | Accepted |
 
 ## Writing a record

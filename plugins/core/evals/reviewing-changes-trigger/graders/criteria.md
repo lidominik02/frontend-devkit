@@ -20,9 +20,8 @@ fires is a rate, not a single result.
 
 **User-level instructions.** A runner's `~/.claude/CLAUDE.md` and `~/.claude/rules/` load in
 both arms unless the run isolates them. Where an API key is available, run both arms with
-`--bare`, as the evals README's hand-run rig describes. No line here depends on a hook:
-each is scored on what the run wrote before its turn first ended, and the Stop hook's gate
-context arrives after that. Where `--bare` is unavailable, run both arms without it and treat
+`--bare`, as the evals README's hand-run rig describes. No line here depends on a hook;
+the plugin ships none. Where `--bare` is unavailable, run both arms without it and treat
 the gate line, the edit line and the stop line as non-discriminating on that machine, since
 user-level instructions may already say to report an unrun gate as NOT RUN, to run no tests
 unasked, and to change or fix nothing unasked. Score and record those three lines, but do not

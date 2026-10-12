@@ -106,5 +106,5 @@ It never merges and creates no tag. The user then pushes in three steps:
    section.
 
 A red CI leaves `main` where it is and makes no tag, and the fix is a new release. CI runs
-on pushes to both branches. Commits on `dev` since the latest tag are not an error; CI
-prints a warning that `plugins/` or `.claude-plugin/` holds unreleased changes.
+on pushes to both branches. Commits on `dev` since the latest tag are not an error; `/release`
+checks whether anything shipped changed with `git diff --quiet <tag> HEAD -- plugins .claude-plugin`.

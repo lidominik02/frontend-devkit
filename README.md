@@ -95,7 +95,7 @@ there and says plainly when there is nothing to drive.
 | [Installation](docs/installation.md) | Install, choose packs, update, companion plugins |
 | [The feature lifecycle](docs/feature-lifecycle.md) | From an idea to a commit |
 | [Browser verification](docs/browser-verification.md) | UI checks, QA lists, browser MCP setup |
-| [Scripts](docs/scripts.md) | What the devkit detects, and how gates run |
+| [Scripts](docs/scripts.md) | The one shipped script, `snapshot.mjs` |
 | [Architecture](docs/architecture.md) | How the parts fit, and the principles behind them |
 | [Decision records](docs/adr/README.md) | Why it is built this way |
 

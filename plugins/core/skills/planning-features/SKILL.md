@@ -98,7 +98,8 @@ mode exits; the approval covers the content only, so the mode form still runs.
 
 Report where the feature stands, then wait — unless the request carries more than resuming.
 
-1. If several features have folders under `temp/`, list them and ask which one. A named
+1. If several features — folders under `temp/` holding a STATUS.md — exist, list them and
+   ask which one. A named
    feature with no `temp/<feature>/` may be archived: "`temp/archive/<feature>/` — move it
    back by hand (it is untracked) and resume again."
 2. Read STATUS.md and PLAN.md whole. At the `clarify` stage there are no tasks yet: the next

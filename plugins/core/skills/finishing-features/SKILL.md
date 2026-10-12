@@ -23,8 +23,8 @@ what happens to them.
 
 ## 1. Set up
 
-The feature is the one the caller or the user names; with several folders under `temp/` and
-none named, ask with one form, "none" included. The base branch comes from
+The feature is the one the caller or the user names; with several feature folders (holding
+STATUS.md) under `temp/` and none named, ask with one form, "none" included. The base branch comes from
 `../planning-features/references/project.md`. Read STATUS.md and PLAN.md whole.
 
 ## 2. The completeness check

@@ -8,8 +8,8 @@ links the decision record that holds the reasoning.
 The devkit is a Claude Code marketplace of three plugins, called packs:
 
 - **`core`** — framework-agnostic: the feature lifecycle, bug investigation and fixing,
-  branch syncing, review, commit and merge request text, browser verification, and the
-  hooks. Enabled in every repository.
+  branch syncing, review, commit and merge request text, and browser verification. Enabled
+  in every repository.
 - **`vue`** — Vue 3 engineering and review knowledge for single-page apps on Vite.
 - **`nuxt`** — what server rendering inverts or adds on top of `vue`.
 
@@ -91,8 +91,8 @@ approval.
 
 - **Systematic over ad hoc.** Work moves through the lifecycle chain in order, and every
   plan task carries a Done when that names the gates and the observation that must hold.
-- **Less complexity, not more.** The review's `architecture` lens checks reuse, altitude and
-  the deletion test; a plan records decisions, not code; and deleting a component is
+- **Less complexity, not more.** The reviewer's quality axis checks reuse, altitude and the
+  deletion test; a plan records decisions, not code; and deleting a component is
   preferred to adding one.
 - **Evidence over claims.** A gate that did not run is reported NOT RUN; the verifier holds
   a candidate refuted until its trigger is shown; a finding cites a `file:line` its reviewer

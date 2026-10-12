@@ -24,8 +24,7 @@ result before anything else, as the rig requires.
 
 User-level instructions: run both arms with `--bare` and an API key, as the README's
 hand-run rig describes, so neither arm sees `~/.claude/CLAUDE.md` or `~/.claude/rules/`. No
-line here depends on a hook; in a run without `--bare`, a gate result the Stop hook handed
-the with-plugin arm is the hook's, not the skill's. Without an API key, both arms load the
+line here depends on a hook; the plugin ships none. Without an API key, both arms load the
 runner's user-level instructions. On a machine whose user-level instructions ask for a
 summary of what was done, what is verified and what is left, or for an unrun check to be
 reported as NOT RUN, the line on what the file records and the fully-verified line are

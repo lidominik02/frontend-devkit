@@ -25,8 +25,8 @@ feature, unless the rules hold the review. Once the user has read the code and t
 
 Once per run. `fix-findings` needs only steps 1, 2, 3 and, inline, 6.
 
-1. **Feature.** The caller or the user names it; with several folders under `temp/` and
-   none named, ask with one form. Every `temp/` path is under the repository root
+1. **Feature.** The caller or the user names it; with several feature folders (a folder
+   under `temp/` holding STATUS.md) and none named, ask with one form. Every `temp/` path is under the repository root
    `git rev-parse --show-toplevel` prints, written there and handed on as an absolute path.
 2. **Read the state.** STATUS.md and PLAN.md whole. A restarted run continues at the first
    task not done. From DECISIONS.md read only the `OQ<n>` lines the tasks' `Blocked by` name

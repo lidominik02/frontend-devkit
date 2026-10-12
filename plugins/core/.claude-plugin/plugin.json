@@ -4,5 +4,5 @@
   "description": "Framework-agnostic development platform: a feature lifecycle (clarify, plan, execute, automatic review, QA), bug investigation, browser verification, commit/MR authoring and repo preparation.",
   "author": { "name": "lidominik02" },
   "repository": "https://github.com/lidominik02/frontend-devkit",
-  "keywords": ["review", "planning", "debugging", "hooks", "gitlab"]
+  "keywords": ["review", "planning", "debugging", "gitlab"]
 }

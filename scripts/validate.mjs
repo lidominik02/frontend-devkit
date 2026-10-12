@@ -116,7 +116,7 @@ export function isListed(text) {
   return !/^disable-model-invocation:\s*true/m.test(frontmatter(text) ?? '');
 }
 
-// What counts as a component, for the walks below and the write-time hook alike: a SKILL.md
+// What counts as a component, for the walks below: a SKILL.md
 // or any file under agents/ in a pack, a SKILL.md under .claude/skills, a .md under .claude/agents.
 export function isComponent(root, file) {
   const parts = path.relative(root, file).split(path.sep);
@@ -324,8 +324,7 @@ export function checkScripts(root = ROOT) {
     })(base);
   }
 
-  // `node --check` parses without executing. Running an unknown script to
-  // validate it is not something a Stop hook should ever do.
+  // `node --check` parses without executing; an unknown script is never run to validate it.
   for (const p of mjs) {
     try {
       execFileSync(process.execPath, ['--check', p], { stdio: 'pipe' });

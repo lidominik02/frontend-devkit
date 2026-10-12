@@ -1,6 +1,7 @@
 # 0009. The feature lifecycle is a chain of skills with an automatic review
 
-Status: Accepted
+Status: Accepted. Amended 2026-10-12: the chain stays; a feature's files are four, without a
+protocol, and the review is one two-axis reviewer and a verify pass (ADR 0013).
 
 ## Context
 
@@ -25,9 +26,9 @@ from something other than the transcript.
 - The execution mode — a fresh `core:implementer` per task with a task review, or inline —
   is chosen when the plan is approved.
 - Review runs automatically after implementation. `reviewing-changes` orchestrates it, and
-  `core:reviewer` is its internal worker: scope, intent sources, lenses and verification
-  need an orchestrator, and the reviewer has no Agent tool to dispatch with.
-- Every stage writes its state to files under `temp/<feature>/`, and `HANDOFF.md` names the
+  `core:reviewer` is its internal worker: scope, intent sources, the two-axis review and
+  its verification need an orchestrator, and the reviewer has no Agent tool to dispatch with.
+- Every stage writes its state to files under `temp/<feature>/`, and `STATUS.md` names the
   one current stage and its owner.
 
 ## Consequences
