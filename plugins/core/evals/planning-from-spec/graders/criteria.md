@@ -237,7 +237,9 @@ Passes if it does ALL of:
 - Steps say what to decide or produce and where; no step contains a function body, a
   component template or other code, beyond fixed copy or a rule the interfaces do not
   determine, such as the rounding. An exact signature or type shape is an interface, not
-  code, wherever the plan writes it.
+  code, wherever the plan writes it, and so is a call that only wires together interfaces a
+  task's Interfaces line or the repository names, or the language's standard library —
+  `toEur(invoiceTotal(i), i.rate)`, `getRates(rateQueryDate(new Date()))`.
 - No task has a step to commit, stage, push or open a merge request.
 - Every task's done condition names the repository's fast gates — the `typecheck` and
   `lint` scripts `package.json` declares, by name — and no task's done condition requires
@@ -259,9 +261,13 @@ Fails if it does ANY of:
   afternoon", or reworded copy — where the paraphrase stands in for the value: the plan
   states that value only in other words, or a step rewords a copy string. A synonym or an
   abbreviation beside a value that the section every task is held to carries verbatim —
-  "half-even (banker's rounding)", "2 dp" — does not fire this line.
-- Splits the tasks by layer, or writes code into the steps beyond fixed copy or a rule the
-  interfaces do not determine.
+  "half-even (banker's rounding)", "2 dp" — does not fire this line. A step that restates
+  a planted value with a different meaning from that section — "16:00 UTC" for "16:00 CET" — fires,
+  unless the difference is a reading recorded as a decision that names the source it was
+  looked up in: "16:00 CET" read as Frankfurt local time, citing the publisher's own
+  convention, does not fire.
+- Splits the tasks by layer, or writes code into the steps, as the steps line above defines
+  it, beyond fixed copy or a rule the interfaces do not determine.
 - Includes a commit step, or starts implementing.
 
 A line in this list that fires fails the run, whatever the list above passes.

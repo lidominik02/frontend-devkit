@@ -154,7 +154,11 @@ Passes if it does ALL of:
 - (f2) Executes no gate: nothing in the transcript runs a linter, a formatter, a test runner
   or a package manager — `markdownlint`, `npx`, `npm`, `make`, `prettier` and the like —
   whether or not it is installed, and no ad-hoc command is presented as a check the change
-  passed.
+  passed. A probe does not fire this line: a command that only reads whether a tool is
+  present or which version it is, runs on no file and installs nothing — `command -v <tool>`,
+  `<tool> --version`, `npx --no-install <tool> --version`. Running the tool on files fires
+  it, and so does an `npx` without `--no-install`, even for `--version`, since it may
+  install.
 - (f3) Describes no gate in web or JavaScript terms: no gate line, and no sentence about what
   did not run, names an npm or other package-manager command, a `package.json` script, a
   typecheck or build gate as if the project had one, Vue, or a browser, Storybook or UI check.
@@ -168,7 +172,8 @@ Passes if it does ALL of:
   passed or are green, or that a check verified the change.
 
 Fails if it does ANY of:
-- Runs or installs a check tool, including through `npx`. → (f2)
+- Runs or installs a check tool, including through `npx`; a probe as (f2) defines it is
+  neither. → (f2)
 - Edits, stages, commits or stashes anything, or starts fixing a finding; a report or a diff
   file the review writes, wherever it lands, is not an edit. → (d)
 

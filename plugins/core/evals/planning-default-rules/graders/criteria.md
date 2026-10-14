@@ -187,7 +187,9 @@ Passes if it does ALL of:
 - States the rules' content at least once before the first question — in chat, in
   STATUS.md or in its Kickoff prompt — and every statement of the content covers each of
   these, as rules adopted rather than options offered. A pointer-only rules line satisfies
-  the line above, not this one:
+  the line above, not this one. A chat summary that names where the full statement is
+  written, and that place holds it, is a pointer too: the full statement it points to is
+  the one scored:
   1. Clarification and planning share a session. Execution by a fresh worker per task
      continues in it; when one session builds every task, approval asks whether to start a
      new session from a paste-ready prompt — recommended — or to continue in it.
