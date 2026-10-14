@@ -3,6 +3,29 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.2.1 - 2026-10-14
+
+### Fixed
+
+- `vue` and `nuxt` read the version a project actually installed from the lockfile or
+  `node_modules`, not the range in `package.json`. When the installed version is unknown,
+  they say so instead of naming an exact one.
+- `vue` no longer flags a missing import when `vite.config` loads an auto-import plugin
+  such as `unplugin-auto-import` or `unplugin-vue-components`. The exemption covers only
+  what that plugin's config covers, defaults included.
+- A key its vendor designs to be public, such as a publishable key, a DSN or an analytics
+  write key, is no longer a blocking finding in either pack. A secret credential or a
+  user's session token still is, and a key of unknown kind is asked about.
+- `nuxt` states correctly what survives the payload. A `Date`, `Map`, `Set` or `RegExp`
+  in `useState` or `useAsyncData` arrives as itself, a class instance throws without a
+  payload plugin, and a `Date` returned from a server route arrives as a string.
+- `nuxt` no longer suggests moving a time value into `useState` to fix a hydration
+  mismatch. A `Date` there still renders in each side's own timezone.
+- `vue` explains why `new URL('./file', import.meta.url)` fails under Vitest with jsdom,
+  and gives a fix that works from any working directory.
+- The installation guide records how the update from 0.1.2 to 0.2.0 behaved on
+  Claude Code 2.1.292.
+
 ## 0.2.0 - 2026-10-12
 
 ### Added
