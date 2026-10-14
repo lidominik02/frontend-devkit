@@ -14,8 +14,10 @@ consequences, both expensive:
 
 Vars without the `VITE_` prefix are not exposed to client code at all — which is a guard
 against accident, not a way to ship a secret. There is no server in a static SPA, so
-there is nowhere for a secret to live. If a call needs a credential, it belongs behind an
-endpoint you control.
+there is nowhere for a secret to live. If a call needs a secret credential, it belongs
+behind an endpoint you control. A key its vendor designs to be public — a publishable or
+browser key, a DSN, an analytics write key — is meant to ship in the bundle; when it is
+not known whether a vendor key is secret, say so and ask.
 
 ## Runtime configuration, instead
 
@@ -70,6 +72,9 @@ user is on an old build" from a guess into a fact.
 - Any new `VITE_`-prefixed variable. Ask what it holds and whether the build is now
   environment-specific.
 - `import.meta.env` read outside the one module allowed to.
-- A credential, token or key present in client code, Pinia state, or a query string.
+- A secret credential — a private key, a password, a user's session or access token —
+  present in client code, Pinia state, or a query string. A key its vendor designs to be
+  public is not a finding; when it is not known whether a vendor key is secret, say so
+  and ask.
 - `/config.json` or `index.html` served without a no-store header.
 - A boot path that can fail to a blank page.

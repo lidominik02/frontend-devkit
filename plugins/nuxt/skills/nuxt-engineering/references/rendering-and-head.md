@@ -11,8 +11,8 @@ flash, a lost input, or a wrong value that corrects itself.
 Anything that differs between the two renders causes it:
 
 - **Time and dates.** `new Date().toLocaleString()` renders the server's timezone, then
-  the browser's. Use `<NuxtTime>`, or format from a fixed timezone, or render the ISO
-  string and localise after mount.
+  the browser's. Use `<NuxtTime>`, or format from a fixed timezone and locale, or render
+  the ISO string and localise after mount.
 - **Randomness.** `Math.random()`, `crypto.randomUUID()`, a shuffled array. For ids, use
   `useId()`, which is stable across the boundary.
 - **Browser globals.** `window`, `document`, `localStorage`, `matchMedia` do not exist
@@ -40,10 +40,20 @@ Anything that differs between the two renders causes it:
 **Not an escape hatch: moving a time- or locale-derived value into `useState`.** This is
 correct alone and wrong in combination with the fix above it. `useState` is per-request,
 not per-render — its value is computed once on the server and serialised into the
-payload, so a value fixed there stays at the **server's** clock and locale for the rest
-of that request's session, never advancing to the visitor's own. It looks like a fix
-because the mismatch warning goes away; it has actually removed the client's chance to
-ever show its own time. See `ssr-state.md` for what `useState` is and is not for.
+payload, so it never advances past the **server's** clock for the rest of that request's
+session. What the visitor then sees depends on the type:
+
+- **A formatted string** arrives exactly as the server formatted it, so it also stays in
+  the server's timezone and locale. It looks like a fix because the mismatch warning goes
+  away; it has actually removed the client's chance to ever show its own time.
+- **A `Date`** arrives as the same instant, frozen at the server's clock (Nuxt docs, Data
+  Fetching → Serializing Data From Server to Client, checked against Nuxt 4.6.1). But
+  `toLocale*` with no timezone or locale passed formats in each runtime's default — the
+  server's, then the browser's — so it follows that the mismatch is still there whenever
+  the server's zone (often UTC) or locale differs from the visitor's. It hides wherever
+  they match — typically in development, where both are the same machine.
+
+See `ssr-state.md` for what `useState` is and is not for.
 
 `<ClientOnly>` is a cost, not a fix: its content is absent from the HTML, invisible to
 crawlers, and unavailable with JavaScript off. Reach for it after the first three.

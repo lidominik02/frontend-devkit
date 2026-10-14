@@ -55,19 +55,23 @@ for a duration. A timeout is a race that passes on your machine and fails in CI.
 Seed state through the API or a fixture rather than clicking through setup UI. A login
 flow re-run in fifty specs is fifty slow specs and one flaky one.
 
-**Reading a file relative to the test's own location under Vitest + jsdom needs
-`process.cwd()`, not `import.meta.url`.** The `fileURLToPath(new URL('../fixture.json',
-import.meta.url))` idiom that works in `vite.config.ts` throws
-`ERR_INVALID_URL_SCHEME` inside a test file transformed by Vite under
-`environment: 'jsdom'`, because `import.meta.url` there resolves to a virtual dev-server
-URL (`http://localhost:.../@fs/...`) rather than a real `file://` path — `new URL(...)`
-against it yields `protocol: 'http:'`, which `fileURLToPath()` rejects. This is **not**
-the well-known jsdom global-`URL`-shadowing gotcha, and importing `URL` explicitly from
-`node:url` does not fix it — the rewritten string itself is the problem, not which `URL`
-class evaluates it. The tell, if you log the value instead of assuming which bug this is:
-the printed `.href` starts with `http://localhost:…/@fs/…`. Resolve from `process.cwd()`
-instead, which is stable because both `pnpm --filter <pkg> <script>` and running
-`vitest` directly inside a workspace package set cwd to that package's directory.
+**Under Vitest + jsdom, `fileURLToPath(new URL('./fixture.json', import.meta.url))`
+throws `ERR_INVALID_URL_SCHEME`**, though the same line works in `vite.config.ts` and
+under `environment: 'node'`. `import.meta.url` itself is still a `file://` URL; the
+whole expression is what changes. Vite's asset-URL transform (`vite:asset-import-meta-url`)
+applies to the client environment, which Vitest's jsdom environment runs test files in,
+and rewrites the literal `new URL('<string>', import.meta.url)` into a root-relative path
+resolved against `self.location` — jsdom's `http://localhost:3000/` by default. The result
+is `http://localhost:3000/src/fixture.json`, which `fileURLToPath()` rejects. Observed on
+Vitest 5.0.4 (Vite 8.3.4) and 3.2.4 (Vite 7.3.7) with jsdom 30.1.2, Node 22.23, on
+Windows. This is **not** the jsdom global-`URL`-shadowing gotcha: with `URL` imported from
+`node:url` the expression reads the same, is rewritten the same, and throws the same. The
+tell, if you log the values instead of assuming which bug this is: `import.meta.url`
+prints `file://…`, the `new URL(…)` built from it prints `http://localhost:3000/…`.
+Resolve the path without the literal form — `join(dirname(fileURLToPath(import.meta.url)),
+'fixture.json')`, or `import.meta.dirname` — which stays relative to the test file
+whatever directory `vitest` runs from; a `process.cwd()` join holds only while the cwd is
+the package directory.
 
 ## What the official guide does not cover
 

@@ -4,9 +4,11 @@ Read the installed versions before applying anything on this page. The wrong hal
 version-gated rule is worse than no rule, and Nuxt moved the source directory in one
 major and is moving the server layer in the next.
 
-Read the workspace's `package.json` (`dependencies` and `devDependencies`) with the Read
-tool and note the majors of `nuxt`, `nitro`, any `@nuxt/*` package, `vue`, `pinia`,
-`@pinia/nuxt`, `typescript` and `vue-tsc`.
+Read the resolved version of `nuxt`, `nitro`, any `@nuxt/*` package, `vue`, `pinia`,
+`@pinia/nuxt`, `typescript` and `vue-tsc` from the lockfile or
+`node_modules/<pkg>/package.json`. A `package.json` range is only a range — it bounds
+what may be installed, not what is. With the resolved version unknown, claim no exact
+version, and say in the answer that it is unknown.
 
 Then read `nuxt.config` for `compatibilityDate` and anything under `future` — those
 change runtime behaviour without changing an installed version.

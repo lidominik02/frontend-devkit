@@ -1,7 +1,9 @@
 ---
 max_turns: 25
-allowed_tools: [Read, Glob, Grep, Write, Edit, Bash]
+allowed_tools: [Read, Glob, Grep, Write, Edit, Bash, Skill]
 ---
+
+/vue:vue-engineering
 
 In a Vue 3 app, build the active-filters bar for a parts catalogue. Each filter the user
 has applied shows as a chip with an X that removes just that one, and there is a "Clear

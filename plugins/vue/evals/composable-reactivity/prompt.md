@@ -1,7 +1,9 @@
 ---
 max_turns: 20
-allowed_tools: [Read, Glob, Grep, Write, Edit, Bash]
+allowed_tools: [Read, Glob, Grep, Write, Edit, Bash, Skill]
 ---
+
+/vue:vue-engineering
 
 In a Vue 3 project, write a composable `useOrder` that takes an order id and returns the
 order's current status. Then use it from a component that receives `orderId` as a prop.

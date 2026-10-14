@@ -28,7 +28,9 @@ keyed by id.
 ## `useState`
 
 `useState(key, init)` is a `ref` scoped to the request and serialised into the payload,
-so the client resumes with the value the server rendered rather than re-deriving it.
+so the client resumes with the value the server rendered rather than re-deriving it. The
+payload is not plain JSON: a `Date` comes back a `Date`, while a class instance throws on
+the default payload — the third rule below.
 
 ```ts
 // app/composables/useRecentlyViewed.ts
@@ -41,9 +43,21 @@ Three rules:
   unrelated `useState('user')` calls are the same piece of state.
 - **The initialiser must be a function.** `useState('x', [])` evaluates the array once at
   module load; `useState('x', () => [])` evaluates it per request.
-- **The value must be serialisable.** It goes through the payload, so a `Date`, a `Map`,
-  a class instance or a function does not survive the trip by default. Register a
-  `definePayloadPlugin` reducer/reviver pair if a richer type genuinely has to cross.
+- **The value must be payload-serialisable.** The payload is serialised with devalue, so
+  a `Date`, `Map`, `Set` or `RegExp` in `useState` or `useAsyncData` reaches the client
+  as itself on every Nuxt 3+ version (Nuxt docs, Data Fetching → Serializing Data From
+  Server to Client, checked against Nuxt 4.6.1; Nuxt 3.0 already rendered it with
+  `@nuxt/devalue`). `BigInt`, `ref`/`reactive`/`shallowRef`/`shallowReactive`,
+  `NuxtError` and a type registered with `definePayloadPlugin` survive only with the
+  JSON payload — default since Nuxt 3.5, behind `experimental.renderJsonPayloads` in
+  3.4, so not on a project whose `nuxt.config` sets that flag `false`. On that default
+  path a function or a class instance throws `Cannot stringify arbitrary non-POJOs`
+  during the server render unless a `definePayloadPlugin` reducer/reviver pair registers
+  that type (the `useState` docs, Troubleshooting, checked against Nuxt 4.6.1; for a
+  function, also the devalue README, checked against devalue 6.0.3). A server
+  route is different: its response reaches `$fetch` and `useFetch` as JSON, so a `Date`
+  it returns arrives as a string (Nuxt docs, Data Fetching → Serializing Data From API
+  Routes, checked against Nuxt 4.6.1).
 
 Wrap it in a composable rather than calling `useState('recently-viewed')` at call sites.
 A hand-written key at each site is a typo away from a second, silent piece of state.
@@ -89,5 +103,9 @@ browser; anything in it is public to that user and to anything that can read the
 - `useState` with a non-function initialiser, giving one shared array again.
 - A duplicated `useState` key colliding with unrelated state.
 - `$fetch` on the server without `useRequestFetch()`, so the call is unauthenticated.
-- A `Date` or `Map` in `useState`, arriving on the client as a string or `{}`.
+- A `Date` returned from a server route and read through `useFetch` as if it were still a
+  `Date` — it arrives as a string.
+- A class instance in `useState` on the default JSON payload, throwing
+  `Cannot stringify arbitrary non-POJOs` with no `definePayloadPlugin` reducer/reviver
+  registered for it.
 - State that is never cleared on logout, so the next render still has it.

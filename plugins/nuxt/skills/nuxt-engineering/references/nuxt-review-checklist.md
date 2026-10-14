@@ -17,10 +17,11 @@ any cache created at module scope. The fix is `useState`, or per-request context
 the highest-severity finding available in a Nuxt diff, and it is invisible in
 single-user testing.
 
-**A secret reachable from the client.** Any credential under `runtimeConfig.public`, in a
+**A secret reachable from the client.** Any secret credential under `runtimeConfig.public`, in a
 `NUXT_PUBLIC_*` variable, in `app.config.ts`, or placed in `useState` — the payload is
 HTML. Unlike an SPA there *is* somewhere safe here, so the fix is a Nitro route holding
-the key, not a better hiding place.
+the key, not a better hiding place. A key its vendor designs to be public is not a
+finding here either; the `vue` list's exception and its ask-when-unknown rule carry over.
 
 **An endpoint that trusts the caller.** A `server/` handler returning or mutating data
 owned by a user or tenant with no ownership check, or one using `readBody`/`getQuery`
@@ -78,7 +79,7 @@ decides the HTML that ships.
 
 ## What is NOT a finding in Nuxt
 
-These four **invert** the `vue` pack's list. Applying that list unchanged produces false
+These three **invert** the `vue` pack's list. Applying that list unchanged produces false
 findings here, or misses real ones.
 
 - **An auto-imported `ref`, `computed` or composable with no import statement.** Correct

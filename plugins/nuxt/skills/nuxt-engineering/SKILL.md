@@ -33,10 +33,10 @@ files first, reuse existing composables and server utilities before writing new 
 ## Before applying any version-gated rule, check what is installed
 
 The Nuxt 3 → 4 boundary moved the source directory and changed data-fetching semantics,
-and Nuxt 5 changes the server layer. Read the workspace's `package.json`
-(`dependencies` and `devDependencies`) with the Read tool and note the majors of `nuxt`,
-`nitro`, any `@nuxt/*` package, `vue`, `pinia`, `@pinia/nuxt`, `typescript` and
-`vue-tsc`.
+and Nuxt 5 changes the server layer. Read the resolved version of `nuxt`, `nitro`, any
+`@nuxt/*` package, `vue`, `pinia`, `@pinia/nuxt`, `typescript` and `vue-tsc` from the
+lockfile or `node_modules/<pkg>/package.json`; a `package.json` range is only a range.
+Resolved version unknown: claim no exact version, and say so in the answer.
 
 Also read `compatibilityDate` and any `future.compatibilityVersion` in `nuxt.config` —
 they change runtime behaviour without changing the installed version.
@@ -44,8 +44,8 @@ they change runtime behaviour without changing the installed version.
 
 ## Rules from the `vue` pack that do NOT apply here
 
-**"Imports are explicit. There are no auto-imports outside Nuxt. Code that relies on
-auto-import compiles nowhere." — does not apply here.** This *is* Nuxt. `ref`,
+**"Imports are explicit unless `vite.config.*` imports an auto-import plugin." —
+does not apply here.** This *is* Nuxt, and its auto-imports are built in. `ref`,
 `computed`, `watch`, `useState`, `useFetch`, `useRuntimeConfig`, `navigateTo`, and
 everything in `app/composables/`, `app/utils/` and `app/components/` are auto-imported.
 Do not add imports for them, and do not strip existing ones in a diff that was not about
@@ -77,11 +77,11 @@ Three more, in one line each, with the detail in the reference file:
 
 **Module-scope state is a cross-request leak.** `const cache = new Map()` or a bare
 `ref()` at the top of a module is created once per *server process*, not once per
-request, so it is shared by every user the server handles. In an SPA that same line is
-an ordinary singleton — here it is a data-leak bug that never appears in development
-with one user. Use `useState('key', () => initial)`, which is per-request and
-serialised into the payload. See `references/ssr-state.md`. **This is the single most
-expensive mistake available in a Nuxt app.**
+request, so it is shared by every user the server handles. In an SPA that line is an
+ordinary singleton; here it is a data-leak bug that never appears in development with one
+user. Use `useState('key', () => initial)`: per request; key global to the app, initialiser
+a function, value in the payload — a `Date` survives it, a class instance throws by default.
+See `references/ssr-state.md`. **This is the single most expensive mistake available in a Nuxt app.**
 
 **A secret belongs in `runtimeConfig`, not `runtimeConfig.public`.** The `public` key and
 any `NUXT_PUBLIC_*` variable are shipped to the browser. Private keys are readable only

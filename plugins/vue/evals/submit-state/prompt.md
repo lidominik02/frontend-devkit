@@ -1,7 +1,9 @@
 ---
 max_turns: 25
-allowed_tools: [Read, Glob, Grep, Write, Edit, Bash]
+allowed_tools: [Read, Glob, Grep, Write, Edit, Bash, Skill]
 ---
+
+/vue:vue-engineering
 
 Add the "request a callback" form to our equipment-hire booking page: name, mobile
 number, and a preferred time slot from a dropdown. It posts to `POST /callbacks`, which

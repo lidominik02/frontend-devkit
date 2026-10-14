@@ -86,4 +86,6 @@ that is the point). Do not put a token in `useState`: the payload is HTML.
 - An env var with no declared key in `nuxt.config`, so the override never applies.
 - `process.env` read in app code rather than `useRuntimeConfig()`.
 - Configuration that only exists in `.env`, so the built server has none.
-- A third-party API key used from the browser where a server route would hold it.
+- A secret third-party API key used from the browser where a server route would hold it.
+  A key its vendor designs to be public is not a finding; when it is not known whether a
+  vendor key is secret, say so and ask.

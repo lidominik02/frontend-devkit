@@ -21,9 +21,9 @@ paths:
 **First, if this project depends on `nuxt`: stop and call the Skill tool with
 "nuxt:nuxt-engineering" instead.**
 This pack is for plain Vue on Vite, and roughly half of what follows inverts under
-server rendering — module-scope state, auto-imports, secrets, and where server data
-belongs. The `nuxt` pack is a delta on this one and names every rule here that does not
-apply there. Applying this file to a Nuxt app produces confidently wrong code, because
+server rendering — module-scope state, Nuxt's built-in auto-imports, secrets, and where
+server data belongs. The `nuxt` pack is a delta on this one and names every rule here
+that does not apply there. Applying this file to a Nuxt app produces confidently wrong code, because
 each rule below is correct and more specific-sounding than the one that replaces it.
 
 Write code that looks like the rest of the codebase you are in. Read the neighbouring
@@ -33,15 +33,16 @@ changes surgical.
 ## Before applying any version-gated rule, check what is installed
 
 Vue's ecosystem broke several defaults across recent majors, and the wrong half of a
-version-gated rule is worse than no rule. Read the workspace's `package.json`
-(`dependencies` and `devDependencies`) with the Read tool and note the majors of `vue`,
+version-gated rule is worse than no rule. Read the resolved version of `vue`,
 `vue-router`, `pinia`, `vite`, `typescript`, `tailwindcss`, `vue-tsc` and any
-`@tanstack/vue-*` package.
+`@tanstack/vue-*` package from the lockfile or `node_modules/<pkg>/package.json`; a
+`package.json` range is only a range. Resolved version unknown: claim no exact version,
+and say so in the answer.
 
-In a monorepo the framework lives in a workspace package, not the root — read that
-package's `package.json` instead. `references/versions.md` has the table of what changes
-between majors; read it whenever the answer to "which API is correct here" depends on a
-number.
+In a monorepo the framework lives in a workspace package, not the root — read what the
+lockfile resolved for that package, or the `node_modules/<pkg>/package.json` nearest to
+it. `references/versions.md` has the table of what changes between majors; read it
+whenever the answer to "which API is correct here" depends on a number.
 
 ## The rules that prevent most bugs
 
@@ -69,8 +70,18 @@ it inside with `toValue()`. This is the most common silent-reactivity bug in Vue
 layer with a cache key, not copied into a store where it goes stale. Pinia holds what
 the client owns. See `references/data-and-state.md`.
 
-**Imports are explicit.** There are no auto-imports outside Nuxt. If you write `ref` you
-import it. Code that relies on auto-import compiles nowhere.
+**Imports are explicit unless `vite.config.*` imports an auto-import plugin.**
+Plain Vite auto-imports nothing, so if you write `ref` you import it; explicit is the
+default because Nuxt habits leak into a plain Vue app. The signal is the plugin package
+imported in `vite.config.*`, whatever its binding is named. The common opt-ins are
+`unplugin-auto-import`, which auto-imports APIs and composables, as the
+`unplugin-auto-import` README states (checked at 21.1.0), and `unplugin-vue-components`,
+which registers components, as the `unplugin-vue-components` README states (checked at
+32.1.0) — not a closed list: any Vite plugin there that auto-imports or auto-registers
+counts. The exemption holds only for what its config covers, defaults included (`imports`
+presets; `dirs`, which for `unplugin-vue-components` is `src/components` when none is
+given; resolvers); there the neighbouring files' convention decides — match it. See
+`references/imports-and-structure.md`.
 
 **Type at the boundary.** Validate anything arriving from outside — API responses, route
 params, form input, `postMessage` — with the schema library the repo already uses.
@@ -149,10 +160,10 @@ Do not claim a gate passed that you did not run.
   conventions from a specific codebase. Those belong in that repo's own `CLAUDE.md` or
   project-local skills. This pack must stay true of *any* Vue app.
 - **Apply Nuxt guidance.** `useFetch`, `useAsyncData`, `useState`, `runtimeConfig`,
-  Nitro server routes and auto-imports do not exist here, and module-scope state is an
-  ordinary singleton in an SPA rather than the cross-request leak it is under SSR. That
-  guidance lives in the `nuxt` pack; call the Skill tool with "nuxt:nuxt-engineering"
-  rather than importing its conclusions into this one.
+  Nitro server routes and Nuxt's built-in auto-imports do not exist here, and
+  module-scope state is an ordinary singleton in an SPA rather than the cross-request
+  leak it is under SSR. That guidance lives in the `nuxt` pack; call the Skill tool with
+  "nuxt:nuxt-engineering" rather than importing its conclusions into this one.
 - **State a version-gated API as fact** without checking what is installed.
 - **Bulk-convert files the task did not ask about** — no drive-by TypeScript migrations
   or refactors of adjacent code.

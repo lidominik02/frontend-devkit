@@ -13,21 +13,24 @@ pack.
 | --- | --- |
 | `composable-reactivity` | Crossing a composable boundary with a getter rather than a value, so the result keeps tracking when the input changes |
 | `vite-secret` | Recognising that a static SPA has nowhere to keep a secret, and that a `VITE_`-prefixed value is inlined into the shipped bundle |
+| `vite-public-key` | A negative test, the mirror of `vite-secret`: a key its vendor's docs call public is wired into client config, not flagged as a leaked secret or held behind a backend |
+| `auto-import-configured` | A negative test: a project whose `vite.config.ts` imports `unplugin-auto-import` and `unplugin-vue-components` has its missing `ref`, `computed` and component imports resolved by those plugins, not flagged as a build error or as imports to add |
 | `module-scope-state` | A negative test: module-scope reactive state is an ordinary singleton in a client-only SPA, not a cross-request leak |
 | `focus-and-announcement` | Whether accessibility rules get applied on a task that never asks for them — focus after a removal, a live region for a count that changes, names that distinguish one control from another |
 | `submit-state` | Whether a form is modelled as state that can be submitted twice and rejected by the server, rather than as values plus a validate function |
 | `finding-the-cost` | Whether a performance claim is backed by a measurement, or assembled from plausible causes read off the source |
 | `binding-composition-spread` | Extending a shared binding for one consumer via a spread-and-override rather than folding the new condition into the shared source (which leaks it to every other consumer) |
-| `vitest-jsdom-import-meta-url` | `import.meta.url` under Vitest + jsdom resolves to a virtual dev-server URL, not a `file://` path — and that it is not the well-known jsdom `URL`-shadowing bug |
+| `vitest-jsdom-import-meta-url` | Under Vitest + jsdom, Vite rewrites the literal `new URL('…', import.meta.url)` into an `http:` URL resolved against jsdom's location while `import.meta.url` itself stays `file://` — and that it is not the well-known jsdom `URL`-shadowing bug |
 
-Both were run by hand with `claude -p`, not the automated harness — see
-`plugins/core/evals/README.md` for why. Five other candidates from the same research
-pass — a shared per-instance loading flag beating a boolean under overlapping requests,
-`cn()`/tailwind-merge's last-argument-wins override order, re-subscribing to a
-DOM mutation made outside Vue's reactivity, a mock handler's generic losing its
-connection to the response schema, and a named Tailwind group requiring its literal
-marker class on the right ancestor — were tested the same way and dropped: a bare
-Sonnet 5 already answered every one of them correctly. A sixth, whether
+`binding-composition-spread` and `vitest-jsdom-import-meta-url` were run by hand with
+`claude -p`, not the automated harness — see `plugins/core/evals/README.md` for why.
+Every case's latest run is recorded under "The 2026-10-14 run" below. Five
+other candidates from the same research pass — a shared per-instance loading flag
+beating a boolean under overlapping requests, `cn()`/tailwind-merge's last-argument-wins
+override order, re-subscribing to a DOM mutation made outside Vue's reactivity, a mock
+handler's generic losing its connection to the response schema, and a named Tailwind
+group requiring its literal marker class on the right ancestor — were tested the same way
+and dropped: a bare Sonnet 5 already answered every one of them correctly. A sixth, whether
 `@storybook/vue3`'s `render` needs to return a function or a bare VNode to dodge
 `vue/one-component-per-file`, was dropped because both arms converged on the same
 (bare-VNode) fix, which resolves the reported lint error either way. A seventh — that
@@ -39,13 +42,17 @@ so the content was not earning its cost. Recorded here rather than silently forg
 in case a future run — or a differently-worded note — closes it.
 
 `composable-reactivity` and `vite-secret` are capability cases: the pack earns its place
-only if the baseline arm gets them wrong. `module-scope-state` is expected to pass at
-baseline and is kept for a different reason.
+only if the baseline arm gets them wrong. `module-scope-state`, `vite-public-key` and
+`auto-import-configured` are expected to pass at baseline and are kept for a different
+reason, as regression guards: each fails if the pack applies a rule where it does not
+hold. `vitest-jsdom-import-meta-url` is a regression guard too: it fails if the pack says
+`import.meta.url` itself is an `http:` URL, as it did before 2026-10-14.
 
 `focus-and-announcement`, `submit-state` and `finding-the-cost` each decide whether a
-reference file is worth adding to this pack. **All three came back with no criterion line
-missed in any of three runs, so there is no `accessibility.md`, no `forms.md` and no
-`performance.md`** — a plain `core` + `vue` session already does these things unaided.
+reference file is worth adding to this pack. **In the earlier run, before the 2026-10-14
+one, all three came back with no criterion line missed in any of three runs, so there is
+no `accessibility.md`, no `forms.md` and no `performance.md`** — a plain `core` + `vue`
+session then did these things unaided.
 
 They are kept for the reason `module-scope-state` is kept, as a regression instrument. A
 case is cheaper to run than its question is to re-argue, so a proposal to add one of these
@@ -59,6 +66,45 @@ project's own build unprompted, read the 372 kB entry chunk against the 0.2 kB l
 off the chunk table, and named `chart.js/auto` and `luxon` at the entry. The pack is not
 manufacturing the failure, because there is no failure to manufacture: measuring before
 ranking is already the floor behaviour.
+
+## The 2026-10-14 run
+
+Every case was run twice per arm, `core` + `vue` against `core` alone, with the manual
+`claude -p` rig on Claude Code 2.1.299, model `claude-opus-5-5`, graded by hand per criterion
+line, on Windows 10 (10.0.19045), with the packs loaded from the working tree through
+`--plugin-dir`. The harness was tried first: it raised no `dependency-unsatisfied`, but its
+with-plugin arm answered that `/vue:vue-engineering` was not installed, so it measured nothing.
+User-level instructions reached both arms; no run used `--bare`.
+
+**The three regression guards held in both arms.** `auto-import-configured`, `vite-public-key`
+and `module-scope-state` passed all four runs: no run flagged the plugin-supplied imports, no
+run called the public browser key a secret, and no run called the SPA's module-scope ref a
+leak. `focus-and-announcement` and `binding-composition-spread` also passed all four runs.
+After the `nuxt` skill body's `useState` line was rewritten, the matched pair ran again,
+two runs per arm, same rig and CLI: `module-scope-state` again passed all four runs. A final
+re-run on the shipped text, same rig and CLI, passed all four runs a third time.
+
+**The two capability cases did not separate the arms.** `composable-reactivity` and
+`vite-secret` passed every run, the `core`-only baseline included, so on this model neither
+shows the pack adding capability.
+
+**Two cases have FAIL runs.** `submit-state` failed one `core` + `vue` run: the 422 field
+messages stay on a field after the user corrects it, until the next submit — the fails-if
+line "Validates only on submit and never re-checks". At 1/2 with the pack, this reopens the
+question of whether a `forms.md` is worth adding, which the earlier run had settled.
+`vitest-jsdom-import-meta-url` passed one `core` + `vue` run and no baseline run. Three of the four runs say `import.meta.url` itself stays `file://`
+and only the literal `new URL('…', import.meta.url)` form is rewritten, which contradicts its
+first passes-if line, and both baseline runs give a fix other than resolving from
+`process.cwd()`, which its third line requires. A scratch project on Vitest 5.0.4 and 3.2.4
+with jsdom 30.1.2, Node 22.23.3 and Windows 10 then bore those three runs out, and the case's
+criteria and `references/testing.md` were rewritten to the observed behaviour. A final re-run
+on the shipped text, two runs per arm with the same rig and CLI, passed all four runs against
+the rewritten criteria, the `core`-only baseline included, as they expect: every run named the
+rewrite of the literal `new URL('…', import.meta.url)` form and gave a fix that reads the real
+fixture.
+
+`finding-the-cost` was not run: it needs the dispatch-board project to build and measure,
+and no fixture for it is kept in this repository.
 
 ## The matched pair
 

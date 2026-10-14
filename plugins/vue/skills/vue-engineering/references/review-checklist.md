@@ -17,11 +17,15 @@ this file and states which of these verdicts it overrides.
 
 ## Blocking (Critical)
 
-**A secret in the client bundle.** Any credential, API key or token reachable from
-client code — including anything added under a `VITE_` prefix, which is inlined at build
-time and readable in devtools. Also flag a token written to `localStorage`, placed in
-Pinia state, or put in a query string. There is no server in an SPA, so there is nowhere
-safe: the fix is an endpoint you control, not a better hiding place.
+**A secret in the client bundle.** A secret credential — a private API key, token or
+password — reachable from client code, including anything added under a `VITE_` prefix,
+which is inlined at build time and readable in devtools. Also flag a secret token —
+including a user's session or access token — written to `localStorage`, placed in Pinia
+state, or put in a query string. There is no server in an SPA, so there is nowhere safe:
+the fix is an endpoint you control, not a better hiding place. A key its vendor designs
+to be public — a publishable or browser key, a DSN, an analytics write key — is not a
+finding; it is meant to ship in the bundle. When it is not known whether a vendor key is
+secret, say so and ask, rather than flagging or passing it.
 
 **A build that can only serve one environment.** A new `VITE_` variable holding an
 environment-specific URL means the artifact you tested is not the artifact you can
