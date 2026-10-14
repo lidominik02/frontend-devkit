@@ -3,6 +3,32 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.3.0 - 2026-10-14
+
+### Changed
+
+- Gates come only from what a project declares in a file it maintains. When its
+  `CLAUDE.md`, `AGENTS.md` or `CONTRIBUTING.md` names its checks, that list is the
+  gates, even in a JavaScript project whose `package.json` scripts differ. Otherwise the
+  targets of `package.json`, a `Makefile` or a `justfile` are. A CI file is never a
+  source, and a project that declares nothing is reported `NOT RUN (no declared
+  command)` instead of a guessed command.
+- Gates run per workspace: work in one package of a monorepo runs that package's gates
+  only. Each gate is reported on one line naming the workspace, the command, the file it
+  came from and the result.
+- A command that writes to the working tree, or watches and never exits, is never run as
+  a gate, whatever its name. Every declared test and build waits until you release it and
+  is reported `NOT RUN (held)` until then.
+- The formatter runs only when the project names it: a `PostToolUse` hook in the
+  repository's `.claude/settings.json`, its docs, a per-file hook config such as
+  lint-staged, or a formatting target of its manifest. It runs on the touched files only.
+  A formatter config file or dependency alone no longer triggers it.
+
+### Fixed
+
+- `executing-plans` takes the next task's starting point after you answer the pause, so
+  an edit you make during the pause is no longer reviewed as that task's work.
+
 ## 0.2.1 - 2026-10-14
 
 ### Fixed
