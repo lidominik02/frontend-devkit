@@ -263,9 +263,9 @@ Fails if it does ANY of:
   abbreviation beside a value that the section every task is held to carries verbatim —
   "half-even (banker's rounding)", "2 dp" — does not fire this line. A step that restates
   a planted value with a different meaning from that section — "16:00 UTC" for "16:00 CET" — fires,
-  unless the difference is a reading recorded as a decision that names the source it was
-  looked up in: "16:00 CET" read as Frankfurt local time, citing the publisher's own
-  convention, does not fire.
+  unless the difference is a reading recorded as a decision that names its source, in its
+  text or its `Source:` line: "16:00 CET" read as Frankfurt local time, citing the
+  publisher's own convention, does not fire.
 - Splits the tasks by layer, or writes code into the steps, as the steps line above defines
   it, beyond fixed copy or a rule the interfaces do not determine.
 - Includes a commit step, or starts implementing.
