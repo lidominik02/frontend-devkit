@@ -101,7 +101,7 @@ Owner report appears only when the cause is not the frontend's.
 # Fix: <one-line summary>
 Status: fixed | fixed, no regression test | owner report | sent back for diagnosis
 Branch: <branch> · Base tree: <id>
-Baseline gates: <gate> pass | FAIL: <the errors it names> | NOT RUN (<reason>) · …
+Baseline gates: <gate line>; … — a FAIL with the errors it names
 
 ## Report        <verbatim; non-English quoted, then translated>
 ## Diagnosis     Given: <source> · Layer: <layer> — <evidence> · Root cause: <path:line> — <what>
@@ -117,6 +117,6 @@ Baseline gates: <gate> pass | FAIL: <the errors it names> | NOT RUN (<reason>) �
 - Green restored: <command> · <summary line> · tree <F> equals <F again>
 <or, for the evident-cause entry> the red before and green after lines only
 <or> none — no test runner | none — no correct seam: <why>
-## Gates         <gate> pass | FAIL: <each error, the fix's or pre-existing> | NOT RUN (<reason>) · …
+## Gates         <gate line>; … — a FAIL with each error, the fix's or pre-existing
 ## Owner report  <the owner report>
 ```

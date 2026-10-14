@@ -55,7 +55,8 @@ merge deny rule blocks it here), then the rebase, or stopping.
    as each step ends. When `git check-ignore -q <top>/temp/` exits 1, say once that it lands
    in an untracked `temp/`. Never `git add` it. A feature's files are read by "Reading" in
    `../planning-features/references/artifacts.md`.
-4. **Baseline.** Before anything moves, run the fast gates as step 1 read them and take
+4. **Baseline.** Before anything moves, run the fast gates of each workspace the branch
+   touches, as step 1 read them, and take
    the pre-sync tree, `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take`; record
    both in LOG.md. The tree holds the untracked work as it stands, apart from `temp/` and
    credential paths. It is the pre-sync state: the overlap scan's and the review's base.
@@ -174,8 +175,8 @@ After every sync onto main, conflicts or not, find what main brought that the br
 ## 6. Gates, close and review
 
 1. **Gates.** Run the fast gates as the baseline ran them and compare error by error: a
-   failure the baseline had is pre-existing, one it did not have is the sync's. `test` and
-   `build` stay NOT RUN unless the user released them.
+   failure the baseline had is pre-existing, one it did not have is the sync's. The held
+   checks (`project.md`, `## Held checks`) stay NOT RUN (held) until the user releases them.
 2. **Chat brief**: each branch and its new tip, the conflicts per class, any dropped
    commit, the overlap decisions, the gates, each backup ref and how section 7 restores it,
    and LOG.md's path. Inside a feature whose final review has not run, it says that review
@@ -222,5 +223,6 @@ After every sync onto main, conflicts or not, find what main brought that the br
   and a new backup ref at the tip it discards.
 - **Decide a product question.** Where intents truly conflict, and for every overlap, the
   user decides.
-- **Run tests, a build, Storybook, a browser or a --watch/--fix/--write/--apply script** unreleased.
+- **Run heavier checks the user did not release** (`../planning-features/references/project.md`, `## Held checks`), **Storybook or a
+  browser** unreleased, or a command that writes as a gate (`## Gates` there).
 - **Carry a fact about an individual repository**; its own files are read at use.

@@ -145,7 +145,8 @@ For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slu
 
 - Implement anything.
 - Write tasks without the spec sections, or answer a missing product question itself.
-- Run a test suite, a build, Storybook or a browser check before the user releases it.
+- Run heavier checks the user did not release (`references/project.md`, `## Held checks`),
+  or Storybook or a browser check before the user releases it.
 - Commit or `git add` the feature's files.
 - Mark a task done with a step skipped or a gate unrun.
 - Keep a second Next action in STATUS.md — rewrite the one that is there.

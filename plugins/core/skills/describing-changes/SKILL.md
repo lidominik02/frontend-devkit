@@ -85,12 +85,13 @@ exact commands the project wants run. Otherwise:
 actually ran. When the skill that called this one supplies gate results, they are the
 truth: use them as given, run no gate, and report a gate they leave out as NOT RUN.
 Otherwise run the gates as "Gates" in `../planning-features/references/project.md`
-describes: the fast gates, and `test` or `build` only once the user has released it.
+describes: the fast gates, and a held check (`## Held checks` there) only once the user has
+released it.
 
 - `pass` → say it passed.
 - `FAIL` → say it failed. Do not soften it.
-- `NOT RUN (<reason>)` → say NOT RUN, with the reason — a held `test` or `build` reads
-  "held until the user releases it". Never upgrade this to a pass.
+- `NOT RUN (<reason>)` → say NOT RUN, with the reason — a held check reads "held until the
+  user releases it". Never upgrade this to a pass.
 - The project has no such gate → "no test suite in this repo; verified manually by
   <steps>". Never omit the gap, and never tick a template checkbox that claims a
   suite which does not exist.

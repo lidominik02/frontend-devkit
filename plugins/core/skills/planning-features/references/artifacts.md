@@ -43,7 +43,7 @@ Interfaces: consumes <exact names> · produces <exact names>
 Design: <screens and states, or none>
 Acceptance criteria: - <observable, from a success criterion>
 Steps: 1. <what to decide or produce, and where>
-Done when: <the fast gates by name, or "no gates declared"> pass, and <the observation that proves the criteria>
+Done when: <each fast gate's command, with its workspace when there are several, or "no gates declared"> pass, and <the observation that proves the criteria>
 Blocked by: <task names | OQ<n> | none>
 Tier: mechanical | judgment
 ```
@@ -94,10 +94,13 @@ Mode: subagent per task | inline | not chosen
 ## Tasks
 | Task | Status | Gates | Review |
 | --- | --- | --- | --- |
-| <name> | not started · in progress · done · blocked (OQ<n>) | <gate> pass · <gate> NOT RUN (<reason>) | <verdict line> |
+| <name> | not started · in progress · done · blocked (OQ<n>) | <gate line>; <gate line> | <verdict line> |
 
 ## Verified
-baseline: <gate> <result> · latest: <gate> <result> · pre-execution tree: <id> · end-of-run tree: <id> · by hand: <what>
+baseline: <gate line>; <gate line>
+latest: <gate line>; <gate line>
+pre-execution tree: <id> · end-of-run tree: <id>
+by hand: <what>
 
 ## Closed findings
 - <report path> <id> — deferred | kept as designed (<reason>) | not ours (<owner>)
@@ -116,7 +119,10 @@ action needs>. Next action: <the action>. Rules: <each governing rule, written o
 
 ## The rules of these files
 
-The Log is append-only, one free line per event, with no fixed shape. The Tasks table is the
+A gate line is `<workspace> · <command> · <source> · <result>`, as `## Gates` in
+`project.md` reports it; the Tasks table's Gates cell and `Verified`'s `baseline:` and
+`latest:` join several with `; `. The Log is append-only, one free line per event, with no
+fixed shape. The Tasks table is the
 only place a task is Done. An open finding is a CONFIRMED or PLAUSIBLE one of the latest
 review, or a NOT ADDRESSED or new one of a re-review after it, that no Closed findings line
 closes. DECISIONS.md and

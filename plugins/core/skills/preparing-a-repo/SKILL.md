@@ -35,21 +35,23 @@ drifting from their Claude counterparts; say so rather than adding a third copy.
 
 ## Step 2 — The facts
 
-`cat package.json`, then read the package manager, the framework packs, the gates and the
-base branch by the four rules of `../planning-features/references/project.md`. Every fact
-comes from a file the project already maintains; do not ask the user for anything it answers.
+Read the package manager, the framework packs, the gates and the base branch as
+`../planning-features/references/project.md` describes them. Every fact comes from a file the
+project already maintains; do not ask the user for anything it answers.
 
 ## Step 3 — Gates, because nothing else substitutes for them
 
-This is almost always the largest real gap, and the one where prose helps least. Read the
-gates from package.json's `scripts` block — typecheck, lint, test, build — and ask:
+This is almost always the largest real gap, and the one where prose helps least. List the
+gates `## Gates` in `project.md` finds — each with its workspace and source, or
+`NOT RUN (no declared command)` — and ask:
 
 1. **Is there a type-check at all?** On Vue, `tsc` checks nothing inside a template —
    `vue-tsc --noEmit` is the gate, and `strictTemplates` and the `checkUnknown*` family
    default to **off**. Propose turning them on as a separate, visible step.
 2. **Does the gate run anywhere but a developer's machine?** A rule CI does not run has
    nothing behind it; adding the gate to CI usually beats any wording.
-3. **What does the existing gate cost?** A `build` script is not a review gate; say so.
+3. **What does the existing gate cost?** A build or a test suite is a held check, not a fast
+   gate (`## Held checks` in `project.md`); say so.
 
 A new type-checker surfaces a backlog. **Count the errors before changing anything**, and
 offer: fix now if small; baseline and enforce on changed files; or stage the strictness.
@@ -87,7 +89,8 @@ Keep it short. Path-specific conventions belong in `.claude/rules/*.md` with a `
 
 Without `.claude/settings.json` every ordinary command prompts; an accreted
 `settings.local.json` freezes one machine's paths. Propose a small read-only allowlist —
-the gate commands plus `git diff`/`git log`/`git status`; never a destructive command.
+the declared fast-gate commands plus `git diff`/`git log`/`git status`; never a destructive
+command.
 
 ## Step 6b — Settings the devkit recommends
 

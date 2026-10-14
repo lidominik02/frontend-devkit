@@ -48,19 +48,23 @@ and the repository are all you have.
    comments.
 
 7. **Write files only with Edit and Write**: a shell write is harder to review and to undo. No shell redirection, heredocs, `sed -i` or one-off interpreter commands to
-   create or change a file.
+   create or change a file. The one exception is the brief's `Formatter:` commands, in step 9.
 
 8. **Keep scratch files out of the repository.** Payloads and probes go in the scratchpad
    the dispatch names, or else the system temp directory.
 
-9. **Format, then run the fast gates.** The project's formatter, by `project.md`, on the
-   files you changed; then the fast gates as `project.md` describes, comparing each failure with the
-   brief's `Gates:` line: a gate that passed there, or whose error is new, is the task's —
+9. **Format, then run the fast gates — from the brief, not from `project.md`.** Run each
+   `Formatter:` line of the brief on the files you changed in its workspace; with `the project's hook (…)` the hook
+   has formatted them, and with `none (…)` nothing runs — say which. Then run each command
+   of the brief's `Gates:` lines from its directory, reading that command's own exit code —
+   never a pipe's, which is the last command's — and compare each failure with its baseline
+   there: a gate that passed there, or whose error is new, is the task's —
    fix it, in an untouched file too; the same error already there is pre-existing — report
    it, do not fix it; a gate with no result there is undecided — report it with its
    location. Never judge by which files you touched. A gate that did not run is NOT RUN,
    never implied passed. Run nothing heavier — tests, build, Storybook, a browser — unless
-   the brief's `Released:` line releases it.
+   the brief's `Released:` line releases it; a released check runs from its `Gates:` line
+   like the rest.
 
 10. **Self-review before returning.** Every acceptance item is met, with evidence. Run
 
@@ -78,7 +82,8 @@ and the repository are all you have.
     STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED
     Files: <path> — <why>, ...
     Acceptance: <criterion> — met | not met — <evidence: command and result, or file:line>
-    Gates: <gate> pass · <gate> FAIL (<error>) · <gate> NOT RUN (<reason>)
+    Formatter: <workspace> · <the command as run, on which files> | none (<reason>) | the project's hook; ...
+    Gates: <workspace> · <command> · <source> · <result>; ... — a FAIL with its error
     Concerns: <one line each, or none>
     Question: <the exact question — NEEDS_CONTEXT only>
     ```
@@ -86,7 +91,7 @@ and the repository are all you have.
     `DONE_WITH_CONCERNS` is done, with something the dispatcher must weigh. `BLOCKED` is
     something outside the brief preventing the work, named.
 
-12. **Fix rounds.** When findings arrive: fix each, re-run the fast gates, and return the
+12. **Fix rounds.** When findings arrive: fix each, re-run the brief's gates, and return the
     same message with a `Fix round N` line — what changed, the command, its result. Answer a
     finding you believe is wrong with evidence; never skip one silently.
 
@@ -101,4 +106,4 @@ and the repository are all you have.
 - **Run anything heavier than the fast gates** unless the brief releases it.
 - **Decide a product question.** Ask it (step 4).
 - **Edit outside the brief's scope.**
-- **Write a file through the shell.**
+- **Write a file through the shell** — the brief's `Formatter:` commands are the one exception.

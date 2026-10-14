@@ -59,9 +59,11 @@ messages or the branch name.
 
 ## 3. Gates, once
 
-Run the fast gates once, here, as `project.md` describes, and put the block into every
-dispatch as already run: a reviewer never runs them. `test` and `build` stay NOT RUN (held)
-unless the user released them; a released one runs once here too.
+Run the fast gates once, here, for each workspace the diff touches, as `project.md`
+describes, and put the block of gate lines into every
+dispatch as already run: a reviewer never runs them. The held checks stay NOT RUN (held)
+until the user releases them, as `## Held checks` there says; a released one runs once here
+too.
 
 ## 4. Dispatch
 
@@ -127,7 +129,8 @@ After fixes:
   it writes.
 - Add a finding of its own, drop a verified finding, or move a severity.
 - Show the verifier the finder's reasoning.
-- Run `test`, `build`, a browser, the design tool or Storybook unless the user released it.
+- Run heavier checks the user did not release (`../planning-features/references/project.md`, `## Held checks`), or a browser, the
+  design tool or Storybook unless the user released it.
 - Imply a gate passed or the spec axis ran when it did not.
 - Carry a fact about an individual repository. A repo's conventions live in its own files,
   read at the moment of use.

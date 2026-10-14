@@ -12,9 +12,12 @@ Every `temp/…` path below is handed on as an absolute path under the repositor
 Feature: <feature-slug>
 Plan: temp/<feature>/PLAN.md
 Packs: <each framework pack project.md found, in order> | none
-Gates: <each fast gate with its baseline result from STATUS.md's Verified>
+Gates:
+- <workspace directory> · <command> · source <file> · baseline <result>   (one line per fast gate of the workspaces the task touches, from STATUS.md's Verified, and one per held check the user released there, `baseline NOT RUN (held)` when it was released after the baseline; a workspace that declares nothing, its `NOT RUN (no declared command)` line)
+Formatter:
+- <workspace directory> · <the `## Formatter` command, with <paths> where that workspace's touched files go> | none (<reason>) | the project's hook (<settings file>)   (one line per workspace the task touches)
 Scratch: <a directory outside the repository>
-Released: test released | held · build released | held
+Released: <each held check the project declares: released | held> | none declared   (a released one runs from its `Gates:` line)
 Forbidden index writes: git add, git commit, git write-tree, git update-index, git read-tree, git commit-tree.
 
 ## Task
@@ -56,7 +59,7 @@ Role: two-axis
 Diff file: <the path snapshot.mjs printed for temp/<feature>/tasks/<NN>-<task-slug>.diff>
 Intent sources: <brief path> · temp/<feature>/PLAN.md, the task "<task name>"
 Packs: <the brief's Packs line>
-Gates: <each gate run in step 6, with its result and the quoted error lines of a FAIL>
+Gates: <each gate line run in step 6 — <workspace> · <command> · <source> · <result> — a FAIL with its quoted error lines>
 Released: <the brief's Released line>
 Implementer message: <the implementer's returned message> — claims to check against the code, not evidence
 Raised by the dispatcher: <each changed file outside the brief's Files and the message> | none
@@ -77,7 +80,7 @@ id the dispatch returned):
 Fix round <N> for <task name>.
 Findings (verbatim from the review):
 <each open critical and important finding block>
-Fix each one, re-run the fast gates, and return the same short message with a "Fix round <N>" line — what changed, the command, its result. Answer a finding you believe is wrong with evidence; never skip one silently.
+Fix each one, re-run the brief's gates, and return the same short message with a "Fix round <N>" line — what changed, the command, its result. Answer a finding you believe is wrong with evidence; never skip one silently.
 ```
 
 To a fresh implementer — round 3, or when the first cannot be continued: the implementer
@@ -96,9 +99,12 @@ after the review of the whole feature; every task is built`.
 Review: <review report path> · <re-review report path> | none
 Plan: temp/<feature>/PLAN.md
 Packs: <each pack, in order> | none
-Gates: <each fast gate with its `latest:` result from STATUS.md's Verified, else its `baseline:`>
+Gates:
+- <workspace directory> · <command> · source <file> · latest <result>, else baseline <result>   (one line per fast gate of the workspaces the fixes touch, and one per held check the user released there; a workspace that declares nothing, its `NOT RUN (no declared command)` line)
+Formatter:
+- <workspace directory> · <the `## Formatter` command, with <paths> where that workspace's touched files go> | none (<reason>) | the project's hook (<settings file>)   (one line per workspace the fixes touch)
 Scratch: <a directory outside the repository>
-Released: test released | held · build released | held
+Released: <each held check the project declares: released | held> | none declared   (a released one runs from its `Gates:` line)
 Forbidden index writes: git add, git commit, git write-tree, git update-index, git read-tree, git commit-tree.
 
 ## Fix

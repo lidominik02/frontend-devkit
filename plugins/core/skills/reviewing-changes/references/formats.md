@@ -10,8 +10,8 @@ Diff file: <path>
 Intent sources: <paths, the approved in-chat design pasted verbatim> | none — the spec axis is NOT RUN
 Packs: <each framework pack, in order> | none
 Gates (already run — report as given, do not re-run):
-<each gate with its result: pass · FAIL with the quoted error lines · NOT RUN (<reason>)>
-Released: test released | held · build released | held
+<one gate line per gate — <workspace> · <command> · <source> · <result> — a FAIL with its quoted error lines>
+Released: <each held check the project declares: released | held> | none declared
 <role material>
 ```
 
@@ -32,7 +32,7 @@ failure scenario: <inputs or state → wrong outcome>
 Scope: <the stat summary line> · base <base> · snapshot tree <tree>
 Diff: <diff file path>
 Intent sources: <paths> | none
-Gates: <gate> pass | FAIL | NOT RUN (<reason>) · ...
+Gates: <gate line>; <gate line>; ...
 Framework packs: <packs applied, in order> | none
 NOT RUN: <each item, with the reason>
 Overall: CONFIRMED <n> critical · <n> important · <n> minor — PLAUSIBLE <n> — PREDATES_CHANGE <n> — REFUTED <n>

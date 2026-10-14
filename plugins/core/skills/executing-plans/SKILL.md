@@ -38,8 +38,8 @@ Once per run. `fix-findings` needs only steps 1, 2, 3 and, inline, 6.
    recorded (or `not chosen`), ask: one form, the recommended mode first, with the reason taken from the
    plan — how tightly its tasks couple, how many there are, what a shipped mistake would
    cost. Record it as STATUS.md's `Mode:`.
-4. **Baseline.** Run the fast gates once, as `project.md` describes, and write each result
-   to STATUS.md's `Verified` as `baseline:`, so a failure that predates the run is never blamed on
+4. **Baseline.** Run the fast gates once for each workspace the plan's Files touch, as
+   `project.md` describes, and write each gate line to STATUS.md's `Verified` as `baseline:`, so a failure that predates the run is never blamed on
    a task. Then `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take` and write the tree
    it prints to `Verified` as `pre-execution tree:`, the base the final review diffs from.
    A restarted run keeps the recorded tree once `git cat-file -e <tree>^{tree}` confirms it.
@@ -78,8 +78,8 @@ For each task neither done nor blocked, in plan order:
    one every dispatch carries. Compare the stat lines with the brief's Files: a changed file outside them that the
    implementer's message does not name with a reason is raised to the reviewer and to the
    user — never silently accepted.
-6. **Gates.** Run the fast gates as `project.md` describes, and judge each failure against
-   the baseline in `Verified`:
+6. **Gates.** Run the fast gates of each workspace the task touched, as `project.md`
+   describes, and judge each failure against that workspace's baseline in `Verified`:
    - **the task's** — the gate passed in the baseline, or the baseline lacks this error:
      fixed, in an untouched file too;
    - **pre-existing** — the baseline holds the same error: reported, not fixed;
@@ -113,8 +113,10 @@ For each task neither done nor blocked, in plan order:
 1. **Open** the task by reading it in PLAN.md, not from memory, quoting its heading as read.
    STATUS.md: the Stage `execute (task N/M, inline)` and the row `in progress`.
 2. **Implement** with Edit and Write — a scripted shell edit only for conflict hunks or a
-   mechanical rename — then run the project's formatter, by `project.md`, on the touched files.
-3. **Gates** as `project.md` describes, each failure judged as section 2 step 6 says. With
+   mechanical rename — then format the touched files as `## Formatter` in `project.md` says, and
+   report its line for each touched workspace.
+3. **Gates** of each workspace the task touched, as `project.md` describes, each failure
+   judged as section 2 step 6 says. With
    no pause between inline tasks, an undecided failure stops the run before the task closes.
 4. **Close** in one write: the row, its gates, a Log line, and the Next action moved on.
    Continue with the next task without pausing.
@@ -169,7 +171,8 @@ The user has read the code and the review report and says what to do with each f
 - Commit or push, or stage or touch the index or refs — plumbing included. `snapshot.mjs`
   builds its tree in a private temporary index and is the exception.
 - Edit code on the main thread in subagent mode.
-- Run tests, a build, Storybook or a browser before the user releases them.
+- Run heavier checks the user did not release (`../planning-features/references/project.md`, `## Held checks`), or Storybook or a browser
+  before the user releases them, or a command that writes as a gate (`## Gates` there).
 - Decide a product question, or rule on anything but a reversible plan defect.
 - Mark a task done with a step skipped or a gate unrun.
 - Run two implementers at once.

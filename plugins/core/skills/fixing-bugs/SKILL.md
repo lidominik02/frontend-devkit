@@ -35,8 +35,8 @@ frontend code only, runs only the one test file it writes, and hands on to `revi
 3. **Report.** FIX.md's Report holds the bug as given, verbatim; non-English text is quoted,
    then translated. The expected behaviour is what the test will assert: when neither the
    report nor the diagnosis states it, ask before writing any test.
-4. **Baseline.** Before the first edit, the repro test included, run the fast gates as
-   `project.md` says and take the tree with `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take`,
+4. **Baseline.** Before the first edit, the repro test included, run the fast gates of each
+   workspace the fix and its repro test touch as `project.md` says and take the tree with `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take`,
    and record both in FIX.md, with the errors of a gate that fails. The review diffs from
    the tree; section 3 step 4 compares against the gates, so a failure that predates the
    fix is never blamed on it.
@@ -89,8 +89,8 @@ first. With no correct seam, section 5 governs.
 4. **Gates.** Run the fast gates as the baseline ran them, read from the exit code, and
    compare with FIX.md's baseline, error by error for a gate that failed there. A failure
    the baseline did not have is the fix's: fix it. One the baseline already had is
-   pre-existing, even in a file this fix touched: report it and leave it. `test` and
-   `build` stay NOT RUN unless the user released them.
+   pre-existing, even in a file this fix touched: report it and leave it. The held checks
+   (`project.md`, `## Held checks`) stay NOT RUN (held) until the user releases them.
 5. **Close**, by section 6.
 
 ## 4. A cause outside the frontend
@@ -158,8 +158,9 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
   write the owner report.
 - **Add a frontend guard or workaround for another owner's bug** without the user's
   approval in section 4's form.
-- **Run more than the one test file**: never the suite, the `test` script, a watch mode, a
-  build, a browser or Storybook unreleased, or a script holding --fix, --write or --apply.
+- **Run more than the one test file**: never the suite, the declared test command, a watch
+  mode, another heavier check the user did not release (`../planning-features/references/project.md`, `## Held checks`), a browser
+  or Storybook unreleased, or a command that writes as a gate (`## Gates` there).
 - **Leave the fix reverted.** The revert proof ends with the fix restored, the test green
   and the tree equal to the one taken before the revert.
 - **Take a fix out with git.** No `git stash`, `git checkout` or `git restore`; no staging,

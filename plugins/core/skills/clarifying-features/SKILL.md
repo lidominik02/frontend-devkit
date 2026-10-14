@@ -167,7 +167,8 @@ rounds settled before going on.
 - Write anything for someone else — no ticket description, no user story, no questionnaire.
 - Present an ASSUMED item as settled, or a third party's answer as given before they gave
   it.
-- Run tests, a build, Storybook or a browser before the user releases them.
+- Run heavier checks the user did not release (`../planning-features/references/project.md`, `## Held checks`), or Storybook or a browser
+  before the user releases them.
 - Commit, stage or touch the index.
 - Carry a fact about an individual repository or a client. A repo's conventions live in its
   own files, read at the moment of use.

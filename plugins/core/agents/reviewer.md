@@ -97,7 +97,7 @@ After it, every line is a verdict, a finding, or a check you ran. Then the heade
 
 ```
 Scope: <the diff's stat summary line>
-Gates: <gate> pass | FAIL | NOT RUN (<reason>) · ... — as the dispatch gave them
+Gates: <gate line>; <gate line>; ... — as the dispatch gave them
 Framework packs: <packs applied, in order> | none
 NOT RUN: <each item not run, with the reason>
 ```
