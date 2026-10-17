@@ -67,9 +67,16 @@ round; bounded work that finds an API need is no longer bounded.
 
 ## The research dispatch
 
-Round 1 dispatches it in the background; `research <question>` in the foreground, with the
+Round 1 dispatches it in the background on proposed `feature` work — `bounded` work reads the
+same questions on the main thread instead; `research <question>` in the foreground, with the
 user's question alone as the numbered list. The agent type is `Explore` where the host offers
-it, else `general-purpose`, with `model: sonnet`.
+it, else `general-purpose`.
+
+**Model and effort.** model: sonnet · effort: not set — measured: on `clarifying-frontier`,
+three runs each, sonnet with no effort set held every research criterion line the session's
+model held, at 26% less per run (`claude-sonnet-5-5` under a `claude-opus-5-5` session,
+Claude Code 2.1.299, 2026-10-16). The dispatch passes the model named; "the session's" and
+"not set" leave that parameter out.
 
 ```
 Read-only research for <the feature, or the question>. Change nothing: no file writes, no

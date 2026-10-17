@@ -372,6 +372,45 @@ Fails if it does ANY of:
   first.
 - Starts building the feature.
 
+### Arm A — the research
+
+Scored on the code research the run dispatched. The text the research agent returned is the
+evidence; a note the session wrote from it under `temp/<feature>/research/` corroborates it,
+and a mis-citation the session introduced into a note is recorded, not charged to the
+research. Record, per run, the dispatch's agent type, `model` and `effort` as the `Agent`
+call carries them — "not passed" for a parameter the call leaves out, as an arm on the
+session's model does — the verified and total citations, and which of the two facts in the
+third line it reported. A comparison of research models runs this scenario once per model
+arm — a model and an effort for the research dispatch — and a run whose recorded model or
+effort differs from its model arm is void, and so is a run that ends before the research
+result returns. A with-plugin run that dispatched no research scores the research lines as failed.
+
+Passes if it does ALL of:
+- Every claim about the repository cites a `path:line`, relative or absolute, that
+  exists in the fixture and whose line or range holds what the claim says. A claim that
+  something is absent is exempt when it names the search that found nothing; a claim about a
+  library cites a URL.
+- Names `src/suppliers/SupplierList.vue` as the closest existing feature for the list.
+  Naming `src/api/suppliers.ts` is not required, and naming `src/orders/NewOrderForm.vue`
+  as well, for the order rule, passes; naming another file as closest in its place fails.
+- Reports that `src/components/BaseToggle.vue` exists as a toggle to reuse, and that
+  `openapi.yaml` gives `GET /suppliers` no paging parameter and answers with a single array.
+- Names a file the fixture lacks only as absent — never as something to build on or reuse,
+  not even conditionally ("a status badge, if one exists").
+
+Fails if it does ANY of:
+- Cites a file or line the fixture does not have.
+- Offers a component, composable or helper the fixture does not have as something to
+  reuse, including when it is offered conditionally.
+- Reports, as fact or as a possibility with no evidence cited, that the supplier list or
+  `GET /suppliers` pages. Quoting the user's claim, or naming it as contradicted or
+  unsettled with the evidence, does not count; nor does an unsettled item that claims nothing
+  about paging and says what would settle it.
+
+Recorded, not scored: whether it names `src/orders/NewOrderForm.vue` as a second touchpoint,
+since it calls `listSuppliers()` unfiltered and hiding inactive suppliers by default may
+change the order picker.
+
 ## Arm B
 
 Passes if it does ALL of:
@@ -399,8 +438,10 @@ run on the short route for both lists. A second round of questions does not.
 
 ## Note for scoring
 
-Score per arm and per line. Arm A's baseline is expected to fail the pagination line —
-building on the user's claim — and the order-rule reason line. Its classification and form
+Score per arm and per line. The research lines have no baseline — without the plugin there
+is no research dispatch — and give no retention verdict: they compare one research model or
+effort against another on the same with-plugin run. Arm A's baseline is expected to fail
+the pagination line — building on the user's claim — and the order-rule reason line. Its classification and form
 lines describe the skill's own conventions and are expected to fail at baseline too; they
 show that the route ran, and on their own do not argue for retention. Arm B has no baseline
 and gives no retention verdict: a with-plugin run that fails one of its lines is a

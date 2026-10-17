@@ -27,7 +27,7 @@ of any build, so check them even when the canary is green.
 ## What is actually load-bearing
 
 1. **The clean strict exit.** The gate runs `claude plugin validate --strict` and reads only
-   its exit code; on 2.1.292 a warning exits 1. A release that adds a new finding turns the
+   its exit code; on 2.1.301 a warning exits 1. A release that adds a new finding turns the
    canary red on a commit that changed nothing.
 2. **The claim that `--strict` does not read component frontmatter, and the allowlists it
    justifies.** `scripts/validate.mjs` owns `KNOWN_SKILL`, `KNOWN_AGENT` and

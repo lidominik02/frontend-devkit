@@ -155,6 +155,29 @@ describe('validate.mjs checks run against the root they are given', () => {
     assert.equal(checkFrontmatter(undefined, root).ok, false);
   });
 
+  test('checkFrontmatter() rejects a misspelt effort in a skill', (t) => {
+    const root = fixture(t, { override: { [SKILL]: skillText({ extraField: 'effort: lwo' }) } });
+    assert.deepEqual(checkFrontmatter([path.join(root, SKILL)], root).findings, [
+      'plugins/core/skills/demo/SKILL.md -> effort "lwo" is not low | medium | high | xhigh | max',
+    ]);
+  });
+
+  test('checkFrontmatter() rejects a model that is no alias, inherit or claude-* ID in an agent', (t) => {
+    const root = fixture(t, { override: { [AGENT]: agentText({ extraField: 'model: gpt' }) } });
+    assert.deepEqual(checkFrontmatter([path.join(root, AGENT)], root).findings, [
+      'plugins/core/agents/helper.md -> model "gpt" is not sonnet | opus | haiku | fable | inherit or a claude-* model ID',
+    ]);
+  });
+
+  test('checkFrontmatter() accepts a valid model and effort', (t) => {
+    const override = {
+      [SKILL]: skillText({ extraField: 'effort: low' }),
+      [AGENT]: agentText({ extraField: 'model: claude-sonnet-5-5\neffort: "xhigh"' }),
+    };
+    const root = fixture(t, { override });
+    assert.deepEqual(checkFrontmatter([path.join(root, SKILL), path.join(root, AGENT)], root).findings, []);
+  });
+
   // The walks decide by isComponent alone, so it must agree with them.
   test('isComponent() accepts exactly what components() and localComponents() list', (t) => {
     const root = fixture(t, { override: { 'plugins/core/skills/demo/notes.md': '# Notes\n', '.claude/skills/local/notes.md': '# Notes\n' } });

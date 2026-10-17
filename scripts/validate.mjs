@@ -58,7 +58,7 @@ export function packs(root = ROOT) {
 // --- frontmatter ------------------------------------------------------------
 
 // `claude plugin validate --strict` flags unknown fields in plugin.json but NOT
-// in component frontmatter (verified against 2.1.250, 2.1.276 and 2.1.283), so a typo
+// in component frontmatter (verified against 2.1.250, 2.1.276, 2.1.283 and 2.1.301), so a typo
 // there loads as silence: misspell `disable-model-invocation` and the skill
 // quietly becomes model-invocable, misspell `disallowed-tools` and a guardrail
 // quietly stops being enforced. Hence these allowlists.
@@ -69,15 +69,23 @@ const KNOWN_SKILL = [
   'metadata', 'hooks',
 ];
 // `omitClaudeMd` verified against 2.1.283: documented, and in the binary's agent schema.
+// `autoCompactWindow` is documented on the sub-agents page, read 2026-10-15; the 2.1.301
+// binary carries the name as a setting, and its use as an agent field was not observed.
 const KNOWN_AGENT = [
   'name', 'description', 'tools', 'disallowedTools', 'model',
-  'maxTurns', 'skills', 'mcpServers', 'hooks', 'memory', 'background', 'omitClaudeMd',
+  'maxTurns', 'autoCompactWindow', 'skills', 'mcpServers', 'hooks', 'memory', 'background', 'omitClaudeMd',
   'effort', 'isolation', 'color', 'initialPrompt', 'experimental',
 ];
-// Documented on the plugins/components page, read 2026-10-12; the CLI 2.1.292 validator does
+// Documented on the plugins/components page, read 2026-10-12; the CLI 2.1.301 validator does
 // not flag them. `permissionMode: plan` held a project agent in plan mode and not a plugin
 // agent (observed on 2.1.283).
 const IGNORED_IN_PLUGIN_AGENT = ['permissionMode', 'hooks', 'mcpServers', 'initialPrompt'];
+// The values `model` and `effort` take, from the sub-agents page, read 2026-10-15: an alias,
+// `inherit` or a full model ID; an effort level. The field allowlists above do not see a
+// misspelt value, and a skill's `effort: lwo` would load as silence too.
+const KNOWN_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
+const MODEL_ID = /^claude-[a-z0-9][a-z0-9.-]*$/;
+const KNOWN_EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'];
 
 // 1024 is the Agent Skills spec's hard limit: past it a skill cannot be packaged
 // or uploaded, even though Claude Code itself tolerates roughly 1536.
@@ -191,6 +199,13 @@ export function checkFrontmatter(files, root = ROOT) {
       }
       // Skill packaging validation rejects a description containing `<` or `>`.
       if (k === 'description' && /[<>]/.test(value)) bad.push(`${rel(root, p)} -> description contains an angle bracket`);
+      const v = value.trim().replace(/^(['"])(.*)\1$/, '$2');
+      if (k === 'model' && !KNOWN_MODEL.includes(v) && !MODEL_ID.test(v)) {
+        bad.push(`${rel(root, p)} -> model "${v}" is not ${KNOWN_MODEL.join(' | ')} or a claude-* model ID`);
+      }
+      if (k === 'effort' && !KNOWN_EFFORT.includes(v)) {
+        bad.push(`${rel(root, p)} -> effort "${v}" is not ${KNOWN_EFFORT.join(' | ')}`);
+      }
     }
   }
   return { name: 'frontmatter', findings: bad, ok: bad.length === 0 };

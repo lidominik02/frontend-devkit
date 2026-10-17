@@ -74,8 +74,9 @@ Facts are looked up, never asked.
   how often.
 - **Outside research** runs when the user asked for it in step 1, or when the codebase has
   no precedent. Dispatch one agent of the built-in `Explore` type where the host offers it
-  (observed in Claude Code 2.1.283), else `general-purpose` told to stay read-only;
-  `model: sonnet`. Primary sources first. Every claim it returns carries its URL.
+  (observed in Claude Code 2.1.283), else `general-purpose` told to stay read-only,
+  with the model and effort of "The research dispatch" in
+  `../clarifying-features/references/sources.md`. Primary sources first. Every claim it returns carries its URL.
 
 Then say in a few lines what the evidence settled, with the counts, as chat text; step 5's
 form question repeats the counts.

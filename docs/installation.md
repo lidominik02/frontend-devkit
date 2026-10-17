@@ -85,6 +85,51 @@ advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is
 `nuxt` declares `core` **and** `vue` directly; see
 [ADR 0004](adr/0004-framework-packs-layer-as-deltas.md).
 
+## Model and effort of the workers
+
+`core` dispatches three kinds of worker — code research, the task implementer and the
+reviewer — and each kind's model and effort stand in one place: the **Model and effort** line
+of its dispatch template (`clarifying-features/references/sources.md`,
+`executing-plans/references/dispatch.md`, `reviewing-changes/references/formats.md`). A line
+names a cheaper model only with a measured pair behind it, which the line itself states;
+anything unmeasured runs on your session's model. `describing-changes` also sets
+`effort: low` in its own frontmatter, on the same terms. Your main session's model and effort
+are never set by the devkit.
+
+**Minimum CLI.** A dispatch that names an `effort` needs Claude Code 2.1.292 or later; the
+defaults were measured on 2.1.299. On an older CLI the reviewer's `effort: low` is not
+observed — read 2026-10-15 from the sub-agents page, not run.
+
+**Overriding them.** Everything here is your own setting; the devkit ships no switch for it.
+Claude Code resolves a worker's model in this order (sub-agents page, read 2026-10-15): the
+model the dispatch names, then the agent's frontmatter `model`, then
+`CLAUDE_CODE_SUBAGENT_MODEL`, then your session's model.
+
+- `CLAUDE_CODE_SUBAGENT_MODEL=<model>` fills in only where nothing earlier names a model. On
+  its own it does not change the built-in `Explore` and `Plan` agents.
+- `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (2.1.257 or later), with the variable above, overrides
+  the dispatch and frontmatter models too: every worker runs on the model you name.
+- `CLAUDE_CODE_EFFORT_LEVEL=<level>` wins over both the dispatch's `effort` and a skill's or
+  agent's frontmatter `effort`.
+- An `Explore` agent of your own, in `~/.claude/agents/` or the project's `.claude/agents/`,
+  replaces the built-in one the research dispatch uses. Its `model` applies only where the
+  dispatch names none — the research dispatch names one, so change that model with the
+  variables above.
+
+To see what the workers cost, `/usage` breaks spending down by skill, subagent and plugin
+under **Attribution** (2.1.222 or later; its figures are approximate).
+
+**The prompt cache.** `describing-changes`' `effort: low` replaces the session effort while
+the skill runs. On Opus, Sonnet and Haiku 5.5 and Fable 5.1, with an API key or a Claude
+subscription, changing effort keeps the cache intact; on Bedrock, Google Cloud, an LLM
+gateway, with `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`, or under HIPAA it does not (prompt
+caching page, read 2026-10-15).
+
+**No profile option.** A plugin `userConfig` choice between a cheaper and a stronger profile
+was tried and left out: an option's `default` is not substituted into skill text until a value
+is saved, so a profile would arrive unset for anyone who installed without the dialog
+(observed on 2.1.299 and 2.1.301).
+
 ## Node
 
 Node 22 or newer on `PATH`; the one shipped script, `snapshot.mjs`, needs nothing else.

@@ -68,8 +68,8 @@ too.
 ## 4. Dispatch
 
 One `core:reviewer` with `Role: two-axis`, then one with `Role: verify` over its candidates
-— by that fully-qualified name, in the foreground, with no model named. Each carries the
-dispatch shape in `references/formats.md`: the role, the absolute diff path, the intent
+— by that fully-qualified name, in the foreground, on the model and effort
+`references/formats.md` names. Each carries the dispatch shape there: the role, the absolute diff path, the intent
 sources, the `Packs:` line `project.md` gives, the gate block, what is released, and the
 role material. `verify` gets each candidate's id, location, category, severity, summary and
 failure scenario — never the finder's reasoning, fix suggestion or confidence. No

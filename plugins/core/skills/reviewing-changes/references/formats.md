@@ -15,6 +15,13 @@ Released: <each held check the project declares: released | held> | none declare
 <role material>
 ```
 
+**Model and effort.** model: sonnet · effort: low — measured: on `reviewing-changes-trigger`,
+`review-spec-axis` and `review-uncommitted-scope`, three runs each, it held every criterion
+line the session's model held, at 32% less per run (`claude-sonnet-5-5` under a
+`claude-opus-5-5` session, Claude Code 2.1.299, 2026-10-15). One line for
+`two-axis`, `verify` and `re-review` alike; `re-review` follows `two-axis`. The dispatch passes
+the model named; "the session's" and "not set" leave that parameter out.
+
 A task review adds `Implementer message:` and `Raised by the dispatcher:` after Released.
 The role material: `two-axis` — none. `re-review` — `Prior findings:` and each open finding
 block as the report prints it. `verify` — the candidates, each with these fields only:

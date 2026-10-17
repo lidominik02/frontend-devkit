@@ -8,6 +8,7 @@ description: >-
   changelog entry — even without naming the convention, on GitLab or GitHub. For
   "review this" or "is this safe to merge", use reviewing-changes.
 allowed-tools: Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git remote *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob
+effort: low
 ---
 
 You turn a diff into the two artifacts a reviewer reads: a commit message and a merge

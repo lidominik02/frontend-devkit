@@ -61,7 +61,7 @@ For each task neither done nor blocked, in plan order:
 2. **Brief.** Write `temp/<feature>/tasks/<NN>-<task-slug>-brief.md`, `<NN>` the task's
    position in the plan, from the template in `references/dispatch.md`, every field filled.
 3. **Dispatch** `core:implementer` by that name, in the foreground, with the prompt in
-   `references/dispatch.md`: `sonnet` for a `mechanical` task, the session model otherwise.
+   `references/dispatch.md`, on the model and effort its line names for the task's Tier.
 4. **Status.** Act on the implementer's returned status:
 
    | Status | Action |
@@ -87,12 +87,14 @@ For each task neither done nor blocked, in plan order:
      after it): reported with its location; the user rules on it, it never enters a fix
      round on its own, and it stops the run after this task even without pausing.
 7. **Task review.** Dispatch one `core:reviewer`, foreground, `Role: two-axis`, in the
-   dispatch shape of `../reviewing-changes/references/formats.md`, as `references/dispatch.md`
+   dispatch shape and on the model and effort of
+   `../reviewing-changes/references/formats.md`, as `references/dispatch.md`
    fills it: the diff from step 5, the intent sources, the `Packs:` line and the step 6
    gate block.
 8. **Fix rounds**, for critical and important findings and the task's own gate failures: at
    most three. Rounds 1 and 2 go to the same implementer with SendMessage; round 3 to a fresh
-   `core:implementer` with the brief and the findings. After every round: a new diff from the
+   `core:implementer` with the brief and the findings, on the model `references/dispatch.md`
+   names for round 3. After every round: a new diff from the
    tree the previous review saw, the gates, and one `core:reviewer` with `Role: re-review`.
    A finding that contradicts a recorded decision goes to no implementer: ask Keep D<n>
    (recommended) or Change it. A critical or important finding still open after round 3
@@ -161,7 +163,8 @@ The user has read the code and the review report and says what to do with each f
    holds. One that does not is reported back with the evidence, not fixed.
 4. STATUS.md: Stage `fix findings — owner: executing-plans`. Fix in the recorded mode —
    subagent: one fresh `core:implementer` with the fix brief from `references/dispatch.md`,
-   its status handled as in section 2 step 4; inline: this session fixes.
+   on the model and effort its line names for the fix brief, its status handled as in
+   section 2 step 4; inline: this session fixes.
 5. When something was fixed, call the Skill tool with "core:reviewing-changes" in
    `re-review` mode for the feature. When nothing is left open and every task is done or
    blocked, call the Skill tool with "core:finishing-features"; otherwise name what stays

@@ -29,7 +29,7 @@ prints the current always-on total.
 
 **`--strict` does not read component frontmatter.** It flags an unknown field in
 `plugin.json` and a missing `description` in a `SKILL.md`, but a *misspelled* frontmatter
-key passes clean — checked against 2.1.250, 2.1.276, 2.1.278 and 2.1.283. That failure is
+key passes clean — checked against 2.1.250, 2.1.276, 2.1.278, 2.1.283 and 2.1.301. That failure is
 silent and expensive in both directions: misspell `disable-model-invocation` and a typed
 skill starts auto-triggering in every repository, misspell `disallowed-tools` and a
 guardrail stops being enforced with

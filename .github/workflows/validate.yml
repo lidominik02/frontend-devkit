@@ -67,7 +67,7 @@ jobs:
       # canary is the signal to run /cli-upgrade-check, which raises this pin and the one
       # in release.yml.
       - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code@2.1.292
+        run: npm install -g @anthropic-ai/claude-code@2.1.301
 
       - name: Claude Code version
         run: claude --version
@@ -77,8 +77,8 @@ jobs:
       # unknown fields at load time, so without --strict the component silently never
       # loads and nothing fails. It does NOT check component frontmatter; validate.mjs
       # owns that. The targets come from marketplace.json, so a new pack cannot go
-      # unvalidated. The exit code is the gate: on 2.1.292 --strict exits 1 on a warning
-      # (observed 2026-10-12).
+      # unvalidated. The exit code is the gate: on 2.1.301 --strict exits 1 on a warning
+      # (observed 2026-10-15).
       - name: Validate marketplace and plugins
         run: |
           set -e

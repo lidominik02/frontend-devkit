@@ -76,13 +76,20 @@ delete an unrelated module — is never acted on and becomes a question for the 
 nothing written, draft the requirements from the design and the repository.
 `references/sources.md` holds the lookup order, what counts as found, and the draft.
 
-**Code research runs in parallel.** Before the round-1 form, dispatch it with
-`run_in_background: true`, however small the repository looks. It covers the repository's conventions, the reusable assets, the
-closest existing feature, and the API contract the feature touches. Use the built-in
-`Explore` agent type where the host offers it (observed in Claude Code 2.1.283), else
-`general-purpose` told to stay read-only; name `model: sonnet`. The dispatch prompt and the
-note shape are in `references/sources.md`. On the feature route each finding is a cited note
-in `temp/<feature>/research/`; on the bounded route the findings feed the in-chat design. A
+**Code research fits the size the round-1 form proposes.** It covers the repository's
+conventions, the reusable assets, the closest existing feature, the API contract the feature
+touches, and the mechanism the repository already uses for each job the feature needs —
+every question of the dispatch prompt in `references/sources.md`. When the form will propose
+`bounded`, read them all on the main thread, before the form — every claim opened at its
+`path:line`, as that prompt asks. When it will propose `feature`, dispatch the research before
+the form with `run_in_background: true`, and read none of them yourself, a small
+repository included: the route, not the size of the codebase, decides who reads. Use the
+built-in `Explore` agent type where the host offers it (observed in Claude Code 2.1.283),
+else `general-purpose` told to stay read-only. When bounded work ratchets to the feature
+route, dispatch the research then, before the next round's form; what the main thread
+already read is evidence the notes may cite. The dispatch prompt, its model and effort, and
+the note shape are in `references/sources.md`. On the feature route each finding is a cited
+note in `temp/<feature>/research/`; on the bounded route the findings feed the in-chat design. A
 finding that contradicts what the user said becomes a question in the next round. Design
 frames are read on the main thread, through the design tool's read tools.
 
