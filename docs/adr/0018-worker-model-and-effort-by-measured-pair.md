@@ -1,6 +1,6 @@
 # 0018. A worker's model and effort change only with a measured pair
 
-Status: Proposed 2026-10-16. Amends 0013.
+Status: Accepted. Amends 0013.
 
 ## Context
 

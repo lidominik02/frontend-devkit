@@ -1,6 +1,8 @@
 # 0013. No hooks, no facts service, feature files without a protocol
 
-Status: Accepted
+Status: Accepted. Amended 2026-10-17: the reviewer, the research and the `mechanical`
+implementer run on the measured model and effort their role names, not the session's
+(ADR 0018).
 
 ## Context
 
