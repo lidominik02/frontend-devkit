@@ -3,6 +3,29 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.4.0 - 2026-10-17
+
+### Added
+
+- The installation guide now explains how to override the workers' model and effort with
+  your own settings, and the order Claude Code resolves them in.
+
+### Changed
+
+- Reviewers run on Sonnet at low effort, which costs about 32% less per run. Each worker's
+  model and effort now sit on one line of its dispatch template, along with the measurement
+  that justifies them. A cheaper model is used only where it matched your session's model
+  on every eval criterion; anything not measured runs on your session's model.
+- The implementer runs on Sonnet only for a `mechanical` task. A `judgment` task, the third
+  fix round, and a fix that touches a `judgment` task stay on your session's model.
+- Code research runs on Sonnet with no effort set, in `clarifying-features` and in
+  `designing-architecture`'s outside research. `describing-changes` runs at low effort.
+- `clarifying-features` scales the code research to the size of the work. For bounded work,
+  the main session reads the code itself before the first form. For a feature, the research
+  runs in the background, even in a small repository. When bounded work grows into a
+  feature, the research is dispatched before the next form.
+- A dispatch that names an effort needs Claude Code 2.1.292 or later.
+
 ## 0.3.0 - 2026-10-14
 
 ### Changed
