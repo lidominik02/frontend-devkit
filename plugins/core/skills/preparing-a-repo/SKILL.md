@@ -83,6 +83,14 @@ stack?** If yes it is costing context and buying nothing. What earns its place:
 - Things configured but dead, which an agent will helpfully extend.
 - Build-time versus runtime configuration, and which env vars reach the browser.
 
+A fact the project already maintains in a file — the package manager, the base branch, the
+commit convention with its allowed scopes — is not copied into CLAUDE.md: name the file that
+holds it, and propose removing a copy CLAUDE.md already carries. That holds inside another
+line too: a command names the script and its workspace, not the package manager that runs
+it, and a rule a config file sets is not restated, its values included — the line points at
+that file. A copy is a second source, and the first to go stale. A convention no file
+holds, seen only in the commit history, belongs in CLAUDE.md, with the inference shown.
+
 Keep it short. Path-specific conventions belong in `.claude/rules/*.md` with a `paths:` glob.
 
 ## Step 6 — Permissions
@@ -135,7 +143,9 @@ improvise. Report dangling references and orphaned docs as findings.
 1. <gap> — why it costs an agent something concrete, and the fix
 
 ### Proposed changes
-<file-by-file, with the exact content>
+<file-by-file, with the exact content. An existing CLAUDE.md: only the lines to add, change
+or remove, each with its place in the file. No CLAUDE.md yet: the whole proposed file.
+Step 5 binds the CLAUDE.md in both.>
 
 ### Not proposed, and why
 ```

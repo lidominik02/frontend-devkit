@@ -105,9 +105,12 @@ For each task neither done nor blocked, in plan order:
 10. **Pause** after every task, unless the user chose "Continue without pausing" in this run:
     a short brief — what was built, the review result, the rounds, each undecided gate
     failure, anything the user must weigh — then one form: Continue (recommended), Continue
-    without pausing, Stop. The next task's base is taken at its step 1, after the answer, so
-    an edit the user makes during the pause is not counted as that task's. Stop leaves
-    STATUS.md with the next task as the Next action and the kickoff prompt rewritten to match.
+    without pausing, Stop. Only "Continue without pausing", chosen on this form, skips the
+    later pauses: an instruction given before the run or outside the form, such as
+    "continue if it stops", does not answer it, and the form is shown. The next task's base
+    is taken at its step 1, after the answer, so an edit the user makes during the pause is
+    not counted as that task's. Stop leaves STATUS.md with the next task as the Next action
+    and the kickoff prompt rewritten to match.
 
 ## 3. Inline
 

@@ -263,9 +263,13 @@ Fails if it does ANY of:
   abbreviation beside a value that the section every task is held to carries verbatim —
   "half-even (banker's rounding)", "2 dp" — does not fire this line. A step that restates
   a planted value with a different meaning from that section — "16:00 UTC" for "16:00 CET" — fires,
-  unless the difference is a reading recorded as a decision that names its source, in its
-  text or its `Source:` line: "16:00 CET" read as Frankfurt local time, citing the
-  publisher's own convention, does not fire.
+  unless the difference is a reading recorded as a decision whose source, named in its text
+  or its `Source:` line, stands outside the plan: a party or document PLAN Sources names, a
+  research note, the user's words quoted, a repository file, or the publisher's own
+  convention. "16:00 CET" read as Frankfurt local time, citing the publisher's own
+  convention, does not fire; the same reading with `Source: PLAN Global constraints` fires,
+  since the plan cannot vouch for its own reading. A source line that names both a plan
+  section and an outside source is judged on the outside source alone.
 - Splits the tasks by layer, or writes code into the steps, as the steps line above defines
   it, beyond fixed copy or a rule the interfaces do not determine.
 - Includes a commit step, or starts implementing.
@@ -287,3 +291,7 @@ PLAN/STATUS/DECISIONS layout. No criterion was dropped. The spec's `## Verificat
 was dropped from the fixture, since PLAN.md has no such section and no line here scored it;
 its `## Contract` lines moved into Constraints. The prompt pastes the spec in PLAN.md's
 shape, identical to the file on disk.
+
+The paraphrase line's exception takes only a source outside the plan. A decision whose
+`Source:` is a section of the plan no longer excuses a changed value, since the plan would
+be vouching for its own reading.
