@@ -3,6 +3,18 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.4.1 - 2026-10-18
+
+### Fixed
+
+- `preparing-a-repo` no longer copies into `CLAUDE.md` a fact a project file already keeps,
+  such as the package manager or the allowed commit scopes. It names that file instead, and
+  proposes removing a copy `CLAUDE.md` already carries. For an existing `CLAUDE.md` it
+  proposes only the lines to add, change or remove.
+- `executing-plans` shows the pause form after each task even when you said "continue if it
+  stops" before the run. Only choosing "Continue without pausing" on the form skips the
+  later pauses.
+
 ## 0.4.0 - 2026-10-17
 
 ### Added
