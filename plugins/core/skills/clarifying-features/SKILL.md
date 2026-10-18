@@ -128,8 +128,9 @@ No PLAN.md.
    - Every answer becomes a DECISIONS.md entry the same turn; one that replaces an earlier
      entry marks it `superseded by D<m>` in place. Every assumption goes into the spec
      sections tagged ASSUMED, and each section is updated as it settles.
-   - Probe every business rule for its rationale; a rule with no rationale stays ASSUMED.
-     A reason a source gives for a control as a whole is the reason of each rule that
+   - Probe every business rule for its rationale. A rule the user or a source states is
+     SAID, and with no reason given its rationale reads `unknown — ask <owner>`; only a
+     rule you inferred is ASSUMED. A reason a source gives for a control as a whole is the reason of each rule that
      implements it: quote it, word for word, on each such rule — a pointer to it is not the
      reason. A reason no source and no answer gave is your own: never tag it SAID.
    - Cross-check what the user states against the code and the research ("the list already
@@ -164,7 +165,8 @@ No PLAN.md.
    is listed with what it blocks; and the self-check "an implementer could build this
    without asking" passes for every spec section (`references/question-rounds.md`). Then one
    form asks the user to confirm: Plan it (recommended), Change something, Stop here. The
-   form names each question that blocks a task. Change something returns to the rounds;
+   form names each question that blocks a task, and lists apart the rules you inferred
+   (ASSUMED) and the stated rules whose reason is unknown, each with whom to ask. Change something returns to the rounds;
    Stop here leaves STATUS.md with the confirmation as the next action.
 7. **Write PLAN.md's spec sections in full** in the artifact contract's shape, every section
    present — "none" where empty. STATUS.md's Next action: write the plan. Then call the Skill

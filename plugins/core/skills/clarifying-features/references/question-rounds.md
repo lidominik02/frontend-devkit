@@ -60,7 +60,7 @@ Constraints as "<item>: not applicable".
 | --- | --- | --- |
 | Scope | Whether a named case is in or out, the edge stated | What the sources state; else the smallest scope that meets the outcome, the rest proposed as Deferred with its trigger |
 | Behaviour | A concrete scenario with its input: "When the user does X with Y, what happens?" | Repository precedent: how the closest existing feature behaves, cited by path |
-| Rule rationale | "Why must X be Y — what goes wrong otherwise?" | The reason the source implies. With none: "Unknown — ask <owner>", and the rule stays ASSUMED |
+| Rule rationale | "Why must X be Y — what goes wrong otherwise?" | The reason the source implies. With none: `unknown — ask <owner>`; a stated rule stays SAID, and only an inferred one is ASSUMED |
 | State | One state of one screen: loading, empty, error, permission, success | The repository's own convention for that state, cited by path |
 | Conflict | Both sources quoted, each with its location | The authority order below |
 | Gap | What no source covers: a missing state, a validation limit, an edge case | Repository precedent; else a reasonable-user default, said to be one |
@@ -84,8 +84,10 @@ carries it tagged ASSUMED, with what would check it.
 
 Every business rule gets its reason asked: what goes wrong without it, who asked for it,
 whether it also covers the neighbouring case. The reason settles the edges the rule does not
-name. It sits beside the rule in Business rules; a rule still without one is tagged ASSUMED
-and listed at the exit gate.
+name. It sits beside the rule in Business rules. A rule still without one keeps its
+provenance — SAID when the user or a source stated it, ASSUMED only when you inferred it —
+and its rationale reads `unknown — ask <owner>`. The exit gate lists the two apart: the
+inferred rules, and the stated rules whose reason is unknown with whom to ask.
 
 ## The extras block
 
@@ -109,7 +111,8 @@ task that touches it without asking anything:
 - **Success criteria** are each numbered `SC<n>` and tagged, and every ASSUMED one was
   shown to the user.
 - **User flow** has every step, including cancel and the way back.
-- **Business rules** each carry a rationale, or are tagged ASSUMED.
+- **Business rules** each carry a rationale, or `unknown — ask <owner>`; only an inferred
+  rule is tagged ASSUMED.
 - **States** settle transitions, errors and permissions — loading and empty only for UI
   work — or say "not applicable" and why.
 - **Design** names type, location and coverage, each gap settled or held by an open question.
