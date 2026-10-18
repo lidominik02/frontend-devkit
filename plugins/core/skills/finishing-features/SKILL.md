@@ -35,7 +35,10 @@ One line per source — done, or open with what is open — in the chat, and aga
 - **Tasks.** Every row of STATUS.md's Tasks table is `done` or `blocked`.
 - **Review.** The open findings, as `../planning-features/references/artifacts.md` defines
   them, are open. No report at all is open: the review has not seen the work.
-- **QA.** qa/REPORT.md with no findings, or the user's skip, asked in section 3.
+- **QA.** A current qa/REPORT.md with no findings, or the user's skip, asked in section 3.
+  A report is current unless, after its `QA report` line in STATUS.md's Log, a line records
+  a task done, a fix or a sync, or the branch's last commit (`git log -1 --format=%cs`) is
+  dated after that line; its own line never makes it stale. Gate results are not read here.
 - **Open questions.** DECISIONS.md's OQ lines without `answered:` whose `blocks:` is not
   `nothing` are open; the rest are listed as a reminder.
 - **Contract gaps.** Every CONTRACT-GAPS.md line, as a reminder only.
@@ -69,7 +72,8 @@ a skipped QA, each NOT RUN gate — so that Done accepts those gaps by name.
   `fix-findings` mode; a bug the user found, or a QA finding, to `core:fixing-bugs`.
 - **Want something more** — `core:clarifying-features` in `gap` mode for the feature.
 
-Without a current QA report, the same form asks a second question: run the QA list first
+Without a current QA report — none, or a stale one, named with the line that made it
+stale — the same form asks a second question: run the QA list first
 (`core:testing-changes`), or skip it. A route other than Done writes nothing and ends this
 run.
 
