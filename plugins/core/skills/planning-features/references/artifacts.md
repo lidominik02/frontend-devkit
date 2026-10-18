@@ -141,8 +141,3 @@ closes. DECISIONS.md and
 CONTRACT-GAPS.md never move or delete an entry, and a new id follows the highest one. A
 research note keeps its shape: `Date`, `Answer:` in at most five lines, `Evidence`,
 `Unsettled`.
-
-A feature written under the six-file layout is carried over by hand once: paste SPEC.md into
-PLAN.md's spec sections and PLAN.md's tasks after them, OPEN-QUESTIONS.md above
-DECISIONS.md's entries, HANDOFF.md and PROGRESS.md's task table into STATUS.md, and move
-the old `archive/` folder's entries back into their files; the old files stay as the user's archive.

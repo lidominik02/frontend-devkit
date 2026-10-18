@@ -40,8 +40,7 @@ line in `planning-features/references/project.md`, not a script. (ADR 0013)
 
 **A feature's state lives in files, without a protocol.** `PLAN.md` says what and why;
 `STATUS.md` says where it stands; `DECISIONS.md` and `CONTRACT-GAPS.md` are append-only lists
-read by id. No entry catalogue, no archive protocol, no moves, no format-compatibility layer:
-an older feature is carried over by hand, as the artifact contract says in one sentence.
+read by id. No entry catalogue, no archive protocol, no moves, no format-compatibility layer.
 (ADR 0013)
 
 **Components live in `skills/`, never `commands/`.** A skill already carries the slash

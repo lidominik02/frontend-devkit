@@ -118,9 +118,6 @@ Report where the feature stands, then wait — unless the request carries more t
    "core:clarifying-features" in `gap` mode; a plan request the spec carries runs `plan`
    here; a request to implement calls the Skill tool with "core:executing-plans".
 
-A feature still in the six-file layout (planning/SPEC.md, HANDOFF.md) is carried over by
-hand as the end of `references/artifacts.md` says; tell the user so, and stop.
-
 ## Mode: `checkpoint`
 
 For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slug>.md`:
@@ -134,12 +131,6 @@ For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slu
 ## Kickoff prompt  Continue <slug>. Read first: temp/handoffs/<slug>.md, then <files>.
                    Next action: <the next action>. Rules: <the rules that govern>.
 ```
-
-## Modes that moved
-
-- `new` or `research`: reply "Clarification and research are in core:clarifying-features
-  now." and stop.
-- `implement`: reply "Implementation is in core:executing-plans now." and stop.
 
 ## What this must NOT do
 
