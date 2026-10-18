@@ -5,7 +5,7 @@
 - Every question goes through AskUserQuestion. One call takes one to four questions of two
   to four options each and adds a free-text "Other" answer itself (observed in Claude Code
   2.1.283).
-- Ask the whole frontier each round. More than four open questions become consecutive
+- Ask what the triage below puts on a form, each round. More than four become consecutive
   forms, grouped by topic.
 - The recommended option comes first, its label ending in "(recommended)". Every option's
   description states its consequence: what gets built, what it costs, what it rules out. A
@@ -23,6 +23,36 @@ does an empty list show?" Options: "The shared empty-state component with a crea
 (recommended)" — matches the closest existing list, no new component. "A single line of
 text" — less to build, unlike every other list. "Ask the designer" — an `OQ<n>` line with
 owner `designer`; the list task waits.
+
+## Triage
+
+A frontier item goes on a form when a task or another decision is built on it, when it is
+expensive to reverse later — data, a public interface, a migration —, when it is a source
+conflict or a business rule's reason, or when only a third party can decide it (an `OQ<n>`
+line). Every other item takes a default — the repository's precedent, else a
+reasonable-user default, said to be one — tagged ASSUMED in the spec sections. A fact, a
+rule's reason and a conflict are never a default. There is no cap on the questions: what
+carries weight is asked, however many there are.
+
+**The veto form**, before the exit gate: one AskUserQuestion call, `multiSelect: true`,
+listing each default as an option — its label the default, its description what it decides
+and the precedent it follows — at most four options a question, more defaults in further
+questions of the same call or a following one, grouped by topic. A checked default returns
+to the frontier as a question; an unchecked one stays ASSUMED.
+
+## Non-functional requirements
+
+Once the must-haves are settled and before the extras, one AskUserQuestion call with one
+`multiSelect: true` question per group, each option one item:
+
+- **Load and data** — performance and data volume; concurrency.
+- **Access** — permissions and security.
+- **Users**, only for UI work — accessibility; internationalisation.
+- **Operations** — logging and observability; migration and compatibility; rollout; error
+  policy.
+
+A checked item gets its own question in the next round. Every unchecked item is written in
+Constraints as "<item>: not applicable".
 
 ## Question kinds
 
@@ -74,6 +104,8 @@ task that touches it without asking anything:
 - **Outcome** states what the user can do, and why it matters.
 - **Sources** gives every source a location and who can confirm it, or says "none".
 - **Constraints** names each limit, or says "none".
+- **Non-functional requirements**: each item of the four groups is settled in Constraints,
+  or written there as "not applicable".
 - **Success criteria** are each numbered `SC<n>` and tagged, and every ASSUMED one was
   shown to the user.
 - **User flow** has every step, including cancel and the way back.

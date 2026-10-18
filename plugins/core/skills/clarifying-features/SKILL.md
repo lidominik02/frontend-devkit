@@ -51,8 +51,10 @@ packs, the gates and the base branch come from there.
 ## Round 1 — classification and sources
 
 Round 1 settles what the work is and what it is built from. The round-1 form's question
-states the classification, each part with its reason, and asks to confirm it; a part
-without its reason, or a classification only in your reasoning, has not been said:
+first mirrors the intent in at most about 150 words — the outcome, who it is for, the
+problem, what it is not, how success is measured, each guess tagged ASSUMED — then states
+the classification, each part with its reason, and asks to confirm both; a part without
+its reason, or a classification only in your reasoning, has not been said:
 
 - **Size.** `bounded`: one surface, a few files, no new API need, no open product question,
   and small enough that one in-chat design covers it — a validation rule, a copy or state
@@ -118,9 +120,11 @@ No PLAN.md.
    gitignored.
 2. **Rounds**, until the frontier is empty. `references/question-rounds.md` holds the form
    rules, the question kinds and the probes.
-   - The frontier is every open decision whose prerequisites are settled. Ask the whole
-     frontier each round, as consecutive forms of at most four questions. Chat stays short;
-     long material goes to files.
+   - The frontier is every open decision whose prerequisites are settled. Triage it each
+     round by the rule in `references/question-rounds.md`: what carries weight goes on
+     forms of at most four questions; the rest takes a default, tagged ASSUMED. A fact, a
+     rule's reason and a source conflict are never a default. No cap on the questions. Chat
+     stays short; long material goes to files.
    - Every answer becomes a DECISIONS.md entry the same turn; one that replaces an earlier
      entry marks it `superseded by D<m>` in place. Every assumption goes into the spec
      sections tagged ASSUMED, and each section is updated as it settles.
@@ -145,17 +149,24 @@ No PLAN.md.
    - A visual question words cannot settle: offer a look at the frame through the design
      tool's read tools, or a throwaway prototype once the user releases it.
    - A contract gap becomes a CONTRACT-GAPS.md entry as it surfaces.
-3. **Extras**, once the must-haves are settled: what goes beyond every source, proposed in a
+3. **Non-functional requirements**, once the must-haves are settled: one form of four
+   multi-select groups (`references/question-rounds.md`), the users group only for UI work.
+   Only a checked item gets a question; each unchecked one is "not applicable" in
+   Constraints.
+4. **Extras**: what goes beyond every source, proposed in a
    separate block. An accepted one becomes a DECISIONS.md entry and an EXTRA-tagged success
    criterion; one the client would see also gets an `OQ<n>` line for approval, owner
    `client` or `product owner`.
-4. **Exit gate.** The frontier is empty; no open question blocks a task, or each blocking one
+5. **Veto.** One multi-select form lists every default the triage took, at most four
+   options a question; a checked one returns to the frontier, an unchecked one stays
+   ASSUMED.
+6. **Exit gate.** The frontier is empty; no open question blocks a task, or each blocking one
    is listed with what it blocks; and the self-check "an implementer could build this
    without asking" passes for every spec section (`references/question-rounds.md`). Then one
    form asks the user to confirm: Plan it (recommended), Change something, Stop here. The
    form names each question that blocks a task. Change something returns to the rounds;
    Stop here leaves STATUS.md with the confirmation as the next action.
-5. **Write PLAN.md's spec sections in full** in the artifact contract's shape, every section
+7. **Write PLAN.md's spec sections in full** in the artifact contract's shape, every section
    present — "none" where empty. STATUS.md's Next action: write the plan. Then call the Skill
    tool with "core:planning-features" in `plan` mode for the feature, in this session.
 
