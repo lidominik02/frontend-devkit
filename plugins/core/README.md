@@ -20,8 +20,8 @@ run only when someone types them.
 | `reviewing-changes` | listed | Reviews the branch's committed, uncommitted and untracked changes against the spec and the repository's rules, with one two-axis reviewer and a verification pass | formats |
 | `testing-changes` | listed | Builds a QA list from acceptance criteria for approval, then runs it | design-intent, qa-test-list, storybook-check |
 | `finishing-features` | listed | Closes out a feature: the commit, the MR text, the open items, archiving | — |
-| `investigating-bugs` | listed | Diagnoses a bug to its root cause and owning layer without changing code | — |
-| `fixing-bugs` | listed | Fixes a frontend bug and proves it with a regression test: red, green, red with the fix reverted | loop |
+| `investigating-bugs` | listed | Diagnoses a bug to its root cause, its owning layer and whether this repository owns that code, without changing code | — |
+| `fixing-bugs` | listed | Fixes a bug in this repository's own code, in any layer, and proves it with a regression test: red, green, red with the fix reverted | loop |
 | `syncing-branches` | listed | Rebases the user's branch onto main or across stacked branches behind a backup ref, keeping both sides' intent | conflicts, stacks |
 | `describing-changes` | listed | Writes a commit message or merge request description in the repository's own convention | shaping-commits |
 | `verifying-ui` | listed, as a trial | Verifies a UI change in a real browser through a browser MCP server, after an explicit release ([ADR 0008](../../docs/adr/0008-verifying-ui-model-invocable-trial.md)) | browser-tools, runtime-checks |

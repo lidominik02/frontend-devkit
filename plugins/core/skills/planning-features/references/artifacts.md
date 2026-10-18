@@ -29,8 +29,8 @@ Every section is present, in this order, "none" where empty:
 # Plan: <feature-slug>
 
 ## Outcome · ## Sources · ## Constraints
-## Success criteria        one per line, tagged SAID | ASSUMED | EXTRA
-## User flow · ## Business rules (each with its rationale) · ## States (loading, empty, error, permission)
+## Success criteria        one per line: SC<n> · <criterion> — SAID | ASSUMED | EXTRA
+## User flow · ## Business rules (each with its rationale) · ## States (transitions, errors, permissions; loading and empty only for UI work)
 ## Design                  type, location, coverage | not applicable
 ## Global constraints      exact values, copied into every task that uses them
 ## Review focus            failure modes no acceptance criterion covers, each → task name
@@ -41,7 +41,7 @@ Every section is present, in this order, "none" where empty:
 Files: create <path> · modify <path>
 Interfaces: consumes <exact names> · produces <exact names>
 Design: <screens and states, or none>
-Acceptance criteria: - <observable, from a success criterion>
+Acceptance criteria: - SC<n>: <observable, from that success criterion>
 Steps: 1. <what to decide or produce, and where>
 Done when: <each fast gate's command, with its workspace when there are several, or "no gates declared"> pass, and <the observation that proves the criteria>
 Blocked by: <task names | OQ<n> | none>
@@ -60,7 +60,7 @@ default under Rejected (`rules-block.md`).
 # Decisions: <feature-slug>
 
 ## Open questions
-- OQ<n> · <question> · owner: user | product owner | designer | backend | client · blocks: <task> | nothing
+- OQ<n> · <question> · owner: <who> · blocks: <task> | nothing
   (answered: D<n> is appended to the line when a decision settles it; the line stays)
 
 ## Decisions
@@ -73,7 +73,8 @@ default under Rejected (`rules-block.md`).
 
 ## CONTRACT-GAPS.md
 
-Only when the feature involves the API — anything the frontend cannot deliver alone;
+Only when the feature involves an external contract — anything this repository cannot
+deliver alone;
 append-only. A report for the user, who decides who receives it and in what form.
 ```
 # Contract gaps: <feature-slug>
@@ -90,6 +91,7 @@ append-only. A report for the user, who decides who receives it and in what form
 Stage: clarify | plan (awaiting approval) | execute (task N/M, <mode>) | review | user reads code + findings | fix findings | QA list (awaiting approval) | testing | user's check | finish — owner: <skill or the user>
 Rules: the default rules block | the user's own: <verbatim>
 Mode: subagent per task | inline | not chosen
+Delivery: <verified | accepted with known gaps | blocked> · confidence <high | partial | low> — <the SCs without run evidence>   (finishing-features writes it)
 
 ## Tasks
 | Task | Status | Gates | Review |
@@ -101,6 +103,9 @@ baseline: <gate line>; <gate line>
 latest: <gate line>; <gate line>
 pre-execution tree: <id> · end-of-run tree: <id>
 by hand: <what>
+
+## Evidence
+- SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)
 
 ## Closed findings
 - <report path> <id> — deferred | kept as designed (<reason>) | not ours (<owner>)
@@ -123,7 +128,14 @@ A gate line is `<workspace> · <command> · <source> · <result>`, as `## Gates`
 `project.md` reports it; the Tasks table's Gates cell and `Verified`'s `baseline:` and
 `latest:` join several with `; `. The Log is append-only, one free line per event, with no
 fixed shape. The Tasks table is the
-only place a task is Done. An open finding is a CONFIRMED or PLAUSIBLE one of the latest
+only place a task is Done. An Evidence line is
+`SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`, one piece of
+evidence for one success criterion; a criterion may carry several. Two skills write it:
+`executing-plans` when a task closes, for each `SC<n>` its acceptance criteria name — the
+task's gate lines and `task: <name>`; `testing-changes` after its report, for the `SC<n>`
+each `TC<n>` names — `QA: TC<n> observed | not observed | skipped | finding`. A later line
+adds, never replaces: no writer edits or deletes a line another wrote. `finishing-features`
+only reads it. An open finding is a CONFIRMED or PLAUSIBLE one of the latest
 review, or a NOT ADDRESSED or new one of a re-review after it, that no Closed findings line
 closes. DECISIONS.md and
 CONTRACT-GAPS.md never move or delete an entry, and a new id follows the highest one. A

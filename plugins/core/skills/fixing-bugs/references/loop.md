@@ -1,53 +1,54 @@
 # The fix loop: lookup
 ## Running one test file
 
-Only the repro's own file runs. Find the runner in `package.json` — `vitest` or `jest` among
-the dependencies, or the command behind its `test` script — in the workspace package that
-holds the test file, and run from that package's directory. Call the runner through the
-package manager `../../planning-features/references/project.md` reads, never through the
-`test` script: a script can add watch mode, coverage or other projects.
-
-| Package manager | Vitest | Jest |
-| --- | --- | --- |
-| npm | `npx vitest run <file>` | `npx jest --runTestsByPath <file>` |
-| pnpm | `pnpm exec vitest run <file>` | `pnpm exec jest --runTestsByPath <file>` |
-| yarn | `yarn vitest run <file>` | `yarn jest --runTestsByPath <file>` |
-| bun | `bunx vitest run <file>` | `bunx jest --runTestsByPath <file>` |
+Only the repro's own file runs. The runner is the test command the project declares for
+the workspace that holds the test file — `## Gates` and `## Held checks` in
+`../../planning-features/references/project.md` find it and its source — narrowed to the
+runner's own documented single-file form and run from that workspace's directory. Call the
+runner the declaration names directly — where it is a package.json script, through the
+package manager's exec — never through the script or target itself: one can add watch
+mode, coverage or other suites. With no declared test command there is no runner: the
+repro is `NOT RUN (no declared test command)`, and section 5 of `SKILL.md` governs.
 
 `<file>` is the path from the directory the command runs in.
-- **Vitest** reads the argument as a filter, not an exact path: `cart.test.ts` also runs
-  `mini-cart.test.ts` (read in Vitest 4.1.11): pass the whole relative path. Without `run`
-  it watches; with several Vitest projects, `--project <name>` keeps the file to one.
-- **Jest** reads a bare argument as a path regex; `--runTestsByPath` takes the exact path
-  (read in `jest-config` and `@jest/core` 25.5.4). Never `--watch`.
-- **Check each run's summary.** Vitest's `Test Files` line and Jest's `Test Suites:` line
-  count exactly one file (labels read in Vitest 4.1.11 and `@jest/reporters` 25.5.1). A
-  count above one means the run widened: correct the command, and never repeat it.
+- **Exact path.** Some runners read a file argument as a filter or a pattern, so a short
+  name also matches its neighbours: pass the whole relative path, or the runner's
+  exact-path option where it has one. Never a watch mode.
+- **Check each run's summary.** It must show one file ran: the runner's own count of files
+  or suites where it prints one, otherwise a command naming exactly one file and a result
+  listing only that file's tests. A wider run means the command widened: correct it, and
+  never repeat it.
 - A red run counts only on the test's assertion; failing to import, compile or mock is the
-  test's own defect. **Another runner**: its documented single-file form, the same check.
+  test's own defect.
 
 ## Skipping a repro that stays red
 
-Only the repro test is skipped, never its neighbours or its `describe`: `it` → `it.skip`,
-`test` → `test.skip` (Jest also `xit`, `xtest`). The one-line comment sits above it:
+Only the repro test is skipped, never its neighbours or its group, by the runner's own skip
+form — a `.skip` call, a skip option, a skip marker. The one-line comment sits above it:
 ```ts
 // Fails until the pricing API returns a VAT rate for every country it lists.
 it.skip('adds VAT to the cart total for every listed country', () => {
 ```
+```python
+# Fails until the pricing API returns a VAT rate for every country it lists.
+@pytest.mark.skip(reason="the pricing API omits VAT rates")
+def test_vat_for_every_listed_country():
+```
 
-Run the file alone once more: Vitest's `Tests` and Jest's `Tests:` line count it skipped,
-not failed (read in `@vitest/runner` 4.1.11, `jest-circus` 29.7.0, `@jest/reporters` 25.5.1).
+Run the file alone once more: the runner's summary counts it skipped, not failed.
 
 ## Repro by kind of bug
 
 Match the repository's existing tests — location, naming, helpers, way of mocking.
 | Kind of bug | Repro |
 | --- | --- |
-| A wrong value from logic | Call the function with the input from the report; assert the expected output |
+| A wrong value from a function or module | Call it with the input from the report; assert the expected output |
+| A request an HTTP handler or a server route gets wrong | Drive the handler with the request from the report — in process, or through a server the test starts on a free port — and assert on the status and the body |
+| A CLI or a script | Run it as a child process with the report's arguments and input, against a temporary directory; assert on the exit code, the output and the files it writes |
 | Rendering or state in a component | Mount it with the library the repository's tests use, drive the reported interaction, assert on what the user would see |
 | A value that goes stale | Mount, change the source, wait on a condition (never a fixed sleep), assert |
 | Timing: a debounce, a timeout, a retry | Fake timers, advanced by exactly the interval that matters |
-| A response the frontend mishandles | Mock at the network boundary as the repository's tests do, with the payload from the report; a captured real payload beats an invented one |
+| A response from another service, mishandled here | Mock at the network boundary as the repository's tests do, with the payload from the report; a captured real payload beats an invented one |
 | A route or a navigation guard | A router in memory mode; navigate; assert where it lands |
 | A store | A fresh store per test, and the action sequence from the report |
 | Intermittent | Repeat the case in a loop inside the test and control randomness and time until it fails every run |
@@ -56,8 +57,9 @@ Match the repository's existing tests — location, naming, helpers, way of mock
 ## A correct seam
 
 A test at a correct seam drives the code through what its callers use — a function's
-arguments and result, a component's props, events and rendered output, a store's actions and
-state — and mocks only what lies outside the frontend: the network, time, randomness. A test
+arguments and result, a handler's request and response, a command's arguments and output, a
+component's props, events and rendered output, a store's actions and state — and mocks only
+what lies outside this repository's code: the network, time, randomness. A test
 that has to mock the module under test, reach into private state, or assert how rather than
 what, passes and fails with the implementation instead of the behaviour, so it proves
 nothing about the bug. When no correct seam reaches the bug, that is the finding: the fix
@@ -84,19 +86,20 @@ state is read with `snapshot.mjs` as the set-up runs it, and git never takes a f
 Written so the owner can act without asking back; credentials are named, never pasted.
 ```
 ## Owner report: <one line>
-Owner: backend | identity/auth | the API contract — the repository or team, when known
+Owner: <who> — the repository, team or service, when known
 Symptom: what the user sees, and the steps that show it
 Evidence: the request and the response, or the claim, as observed, with where each was
   seen; `path:line` in the owner's code when it was readable
 Root cause: what is wrong on the owner's side, and why it produces the symptom
 Change needed: the endpoint, field, claim or rule, and the change
-Frontend meanwhile: nothing | the guard the user approved, what it does and what it costs
+Meanwhile here: nothing | the guard the user approved, what it does and what it costs
 Verify: the observation that shows the owner's fix works
 ```
 
 ## FIX.md
 
-Owner report appears only when the cause is not the frontend's.
+Owner report appears only when the cause is in consumed code, or the user chose "Owner
+report instead".
 ```
 # Fix: <one-line summary>
 Status: fixed | fixed, no regression test | owner report | sent back for diagnosis
@@ -116,7 +119,7 @@ Baseline gates: <gate line>; … — a FAIL with the errors it names
 - Red with the fix reverted: <command> — <the failing assertion> · <summary line>
 - Green restored: <command> · <summary line> · tree <F> equals <F again>
 <or, for the evident-cause entry> the red before and green after lines only
-<or> none — no test runner | none — no correct seam: <why>
+<or> NOT RUN (no declared test command) | none — no correct seam: <why>
 ## Gates         <gate line>; … — a FAIL with each error, the fix's or pre-existing
 ## Owner report  <the owner report>
 ```

@@ -41,3 +41,28 @@ reason to reach for `act` or to keep those rules true by hand.
 such as `mcpServer` for `mcpServers` — Claude Code ignores unknown fields at load time, so
 without it the component silently never loads. Every manifest carries `version`, so it is
 expected to exit clean here; CI fails a target on any finding or a non-zero exit.
+
+## Named remainders
+
+`core` is domain-neutral ([ADR 0014](../adr/0014-core-is-domain-neutral.md)), and no check
+enforces that. A review reads it with one grep:
+
+```
+grep -rniE 'frontend|vue|nuxt|vitest|jest|npm|storybook|figma|browser' plugins/core docs
+```
+
+Every hit is either replaced or one of the remainders below, each kept for a stated reason
+until the trigger that ends it. A hit that fits none of them is a finding.
+
+| Remainder | Where | Why it stays | Ends when |
+| --- | --- | --- | --- |
+| K1: the held-check guardrail naming Storybook and a browser | the "must NOT" and rules lines of `clarifying-features`, `planning-features`, `executing-plans`, `reviewing-changes`, `finishing-features`, `syncing-branches`, `fixing-bugs`, `rules-block.md`, the `implementer` and `reviewer` agents | The web checks still live in `core`, and a guardrail must name what it holds back | Web verification and UI QA leave `core` ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| Web verification and UI QA | `verifying-ui` and its references; `testing-changes`, `qa-test-list.md`, `design-intent.md`, `storybook-check.md`; the routing lines to `verifying-ui` in `reviewing-changes` and `testing-changes`; `preparing-a-repo`'s browser question; `docs/browser-verification.md` and its row in `docs/README.md`; the browser paragraph of `docs/architecture.md`; the `core` README rows | They are UI capabilities that ship in `core` today | They move to the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| Framework routing | `project.md` `## Framework packs`; `preparing-a-repo`'s Vue type-check question | The framework packs are chosen from `package.json` until a workspace chooses its rules | A workspace chooses its framework rules ([ADR 0016](../adr/0016-framework-rules-chosen-per-workspace.md)) |
+| UI repro rows | `fixing-bugs` `loop.md` "Repro by kind of bug" (component, store, route, layout rows) and section 5's "layout, focus, hydration, a real browser API" | Domain-neutral rows lead; the UI rows serve the UI repositories `core` still serves | The web knowledge leaves `core` ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| JavaScript lockfile facts | `project.md` `## Package manager`; `syncing-branches` `conflicts.md` lockfile table; `preparing-a-repo`'s and `docs/installation.md`'s lockfile deny list | Facts about files that exist only in a JavaScript workspace, read only when present | The first non-JavaScript lockfile case ([ADR 0014](../adr/0014-core-is-domain-neutral.md), its named remainder on headerless lockfiles) |
+| User and report vocabulary | `investigating-bugs`: the description's "is this a frontend or backend bug", and "browser, native build" among where a report appears | It is the user's wording and a report's environment, not a claim about the repository | The listing is measured again with the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| The framework packs and the marketplace name | `vue`, `nuxt` and `frontend-devkit` in `docs/architecture.md`, `docs/installation.md`, `docs/README.md`, the manifests and the evals README | The packs exist and the marketplace keeps its name | `vue` and `nuxt` become the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)); the name, by a rename decision |
+| Observed tool and server names | `docs/contributing/authoring.md`, `design-intent.md`, `browser-tools.md`: `figma`, `chrome-devtools`, browser MCP observations | Each records a behaviour observed against a named server and CLI version | The component that cites it moves or is removed |
+| Decision records | `docs/adr/` | A record states the context it was decided in, and an accepted record is not rewritten | Never: a later record amends it |
+| Eval fixtures | `plugins/*/evals/` | Fixture content is a test's input, not shipped behaviour | The case is retired |

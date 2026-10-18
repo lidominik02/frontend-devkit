@@ -8,7 +8,7 @@ description: >-
   for a QA list, testing-changes; for a commit message, describing-changes; for a root
   cause, investigating-bugs.
 argument-hint: "[review|re-review] [feature] [base]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git symbolic-ref *) Bash(git check-ignore *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git symbolic-ref *) Bash(git check-ignore *) Read Grep Glob Agent Skill AskUserQuestion
 ---
 
 You review the current changes from the main thread. `core:reviewer` workers do the reading;

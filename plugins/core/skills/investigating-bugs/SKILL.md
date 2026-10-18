@@ -1,8 +1,8 @@
 ---
 name: investigating-bugs
 description: >-
-  Diagnoses a reported bug to its root cause and the layer that owns it — frontend,
-  backend or identity/auth — without changing any code. Use whenever the user says
+  Diagnoses a reported bug to its root cause, the layer that owns it, and whether this
+  repository owns that code, without changing any code. Use whenever the user says
   "investigate this bug", "find the root cause", "why is X broken", "why does it show X", "is this a frontend
   or backend bug", "debug this", "diagnose this", or pastes a bug report, stack trace or
   QA findings. Diagnosis only; for "fix this bug" use fixing-bugs; for "why does it look
@@ -35,12 +35,12 @@ usually finds a real but unrelated bug.
 
 ## Step 2 — Decide which layer owns it, before reading everything
 
-Bugs that look like frontend bugs frequently are not. Check in this order, cheapest first:
+A bug often shows in one layer and lives in another. Check in this order, cheapest first:
 
 1. **The data.** Is the value wrong on arrival, or wrong after rendering? Read the
    actual network response before reading component code. A field that is empty in
    the response is not a rendering bug — it is a backend or contract bug, and no
-   amount of frontend reading will show it.
+   amount of reading the code that renders it will show it.
 2. **The contract.** Where types are hand-written against an API rather than generated,
    a field the backend never populates renders empty with no error anywhere — a silent bug
    that looks like a UI defect. Check whether the field is actually in the payload.
@@ -49,9 +49,11 @@ Bugs that look like frontend bugs frequently are not. Check in this order, cheap
    **Check token claims before blaming the UI that reads them.** If a permission
    check fails, establish whether the claim is absent or the check is wrong; these
    have opposite fixes.
-4. **The frontend.** Only once the data arriving is confirmed correct.
+4. **The code.** Only once the data arriving is confirmed correct.
 
-State the owning layer explicitly in the report, with the evidence that settled it.
+State the owning layer explicitly in the report, with the evidence that settled it, and
+whether this repository owns the code at fault, by `## Own code` in
+`../planning-features/references/project.md`.
 
 ## Step 3 — Trace to the root cause
 
@@ -74,7 +76,7 @@ hypothesis, and you must label it as one.
 <verbatim, plus translation if not English>
 
 ### Owning layer
-<frontend | backend | identity/auth | contract> — and the evidence that decided it
+Layer: <name> · own (this repository) | consumed (<where>) — and the evidence that decided it
 
 ### Root cause
 <path:line> — what is wrong and why it produces this symptom
@@ -93,7 +95,7 @@ Confirmed (an unbroken chain of read code) | Likely | Inconclusive — and what 
 <other call sites with the same defect, and any gap that let this ship>
 
 ### Next step
-fix inline | fixing-bugs | owner report (outside the frontend: <owner>) | the settling check (Inconclusive) — and why
+fix inline | fixing-bugs | owner report (consumed: <owner>) | the settling check (Inconclusive) — and why
 ```
 
 **"Inconclusive" is a valid, respectable outcome.** Say what you ruled out, what you
@@ -104,15 +106,15 @@ diagnosis costs far more than an honest inconclusive one.
 
 The report names one, for after the user's ruling:
 
-- **Owner report** when the owning layer is not the frontend. The line flags it: outside
-  the frontend, and whose it is. The Proposed fix is written for that owner, as "Working
-  across repositories" says. `fixing-bugs`, started from this report, writes the owner
-  report and changes no frontend code unless the user approves a guard.
-- **Fix inline** when the confidence is Confirmed, the cause sits in the frontend's code
-  and the fix touches one function: `fixing-bugs`' evident-cause entry fixes it at once.
-- **fixing-bugs** for any other frontend cause that is Confirmed or Likely. It proves the
-  diagnosis with a failing test before it fixes. An Inconclusive diagnosis names the check
-  that would settle it instead.
+- **Owner report** when the code at fault is consumed. The line flags it: consumed, and
+  whose it is. The Proposed fix is written for that owner, as "Code this repository
+  consumes" says. `fixing-bugs`, started from this report, writes the owner report and
+  changes nothing here unless the user approves a guard.
+- **Fix inline** when the confidence is Confirmed, the cause sits in this repository's own
+  code and the fix touches one function: `fixing-bugs`' evident-cause entry fixes it at once.
+- **fixing-bugs** for any other cause in own code, in any layer, that is Confirmed or
+  Likely. It proves the diagnosis with a failing test before it fixes. An Inconclusive
+  diagnosis names the check that would settle it instead.
 
 A cause that spans layers gets a step for each part.
 
@@ -120,12 +122,13 @@ Then stop. Whether the bug is the user's to fix is the user's ruling, often made
 asking a PM, a tester or the backend. The report gives that ruling its evidence and starts
 nothing.
 
-## Working across repositories
+## Code this repository consumes
 
-A backend that is read-only context is read freely to establish ownership and cause, and
-never edited. A fix that belongs there is written so its owner can act: exact file, exact
-change, exact reason. A frontend workaround for it is presented beside it, saying plainly
-which is the real fix and what the workaround costs.
+Another repository, a service, a dependency, a vendored or generated directory is read
+freely to establish ownership and cause, and never edited. A fix that belongs there is
+written so its owner can act: exact file, exact change, exact reason. A workaround in this
+repository is presented beside it, saying plainly which is the real fix and what the
+workaround costs.
 
 ## What this must NOT do
 

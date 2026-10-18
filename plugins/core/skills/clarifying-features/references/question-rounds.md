@@ -74,10 +74,12 @@ task that touches it without asking anything:
 - **Outcome** states what the user can do, and why it matters.
 - **Sources** gives every source a location and who can confirm it, or says "none".
 - **Constraints** names each limit, or says "none".
-- **Success criteria** are each tagged, and every ASSUMED one was shown to the user.
+- **Success criteria** are each numbered `SC<n>` and tagged, and every ASSUMED one was
+  shown to the user.
 - **User flow** has every step, including cancel and the way back.
 - **Business rules** each carry a rationale, or are tagged ASSUMED.
-- **States** settle loading, empty, error and permission, or say "not applicable" and why.
+- **States** settle transitions, errors and permissions — loading and empty only for UI
+  work — or say "not applicable" and why.
 - **Design** names type, location and coverage, each gap settled or held by an open question.
 - **Global constraints** hold exact values only: no "reasonable", no "TBD".
 - **Review focus** names the failure modes the rules and the states imply.

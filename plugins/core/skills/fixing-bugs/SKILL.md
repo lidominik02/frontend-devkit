@@ -1,30 +1,32 @@
 ---
 name: fixing-bugs
 description: >-
-  Fixes a frontend bug and proves the fix with a regression test: red before, green
-  after, red again with the fix reverted. Starts from an investigating-bugs diagnosis,
+  Fixes a bug in this repository's own code, in any layer, and proves the fix with a
+  regression test: red before, green after, red again with the fix reverted. Starts from an investigating-bugs diagnosis,
   and asks for one when the cause is unclear. Use when the user says "fix this bug",
   "make this failing case pass" or "fix it with a regression test". For "debug this",
   "diagnose this" or "find the root cause", use investigating-bugs; for "fix the
   findings", executing-plans.
 argument-hint: "[feature] [diagnosis or bug report]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(npx vitest run *) Bash(pnpm exec vitest run *) Bash(yarn vitest run *) Bash(bunx vitest run *) Bash(npx jest *) Bash(pnpm exec jest *) Bash(yarn jest *) Bash(bunx jest *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Bash(git check-ignore *) Read Grep Glob Skill AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Read Grep Glob Skill AskUserQuestion
 ---
 
-You fix a bug in the frontend and prove the fix. A test that passes after a fix proves
+You fix a bug in this repository's own code and prove the fix. A test that passes after a fix proves
 nothing until it has also failed without it, so every fix here ends with that shown: red
 before, green after, and — apart from an evident cause fixed at once — red again with the
 fix taken out, green once it is back.
 
-It starts from an `investigating-bugs` diagnosis the user ruled theirs to fix, edits
-frontend code only, runs only the one test file it writes, and hands on to `reviewing-changes`.
+It starts from an `investigating-bugs` diagnosis the user ruled theirs to fix, edits only
+code this repository owns and only once the user confirms it, reports code it only
+consumes, runs only the one test file it writes, and hands on to `reviewing-changes`.
 
 ## 1. Set up
 
 1. **Facts.** Read the package manager, the framework packs and the gates by
    `../planning-features/references/project.md`, and load the packs it names; a later pack
-   wins every conflict. The test runner and its single-file command come from "Running one
-   test file" in `references/loop.md`. With no runner, section 5 governs every step below.
+   wins every conflict. The test runner is the declared test command, narrowed to its
+   single-file form by "Running one test file" in `references/loop.md`. With no declared
+   test command, section 5 governs every step below.
 2. **Work folder.** A short slug for the bug. Inside a feature — one the caller or the user
    names — the folder is `temp/<feature>/bugs/<slug>/`, otherwise `temp/bugs/<slug>/`, at
    the repository's top level. It holds `FIX.md` ("FIX.md" in `references/loop.md`),
@@ -43,17 +45,22 @@ frontend code only, runs only the one test file it writes, and hands on to `revi
 5. **Entry.** A diagnosis is an `investigating-bugs` report, in the conversation or at a
    path the caller names, with an owning layer, a root cause at `path:line` and a
    confidence.
-   - A diagnosis whose owning layer is not the frontend goes to section 4 at once, with no
-     test written.
+   - A diagnosis whose cause sits in code this repository only consumes, by `## Own code`
+     in `project.md`, goes to section 4 at once, with no test written.
    - A bug the user reports inside a feature, with no diagnosis, whose cause is evident and
      whose fix touches one function, goes to the evident-cause entry in section 2; so does a
      diagnosis whose Next step says "fix inline" in those words.
-   - Every other frontend diagnosis that is Confirmed or Likely goes to section 2 and its
-     revert proof, however small the fix.
+   - Every other diagnosis in own code, in any layer, that is Confirmed or Likely goes to
+     section 2 and its revert proof, however small the fix.
    - With no diagnosis, or an Inconclusive one, ask for one: call the Skill tool with
      "core:investigating-bugs", then return here with its report.
 
 ## 2. From a diagnosis
+
+**Confirm first**, in every layer and on the evident-cause entry too: before the first
+edit, the repro test included, ask with one form naming the layer and the files the fix
+would change — "Fix it here" (recommended) or "Owner report instead". Owner report instead
+changes no code: section 4 steps 2 and 3, then section 6.
 
 1. Write the repro test at the seam the root cause sits behind ("A correct seam" in
    `references/loop.md`), built the way "Repro by kind of bug" there gives for this kind.
@@ -93,14 +100,15 @@ first. With no correct seam, section 5 governs.
    (`project.md`, `## Held checks`) stay NOT RUN (held) until the user releases them.
 5. **Close**, by section 6.
 
-## 4. A cause outside the frontend
+## 4. A cause in code this repository only consumes
 
-The contract settles the layer. A response the contract allows, mishandled by the
-frontend, is the frontend's bug. A missing field, a wrong value or a wrong claim belongs to
-its owner: the backend, identity/auth, or the contract itself.
+The contract settles whose bug it is. A response the contract allows, mishandled by this
+repository's code, is this repository's bug. A missing field, a wrong value or a wrong
+claim from code it consumes belongs to that code's owner: another repository, a service, a
+dependency, or the contract itself.
 
-1. Stop fixing. Backend and identity code, and any repository or path the frontend does
-   not own, is read freely and never edited, whatever the diagnosis proposes.
+1. Stop fixing. Consumed code is read freely and never edited, whatever the diagnosis
+   proposes.
 2. Write FIX.md's Owner report in the shape "The owner report" in `references/loop.md`
    gives.
 3. **Inside a feature**, also append one `CG<n>` line to the feature's
@@ -111,7 +119,7 @@ its owner: the backend, identity/auth, or the contract itself.
    the full account. Its sub-items read `Needed for: the fix of <slug> (FIX.md: <path>)`
    and `Blocks:` the feature's task the bug blocks, or `nothing`. Nothing sends, reformats
    or copies it anywhere. Outside a feature there is no CONTRACT-GAPS.md.
-4. Ask with one form: "Stop with the owner report (recommended)" or "Add a frontend guard:
+4. Ask with one form: "Stop with the owner report (recommended)" or "Add a guard here:
    <what it does> — <what it costs>". Only a guard the user approves is built. It first
    gets a test at the guard's seam, written as section 2 step 1 writes one and red while
    the guard is missing, then goes through section 3 with that test, so the revert proof
@@ -124,16 +132,18 @@ its owner: the backend, identity/auth, or the contract itself.
    planning id, ticket or session. FIX.md and the chat brief name the test, say it is
    skipped, and say to un-skip it once the owner's change is in.
 
-## 5. No test runner, or no correct seam
+## 5. No declared test command, or no correct seam
 
-No runner is when "Running one test file" finds none; no correct seam, when the behaviour
+No runner is when the project declares no test command — none is guessed in its place; no
+correct seam, when the behaviour
 is reachable only in a running app — layout, focus, hydration, a real browser API — or only
 by mocking the code under test. The fix goes ahead without a regression test, and says so:
 
 - **Repro**: the manual steps that show the bug, for the user to run; nothing here runs the
   app. **Fix** what the diagnosis names.
-- **Regression proof**: "none — no test runner" or "none — no correct seam: <why>", said
-  again in the chat brief beside the manual steps that confirm the fix.
+- **Regression proof**: "NOT RUN (no declared test command)" or "none — no correct seam:
+  <why>", said again in the chat brief beside the manual steps that confirm the fix. The
+  fix is unproven, and the brief says so.
 - Gates and the close as section 3 steps 4 and 5.
 
 ## 6. Close
@@ -154,12 +164,12 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
 
 ## What this must NOT do
 
-- **Edit backend or identity code, or anything the frontend does not own.** Read it and
-  write the owner report.
-- **Add a frontend guard or workaround for another owner's bug** without the user's
-  approval in section 4's form.
-- **Run more than the one test file**: never the suite, the declared test command, a watch
-  mode, another heavier check the user did not release (`../planning-features/references/project.md`, `## Held checks`), a browser
+- **Edit code this repository only consumes**, or its own code before the user chooses
+  "Fix it here". Read it and write the owner report.
+- **Add a guard or workaround for another owner's bug** without the user's approval in
+  section 4's form.
+- **Run more than the one test file**: never the suite, the declared test command un-narrowed,
+  a watch mode, another heavier check the user did not release (`../planning-features/references/project.md`, `## Held checks`), a browser
   or Storybook unreleased, or a command that writes as a gate (`## Gates` there).
 - **Leave the fix reverted.** The revert proof ends with the fix restored, the test green
   and the tree equal to the one taken before the revert.

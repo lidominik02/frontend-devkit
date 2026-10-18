@@ -1,8 +1,9 @@
 {
   "name": "core",
   "version": "0.4.1",
-  "description": "Framework-agnostic development platform: a feature lifecycle (clarify, plan, execute, automatic review, QA), bug investigation, browser verification, commit/MR authoring and repo preparation.",
+  "description": "Domain-neutral development platform for any repository: a feature lifecycle (clarify, plan, execute, automatic review, QA), bug investigation and fixing in any layer, commit/MR authoring and repo preparation, plus browser verification for UI work.",
   "author": { "name": "lidominik02" },
+  "license": "MIT",
   "repository": "https://github.com/lidominik02/frontend-devkit",
   "keywords": ["review", "planning", "debugging", "gitlab"]
 }

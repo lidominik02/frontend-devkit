@@ -93,19 +93,19 @@ in `../planning-features/references/artifacts.md`.
 ## QA report: <feature>
 
 ### Observed
-- <case>: <what was actually seen, with the evidence — a snapshot detail, a story path>
+- TC<n>: <what was actually seen, with the evidence — a snapshot detail, a story path>
 
 ### Not observed
-- <case>: <why it could not be reached — needs data, needs auth>
+- TC<n>: <why it could not be reached — needs data, needs auth>
 
 ### Skipped
-- <check>: <the one-line reason — no browser tool, no Storybook script, no reachable design>
+- <check>: <the one-line reason — no browser tool, no Storybook script, no reachable design> — TC<n>, …
 
 ### Findings
-- <case> — what is wrong, why, and the evidence
+- TC<n> — what is wrong, why, and the evidence
 
 ### Clean
-<cases with no findings>
+<TC<n> of the cases with no findings>
 ```
 
 8. **Stop.** Findings are the user's to rule on; `investigating-bugs` diagnoses one when
@@ -123,7 +123,11 @@ and the Next action:
   `<date> · QA list · <list path>`.
 - When `run` starts: Stage `testing — owner: testing-changes`; Log `<date> · testing started`.
 - After the report: Stage `user's check — owner: the user`; Log
-  `<date> · QA report · <n> findings, <n> skipped · <report path>`.
+  `<date> · QA report · <n> findings, <n> skipped · <report path>`; and in `## Evidence`
+  one line per case whose heading names an `SC<n>`, appended beside the lines already
+  there, never over them:
+  `SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`, here
+  `SC<n> · QA: TC<n> observed | not observed | skipped | finding`.
 
 Without a STATUS.md, nothing is written beyond the list and the report.
 

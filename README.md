@@ -1,7 +1,7 @@
 # frontend-devkit
 
-A Claude Code marketplace for frontend work: a framework-agnostic `core` plugin plus
-per-framework packs. Install it once and it applies to every repository you open.
+A Claude Code marketplace: a domain-neutral `core` for any repository, plus framework packs
+for frontend work. Install it once and it applies to every repository you open.
 
 It runs on top of an existing project and requires nothing to be added to it. Every fact it
 needs — package manager, quality gates, base branch, git host, commit convention — is read
@@ -13,7 +13,9 @@ at the moment of use from files the project already maintains, so nothing goes s
   review it automatically, run a QA list on request, and close it out — with its state in
   files, so any session can pick it up.
 - **Bugs** — diagnose a bug to its root cause and owning layer without touching code, then
-  fix it with a regression test that is red before the fix and green after.
+  fix the repository's own code, in any layer, once you confirm it, with a regression test
+  that is red before the fix and green after; code the repository only consumes gets a
+  report for its owner.
 - **Branch syncing** — rebase a branch onto main or across stacked branches behind a backup
   ref, keeping both sides' intent in every conflict.
 - **Review** — independent reviewers and a verification pass over everything the branch

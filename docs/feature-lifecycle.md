@@ -76,7 +76,8 @@ the root cause at `path:line`, changes nothing, and stops: whether it is the use
 is the user's ruling. `fixing-bugs` starts from that diagnosis — without one it asks
 `investigating-bugs` for it — with a repro test red for the diagnosed reason, then the fix
 and the revert proof: red with the fix taken out, green once it is back, one test file run.
-A cause outside the frontend stops it with a report for that owner.
+Own code, in any layer, is fixed once the user confirms it; a cause in code the repository
+only consumes stops it with a report for that owner.
 
 ## Syncing a branch
 

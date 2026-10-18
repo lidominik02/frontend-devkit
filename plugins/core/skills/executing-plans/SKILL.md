@@ -6,7 +6,7 @@ description: >-
   task X", "start implementing" or "fix the findings". For "write the plan", "break it
   into tasks" or "resume", use planning-features; for "review this", reviewing-changes.
 argument-hint: "[subagent|inline|fix-findings] [feature] [task]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Bash(git cat-file -e *) Bash(git rev-parse *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion SendMessage
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Bash(git cat-file -e *) Bash(git rev-parse *) Read Grep Glob Agent Skill AskUserQuestion SendMessage
 ---
 
 You carry out an approved plan, one task at a time. In subagent mode `core:implementer`
@@ -101,7 +101,10 @@ For each task neither done nor blocked, in plan order:
    stops the run for the user. A minor finding stays in the review's verdict line.
 9. **Close the task.** The row is `done` only when every step ran and every gate in its Done
    when passed; otherwise it stays `in progress` and the Log line names what was skipped.
-   The row gets its gates and the review verdict; one Log line records the task.
+   The row gets its gates and the review verdict; one Log line records the task; a `done`
+   task appends one Evidence line per `SC<n>` its acceptance criteria name, for each gate
+   line and `task: <name>`, in the shape `../planning-features/references/artifacts.md`
+   gives: `SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`.
 10. **Pause** after every task, unless the user chose "Continue without pausing" in this run:
     a short brief — what was built, the review result, the rounds, each undecided gate
     failure, anything the user must weigh — then one form: Continue (recommended), Continue
@@ -124,7 +127,8 @@ For each task neither done nor blocked, in plan order:
 3. **Gates** of each workspace the task touched, as `project.md` describes, each failure
    judged as section 2 step 6 says. With
    no pause between inline tasks, an undecided failure stops the run before the task closes.
-4. **Close** in one write: the row, its gates, a Log line, and the Next action moved on.
+4. **Close** in one write: the row, its gates, a Log line, the Evidence lines section 2
+   step 9 names, and the Next action moved on.
    Continue with the next task without pausing.
 
 **Deviations.** A change to what a plan step or a DECISIONS.md entry says is asked with one
@@ -158,8 +162,8 @@ The user has read the code and the review report and says what to do with each f
    of at most four findings: Fix, Defer, Keep as designed — Fix recommended for a
    CONFIRMED finding, Defer for a PLAUSIBLE one, Keep for one that conflicts with a
    decision.
-2. Defer and Keep each write a `Closed findings` line. A finding whose cause is not the
-   frontend's closes as `not ours (<owner>)`; the user calls
+2. Defer and Keep each write a `Closed findings` line. A finding whose cause is not in this
+   repository's own code closes as `not ours (<owner>)`; the user calls
    `investigating-bugs` if they want it diagnosed. An answer that changes a decision is a new
    DECISIONS.md entry with `supersedes D<n>`.
 3. Verify each finding to fix: open the cited `file:line` and confirm the failure scenario

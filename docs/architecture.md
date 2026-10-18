@@ -7,9 +7,9 @@ links the decision record that holds the reasoning.
 
 The devkit is a Claude Code marketplace of three plugins, called packs:
 
-- **`core`** — framework-agnostic: the feature lifecycle, bug investigation and fixing,
-  branch syncing, review, commit and merge request text, and browser verification. Enabled
-  in every repository.
+- **`core`** — domain-neutral, for any repository: the feature lifecycle, bug investigation
+  and fixing in any layer, branch syncing, review, commit and merge request text, and
+  browser verification for UI work. Enabled in every repository.
 - **`vue`** — Vue 3 engineering and review knowledge for single-page apps on Vite.
 - **`nuxt`** — what server rendering inverts or adds on top of `vue`.
 
@@ -80,12 +80,10 @@ request, finish — and each writes its state to files under `temp/`, so a new s
 continue from them. [The feature lifecycle](feature-lifecycle.md) describes it;
 [ADR 0009](adr/0009-feature-lifecycle-as-skill-chain.md) records why.
 
-## Scope: the frontend
+## Scope: the repository's own code
 
-The skills work on frontend code. A diagnosis may follow a bug into the backend or the
-identity layer to find the layer that owns it, but only a frontend fix is made; a cause
-elsewhere ends in a report for its owner, and a frontend guard against it needs the user's
-approval.
+The skills fix the repository's own code in any layer once the user decides; code it only
+consumes ends in a report for its owner.
 
 ## Principles
 

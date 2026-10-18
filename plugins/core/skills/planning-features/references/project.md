@@ -50,6 +50,13 @@ only that workspace's gates.
    workspace that declares nothing gets one line, `<workspace> · — · — · NOT RUN (no declared
    command)`. NOT RUN is never a pass, and a gate that did not run is never implied passed.
 
+## Own code
+A directory the repository's `CLAUDE.md`, `AGENTS.md` or `CONTRIBUTING.md` names as vendored
+or generated is consumed; otherwise git decides: a tracked file is this repository's own, and
+a gitignored file, a git submodule or code outside the repository is consumed. Own code, in
+any layer, may be fixed once the user decides; consumed code is reported to its owner, never
+edited.
+
 ## Held checks
 The heavier checks the user did not release: every declared test and build, which cost time
 and quota. They wait until the user releases them, and are reported `NOT RUN (held)` until

@@ -8,7 +8,7 @@ description: >-
   plan", use planning-features; for "implement the plan", executing-plans; for a root
   cause, investigating-bugs.
 argument-hint: "[new|gap|continue|research] [feature|question]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob Agent Skill AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git check-ignore *) Read Grep Glob Agent Skill AskUserQuestion
 ---
 
 You settle what a feature must do before anyone plans how to build it. Facts — what the
@@ -61,8 +61,8 @@ without its reason, or a classification only in your reasoning, has not been sai
   switches to the feature route, said out loud.
 - **UI or not.** A change with no UI is classified "no design", and nothing about design is
   asked.
-- **API involved or not** — whether the feature needs anything the frontend cannot deliver
-  alone. When it does, each gap becomes a CONTRACT-GAPS.md entry as it surfaces.
+- **External contract involved or not** — whether the feature needs anything this
+  repository cannot deliver alone. When it does, each gap becomes a CONTRACT-GAPS.md entry as it surfaces.
 - **Sources.** Inventory the requirement sources and the design source, facts first. Look
   before asking: the links and notes in what the user gave, a story the user names, or the
   files under `requirements/`, the files under `design/`, and the design tool's read tools

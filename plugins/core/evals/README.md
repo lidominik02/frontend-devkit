@@ -32,7 +32,9 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | Case | The claim under test |
 | --- | --- |
 | `investigating-bugs` | Diagnosing to a root cause without editing, and checking the layer that owns the data before the component that renders it |
-| `fixing-bugs` | Whether a fix from a diagnosis is proven — the test red before it, green after, red with the fix taken out and green once it is back, only that test file run, the fix left in place — and whether a root cause in the API leaves the API's code and the frontend untouched and hands the owner a report |
+| `fixing-bugs` | Whether a fix from a diagnosis is proven — the test red before it, green after, red with the fix taken out and green once it is back, only that test file run, the fix left in place — and whether a root cause in an API this repository only consumes leaves the API's code and this repository's source untouched and hands the owner a report |
+| `bug-in-own-server-route` | Whether a bug in the repository's own server code, which the diagnosis calls backend, is fixed under `server/` rather than handed to an owner, and proven with the revert proof through the runner the project declares |
+| `bug-in-repo-without-ui` | Whether, in a repository with no UI and no `package.json`, an untyped "fix this bug" reaches `fixing-bugs`, the cause is treated as the repository's own, the fix is proven with one test file by the declared runner, and the gates come from `CLAUDE.md` with their source and the suite held |
 | `syncing-branches` | Whether bringing a branch up to date loses nothing from either side — both changes to a function kept, the lockfile regenerated rather than merged, a duplicate helper raised with the user before it is touched, the branch rewritten only with a way back, nothing pushed |
 | `describing-changes` | Reading the commit convention from the file that enforces it, and reporting unrun gates as NOT RUN rather than implying they passed |
 | `shaping-commits` | Offering genuine alternatives on request, and basing the one-commit-or-several call on whether an intermediate commit would still build rather than splitting mechanically by file |

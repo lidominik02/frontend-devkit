@@ -43,7 +43,7 @@ with its evidence and its cost, and never restructures, extracts or redesigns un
   looking at the unit. It argues against moving single-use code into a shared folder, and pulls
   against separation of concerns: split by concern only when the split pays for the distance.
 - **Bounded context, at feature level** — Eric Evans, *Domain-Driven Design*. A term or model
-  means one thing inside one boundary. At the scale of a frontend, a feature is that boundary:
+  means one thing inside one boundary. At the scale of one application, a feature is that boundary:
   two features may each own a similar type without sharing it, and a shared layer must never
   depend on a feature.
 - **Feature folders** — Feature-Sliced Design. Group by feature first and by kind second, with

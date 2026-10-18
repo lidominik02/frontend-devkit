@@ -8,7 +8,7 @@ description: >-
   parent branch merged". For "is this safe to merge" or "review this", use
   reviewing-changes.
 argument-hint: "[feature] [branch]"
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Bash(git status *) Bash(git log *) Bash(git diff *) Bash(git show *) Bash(git merge-base *) Bash(git rev-parse *) Bash(git branch --list *) Bash(git check-ignore *) Read Grep Glob Skill AskUserQuestion
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git status *) Bash(git log *) Bash(git diff *) Bash(git show *) Bash(git merge-base *) Bash(git rev-parse *) Bash(git branch --list *) Bash(git check-ignore *) Read Grep Glob Skill AskUserQuestion
 ---
 
 You rebase the user's branch onto the branch it builds on and lose nothing from either

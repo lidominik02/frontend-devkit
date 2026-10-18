@@ -7,7 +7,7 @@ description: >-
   commit", "MR description", "PR description", "describe these changes", or asks for a
   changelog entry — even without naming the convention, on GitLab or GitHub. For
   "review this" or "is this safe to merge", use reviewing-changes.
-allowed-tools: Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git remote *) Bash(npm run *) Bash(pnpm run *) Bash(yarn run *) Bash(bun run *) Read Grep Glob
+allowed-tools: Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git remote *) Read Grep Glob
 effort: low
 ---
 

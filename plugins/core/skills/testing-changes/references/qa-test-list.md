@@ -56,17 +56,19 @@ files it came from, or "no written requirement found; derived from PLAN.md's tas
 the diff">
 <each conflict between sources, when there is one — see below>
 
-### <Criterion, stated as a claim> — <SAID | EXTRA | ASSUMED — not confirmed>
-- Positive: <case> — verified by: <browser | design intent | Storybook | user only>
-- Negative: <case> — verified by: <…>
-- Edge: <case> — verified by: <…>
-- Edge: <case> — verified by: <…>    (only the ones that matter for this criterion)
+### SC<n> <criterion, stated as a claim> — <SAID | EXTRA | ASSUMED — not confirmed>
+- TC<n> · Positive: <case> — verified by: <browser | design intent | Storybook | user only>
+- TC<n> · Negative: <case> — verified by: <…>
+- TC<n> · Edge: <case> — verified by: <…>
+- TC<n> · Edge: <case> — verified by: <…>    (only the ones that matter for this criterion)
 
 ### Beyond the criteria: <the Review focus entry or Runtime-only item, with its source>
-- <case> — verified by: <…>
+- TC<n> · <case> — verified by: <…>
 ```
 
-A criterion from a source without tags carries no tag. A Review focus entry or a
+`TC<n>` numbers the cases through the whole list, and each case names its criterion's
+`SC<n>` by the heading it sits under. A criterion from a source without `SC<n>` ids heads its
+section with the claim alone, and one without tags carries no tag. A Review focus entry or a
 Runtime-only item that fits a criterion goes under it instead of its own heading.
 
 ## When sources disagree

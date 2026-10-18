@@ -59,7 +59,7 @@ build what the spec settled.
    slices, each one piece of behaviour the user can observe, built through every layer it
    needs. Files are real paths; Interfaces use the exact names later tasks call; Design
    points at the exact screens and states; acceptance criteria come from the success
-   criteria; Done when names the fast gates `references/project.md` finds, or says "no gates
+   criteria, each led by its `SC<n>`; Done when names the fast gates `references/project.md` finds, or says "no gates
    declared", plus the observation that proves the criteria; Tier is `mechanical` for a
    complete brief touching 1–2 files, `judgment` otherwise. When a Tasks section already
    exists, rewrite only the tasks the new decisions touch, dropping an answered question
