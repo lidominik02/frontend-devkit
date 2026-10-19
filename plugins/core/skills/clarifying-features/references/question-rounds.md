@@ -3,8 +3,7 @@
 ## The form
 
 - Every question goes through AskUserQuestion. One call takes one to four questions of two
-  to four options each and adds a free-text "Other" answer itself (observed in Claude Code
-  2.1.283).
+  to four options each and adds a free-text "Other" answer itself.
 - Ask what the triage below puts on a form, each round. More than four become consecutive
   forms, grouped by topic.
 - The recommended option comes first, its label ending in "(recommended)". Every option's
@@ -38,7 +37,9 @@ carries weight is asked, however many there are.
 listing each default as an option — its label the default, its description what it decides
 and the precedent it follows — at most four options a question, more defaults in further
 questions of the same call or a following one, grouped by topic. A checked default returns
-to the frontier as a question; an unchecked one stays ASSUMED.
+to the frontier as a question; an unchecked one stays ASSUMED. A question left blank keeps
+every default it lists: never ask again in chat. With nothing checked, the exit gate form
+follows at once.
 
 ## Non-functional requirements
 

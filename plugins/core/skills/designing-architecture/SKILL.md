@@ -73,8 +73,7 @@ Facts are looked up, never asked.
 - **The history** of the code in question, through `git log`: what changed together, and
   how often.
 - **Outside research** runs when the user asked for it in step 1, or when the codebase has
-  no precedent. Dispatch one agent of the built-in `Explore` type where the host offers it
-  (observed in Claude Code 2.1.283), else `general-purpose` told to stay read-only,
+  no precedent. Dispatch one agent of the built-in `Explore` type where the host offers it, else `general-purpose` told to stay read-only,
   with the model and effort of "The research dispatch" in
   `../clarifying-features/references/sources.md`. Primary sources first. Every claim it returns carries its URL.
 

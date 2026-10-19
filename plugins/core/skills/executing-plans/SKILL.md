@@ -104,7 +104,8 @@ For each task neither done nor blocked, in plan order:
    The row gets its gates and the review verdict; one Log line records the task; a `done`
    task appends one Evidence line per `SC<n>` its acceptance criteria name, for each gate
    line and `task: <name>`, in the shape `../planning-features/references/artifacts.md`
-   gives: `SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`.
+   gives: `SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`. The
+   Stage stays on this task: only the next task's step 1 moves it, after the pause.
 10. **Pause** after every task, unless the user chose "Continue without pausing" in this run:
     a short brief — what was built, the review result, the rounds, each undecided gate
     failure, anything the user must weigh — then one form: Continue (recommended), Continue

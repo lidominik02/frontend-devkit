@@ -73,6 +73,13 @@ only at enable time.
 how to query it, never the number. A script that needed a figure from a Markdown sentence
 would tie the documentation's wording to a check. (ADR 0012)
 
+**Shipped text carries the decision, never its evidence.** A skill, an agent or a reference
+says what the model does. How that was settled — the eval cases that measured it, the cost
+it saved, the CLI version a behaviour was observed on, why a frontmatter field is written as
+it is — lives in `docs/`, where it is renewed and costs no consumer a token. A version stays
+in shipped text only when the version in the user's project decides the behaviour: a git,
+framework or tool release the model checks against.
+
 ## Gates
 
 ```
@@ -94,7 +101,9 @@ Both are the gate; run both before pushing.
 
 Comments in this repo record behaviour verified against specific Claude Code versions.
 When a claim about the CLI, a validator, or an MCP server's tool names matters, observe
-it and record the version. Do not replace an observed behaviour with a changelog reading.
+it and record the version — in `docs/` or a code comment, and in shipped text only as
+"Shipped text carries the decision" above allows. Do not replace an observed behaviour with
+a changelog reading.
 
 Gates are reported as `declared` until something runs them: a script name existing says
 nothing about whether its binary resolves. Report an unrun gate as NOT RUN — never imply

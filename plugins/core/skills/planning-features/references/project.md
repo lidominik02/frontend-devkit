@@ -52,8 +52,9 @@ only that workspace's gates.
 
 ## Own code
 A directory the repository's `CLAUDE.md`, `AGENTS.md` or `CONTRIBUTING.md` names as vendored
-or generated is consumed; otherwise git decides: a tracked file is this repository's own, and
-a gitignored file, a git submodule or code outside the repository is consumed. Own code, in
+or generated is consumed; otherwise git decides: a tracked file, or an untracked one git does
+not ignore, is this repository's own, and a gitignored file, a git submodule or code outside
+the repository is consumed. Own code, in
 any layer, may be fixed once the user decides; consumed code is reported to its owner, never
 edited.
 
@@ -76,8 +77,9 @@ the touched files only.
    (lint-staged, lefthook, a local pre-commit `entry`) → a formatting target of its manifest
    or task runner, invoked as `## Gates` step 4 invokes one.
 3. **Narrowed** to the touched files: the command's tool and flags with the touched paths in
-   place of its glob or directory — a package.json script's tool as
-   `<pm> exec <tool> <flags> <paths>`, never the script itself. A command that cannot be narrowed — it formats the whole
+   place of its glob or directory — the tool called directly, or through the launcher the
+   project's own files use for a tool it installs for itself, never the script or target
+   itself. A command that cannot be narrowed — it formats the whole
    tree (`cargo fmt`, `dotnet format`) or takes no paths — does not run, and is reported.
 4. **Evidence, never a reason to write:** a formatter's config file, its dev dependency,
    `.editorconfig`, editor settings and CI. Name the candidate and write nothing.

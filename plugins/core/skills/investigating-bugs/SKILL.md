@@ -1,13 +1,13 @@
 ---
 name: investigating-bugs
 description: >-
-  Diagnoses a reported bug to its root cause, the layer that owns it, and whether this
-  repository owns that code, without changing any code. Use whenever the user says
+  Diagnoses a reported bug to its root cause and the layer that owns it — the UI, a
+  service, the data or identity/auth — and whether this repository owns that code, without
+  changing any code. Use whenever the user says
   "investigate this bug", "find the root cause", "why is X broken", "why does it show X", "is this a frontend
   or backend bug", "debug this", "diagnose this", or pastes a bug report, stack trace or
   QA findings. Diagnosis only; for "fix this bug" use fixing-bugs; for "why does it look
   wrong", verifying-ui.
-disallowed-tools: Edit, Write, NotebookEdit, MultiEdit
 allowed-tools: Read Grep Glob
 ---
 
@@ -111,7 +111,8 @@ The report names one, for after the user's ruling:
   consumes" says. `fixing-bugs`, started from this report, writes the owner report and
   changes nothing here unless the user approves a guard.
 - **Fix inline** when the confidence is Confirmed, the cause sits in this repository's own
-  code and the fix touches one function: `fixing-bugs`' evident-cause entry fixes it at once.
+  code and the fix touches one function: `fixing-bugs`' evident-cause entry, which skips the
+  diagnosis step but still asks before it edits and proves the fix.
 - **fixing-bugs** for any other cause in own code, in any layer, that is Confirmed or
   Likely. It proves the diagnosis with a failing test before it fixes. An Inconclusive
   diagnosis names the check that would settle it instead.
@@ -132,9 +133,9 @@ workaround costs.
 
 ## What this must NOT do
 
-- **Edit, write, or fix anything — not even a one-line change.** The file tools are blocked
-  for this turn: you still see them in your schema, and the call is refused. Propose the
-  fix in the report; applying it is a separate, deliberate step.
+- **Edit, write, or fix anything — not even a one-line change.** This rule is the only
+  guard: the file tools stay available, because `fixing-bugs` calls this skill and edits in
+  the same turn. Propose the fix in the report; applying it is a separate, deliberate step.
 - **Start the next step it names**, or rule on whether the bug is the user's to fix.
 - **Blame the UI before checking the data and the token claims it renders.**
 - **Stop at the first plausible cause** without following the chain to something that

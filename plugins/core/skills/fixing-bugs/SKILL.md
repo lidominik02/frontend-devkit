@@ -13,8 +13,7 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node
 
 You fix a bug in this repository's own code and prove the fix. A test that passes after a fix proves
 nothing until it has also failed without it, so every fix here ends with that shown: red
-before, green after, and — apart from an evident cause fixed at once — red again with the
-fix taken out, green once it is back.
+before, green after, red again with the fix taken out, green once it is back.
 
 It starts from an `investigating-bugs` diagnosis the user ruled theirs to fix, edits only
 code this repository owns and only once the user confirms it, reports code it only
@@ -51,7 +50,7 @@ consumes, runs only the one test file it writes, and hands on to `reviewing-chan
      whose fix touches one function, goes to the evident-cause entry in section 2; so does a
      diagnosis whose Next step says "fix inline" in those words.
    - Every other diagnosis in own code, in any layer, that is Confirmed or Likely goes to
-     section 2 and its revert proof, however small the fix.
+     section 2. Every path that fixes ends with the revert proof, however small the fix.
    - With no diagnosis, or an Inconclusive one, ask for one: call the Skill tool with
      "core:investigating-bugs", then return here with its report.
 
@@ -73,11 +72,10 @@ changes no code: section 4 steps 2 and 3, then section 6.
    Record what it showed under Diagnosis and ask for a fresh one as section 1 step 5 does,
    naming what the test showed.
 
-**The evident-cause entry** fixes at once, with no revert proof: the test written and run
-as steps 1 and 2 do, red for the cause; the fix as section 3 step 1 says; the file again,
-green. Both runs go under Regression proof, then section 3 steps 4 and 5. A test not red for
-the cause, or a fix that leaves it red, is step 3's contradiction: undo any fix with Edit
-first. With no correct seam, section 5 governs.
+**The evident-cause entry** skips the diagnosis, never the proof: the test written and run
+as steps 1 and 2 do, red for the cause, then section 3 whole, its revert proof included. A
+test not red for the cause, or a fix that leaves it red, is step 3's contradiction: undo any
+fix with Edit first. With no correct seam, section 5 governs.
 
 ## 3. Fix and prove it
 
@@ -175,8 +173,8 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
   and the tree equal to the one taken before the revert.
 - **Take a fix out with git.** No `git stash`, `git checkout` or `git restore`; no staging,
   no commit, nothing that touches the index. The user commits after reading the code.
-- **Claim a regression test that never went red** — with the fix reverted, or on the
-  evident-cause entry before the fix — or a gate that did not run.
+- **Claim a regression test that never went red** with the fix reverted, or a gate that did
+  not run.
 - **Decide a product question.** The expected behaviour comes from the report, the
   diagnosis or the user.
 - **Carry a fact about an individual repository.** A repo's conventions live in its own

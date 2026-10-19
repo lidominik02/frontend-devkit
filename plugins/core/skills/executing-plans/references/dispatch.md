@@ -49,12 +49,8 @@ Place: task <N> of <M>. Earlier tasks built: <one line each> | none. Later tasks
 Scratch: <the brief's scratch location>
 ```
 
-**Model and effort.** `mechanical` task: model: sonnet · effort: not set — measured: on
-`executing-pause`, `formatter-from-docs` and `formatter-from-hook`, three runs each, it held
-the criterion lines the session's model held, at 15% less per run (`claude-sonnet-5-5` under
-a `claude-opus-5-5` session, Claude Code 2.1.299, 2026-10-15).
-`judgment` task: model: the session's · effort: not set — not measured; no eval case holds a
-`judgment` task. Fix round 3: model: the session's, whatever the Tier — a step up after two
+**Model and effort.** `mechanical` task: model: sonnet · effort: not set.
+`judgment` task: model: the session's · effort: not set. Fix round 3: model: the session's, whatever the Tier — a step up after two
 rounds that did not close the findings. A fresh implementer that replaces one which cannot be
 continued, in round 1 or 2, takes its task's Tier line. The fix brief for `fix-findings` takes the
 `mechanical` line only when every finding to fix lies in a `mechanical` task's Files, else

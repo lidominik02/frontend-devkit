@@ -38,34 +38,39 @@ One line per source — done, or open with what is open — in the chat, and aga
 - **QA.** A current qa/REPORT.md with no findings, or the user's skip, asked in section 3.
   A report is current unless, after its `QA report` line in STATUS.md's Log, a line records
   a task done, a fix or a sync, or the branch's last commit (`git log -1 --format=%cs`) is
-  dated after that line; its own line never makes it stale. Gate results are not read here.
+  dated that line's day or later; its own line never makes it stale. Gate results are not read here.
 - **Open questions.** DECISIONS.md's OQ lines without `answered:` whose `blocks:` is not
   `nothing` are open; the rest are listed as a reminder.
 - **Contract gaps.** Every CONTRACT-GAPS.md line, as a reminder only.
 - **Gates.** STATUS.md's `Verified` `latest:` results — the final review's run; with none,
   each gate is NOT RUN on the final code. Nothing runs again.
 - **Evidence.** Each `SC<n>` of PLAN.md's Success criteria with its lines from STATUS.md's
-  `## Evidence`; one with no line is `none`. Run evidence is a gate line that passed or a
-  `QA: TC<n> observed`; a `task:` line or a check by hand is not run evidence.
+  `## Evidence`; one with no line is `none`. Run evidence is a `QA: TC<n> observed`, or a
+  passing gate line of a gate that runs the behaviour — a test, not a lint or a type check —
+  and still passes in `latest:`. A `task:` line, a check by hand, and a QA line other than
+  `observed` are not run evidence.
 
 Then the delivery state, from the lines above:
 
 - `verified` — every `SC<n>` has run evidence, and no finding is open, no gate FAILs and no
   open question blocks.
-- `blocked` — a gate FAILs, an open question blocks, or a critical finding is open.
-- `accepted with known gaps` — otherwise: an `SC<n>` without run evidence, a skipped QA or a
-  NOT RUN gate. It stands only once the user answers Done in section 3 with each gap named.
+- `blocked` — a gate FAILs, an open question blocks, or a critical finding is open, and the
+  user has not accepted it on the section 3 form.
+- `accepted with known gaps` — otherwise: an `SC<n>` without run evidence, a skipped QA, a
+  NOT RUN gate, an open finding that is not critical, or a blocker the user accepted. It
+  stands only once the user answers Done in section 3 with each gap named.
 
-And the confidence: `high` when every `SC<n>` has run evidence · `partial` when one has only
-a `task:` line or a check by hand · `low` when one has none — with one sentence naming the
-`SC<n>` without run evidence. Never a percentage.
+And the confidence: `high` when every `SC<n>` has run evidence · `partial` when one lacks it
+but has a `task:` line or a check by hand · `low` when one has neither — with one sentence
+naming the `SC<n>` without run evidence. Never a percentage.
 
 ## 3. "Are we done?"
 
 One form. With nothing open, the first option is recommended; otherwise the route that
 closes what the check found. Its question states the delivery state and the confidence;
 when the state is not `verified`, it names each gap — every `SC<n>` without run evidence,
-a skipped QA, each NOT RUN gate — so that Done accepts those gaps by name.
+a skipped QA, each NOT RUN gate, each open finding and blocker — so that Done accepts those
+gaps by name.
 
 - **Done** — go to section 4.
 - **Found something** — an open review finding goes to `core:executing-plans` in

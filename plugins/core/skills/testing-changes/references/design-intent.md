@@ -36,10 +36,8 @@ never edits one.
 ## Which tools are removed
 
 `disallowed-tools` on `SKILL.md` withdraws twelve write- or execution-shaped tools from the
-pool outright, observed under the `figma` server key on Claude Code 2.1.278. Each is written
-`mcp__*__<tool>`: on 2.1.283 `mcp__figma__use_figma` did not block the same tool on a server
-keyed `claude_ai_Figma`, while `mcp__*__use_figma` did and left `get_screenshot` callable. A
-wildcard in the tool segment would withdraw the read tools too, so it stays wrong here.
+pool outright, under any server key; the read tools, `get_screenshot` among them, stay
+callable. A withdrawn tool is absent, not broken: never look for another way to call it.
 
 **A design tool's default read output is often framework-opinionated** — a generated code
 sample may default to a stack this repository does not use. Read the structured data (node

@@ -5,9 +5,11 @@ Only the repro's own file runs. The runner is the test command the project decla
 the workspace that holds the test file — `## Gates` and `## Held checks` in
 `../../planning-features/references/project.md` find it and its source — narrowed to the
 runner's own documented single-file form and run from that workspace's directory. Call the
-runner the declaration names directly — where it is a package.json script, through the
-package manager's exec — never through the script or target itself: one can add watch
-mode, coverage or other suites. With no declared test command there is no runner: the
+tool the declared command runs directly — `node --test <file>` for a `"test": "node --test"`
+script — never through the script or target itself: one can add watch mode, coverage or
+other suites. A tool the project installs for itself rather than on the `PATH` runs through
+the launcher the project's own files already use for it — a build-tool wrapper, a virtual
+environment, a local tool manifest, a package manager — never one guessed in its place. With no declared test command there is no runner: the
 repro is `NOT RUN (no declared test command)`, and section 5 of `SKILL.md` governs.
 
 `<file>` is the path from the directory the command runs in.
@@ -118,7 +120,6 @@ Baseline gates: <gate line>; … — a FAIL with the errors it names
 - Green after: <command> · <summary line>
 - Red with the fix reverted: <command> — <the failing assertion> · <summary line>
 - Green restored: <command> · <summary line> · tree <F> equals <F again>
-<or, for the evident-cause entry> the red before and green after lines only
 <or> NOT RUN (no declared test command) | none — no correct seam: <why>
 ## Gates         <gate line>; … — a FAIL with each error, the fix's or pre-existing
 ## Owner report  <the owner report>

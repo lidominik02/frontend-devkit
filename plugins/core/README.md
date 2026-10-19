@@ -1,7 +1,8 @@
 # core
 
-The framework-agnostic pack: a feature lifecycle, bug diagnosis and fixing, branch
-syncing, review, commit and merge request text, browser verification. Enable it in every repository; the framework packs depend on it.
+The domain-neutral pack, for any repository: a feature lifecycle, bug diagnosis and fixing
+in any layer, branch syncing, review, commit and merge request text, browser verification
+for UI work. Enable it in every repository; the framework packs depend on it.
 
 Requires Node 22 or later as `node` on the `PATH` ([Installation](../../docs/installation.md#node)).
 

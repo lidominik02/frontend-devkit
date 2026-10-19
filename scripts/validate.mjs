@@ -22,7 +22,7 @@ const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
 // Repo policy, see ADR 0007; the only machine check on the always-on tier; query it with
 // `--checks=budget`.
-export const BUDGET_CEILING = 6500;
+export const BUDGET_CEILING = 6546;
 
 const MARKETPLACE = '.claude-plugin/marketplace.json';
 

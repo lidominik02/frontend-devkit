@@ -71,7 +71,12 @@ is scoped to the invocation. **Name each tool.** A wildcard in the tool segment,
 `mcp__chrome-devtools__*`, withdraws the entire server, including the tools
 `verifying-ui` grants itself to look at a page, which leaves the skill with nothing to look
 with; a tool named in both lists is withdrawn, so `disallowed-tools` wins over
-`allowed-tools`. The components: `investigating-bugs` drops the write tools, `verifying-ui` drops the
+`allowed-tools`. **The withdrawal outlasts a skill another skill calls.** When `fixing-bugs`
+called `investigating-bugs` through the Skill tool, `Edit` and `Write` stayed refused for the
+rest of the turn, after the called skill had finished — observed against 2.1.302 and 2.1.303,
+and the model stopped instead of fixing. So a skill that another skill calls mid-turn names
+in `disallowed-tools` no tool its caller needs; `investigating-bugs` keeps its no-edit rule in
+prose only. The components: `verifying-ui` drops the
 page-evaluate and file-upload tools that no deny rule covers, and `testing-changes`
 drops the design tool's write tools. Keep the prose rule
 as well as the field, and say which of the two is doing the work — claiming enforcement
@@ -129,6 +134,35 @@ that changes the outcome of the first action. Candidates to move are material co
 rather than followed: version matrices and compatibility tables, exhaustive enumerations
 where the body needs only the distinction, worked examples beyond the first, per-case detail
 behind a branch most invocations do not take, and background explaining why a rule holds.
+
+## Decisions in, evidence out
+
+**Shipped text states what to do; `docs/` records how we know.** A component carries the
+outcome of a measurement or an observation — `model: sonnet · effort: low`, "use the
+built-in `Explore` agent where the host offers it" — and nothing about how it was reached:
+no eval case name, no run count or cost saving, no Claude Code version, no date, no account
+of why a frontmatter field is spelled the way it is. The consumer's model cannot act on any
+of it, it is paid for on every load, and `/cli-upgrade-check` renews versions only under
+`docs/`, so a stamp in shipped text goes stale unseen. The evidence goes where it is
+maintained: a measured setting in its ADR ([ADR 0018](../adr/0018-worker-model-and-effort-by-measured-pair.md)
+holds the worker lines), a platform observation on this page or in the guide it concerns.
+The one exception is a version the user's own project decides — "`zdiff3` exists from git
+2.35", "checked against Nuxt 4.6.1" — because the model compares it with what the project
+runs.
+
+Observed platform behaviour the components rely on without saying so:
+
+- AskUserQuestion takes one to four questions of two to four options each and adds a
+  free-text "Other" answer itself (Claude Code 2.1.283).
+- The built-in `Explore` agent type is offered for read-only research (Claude Code 2.1.283).
+- Without `--isolated`, Chrome DevTools MCP keeps its profile under the user's home,
+  `.cache/chrome-devtools-mcp/` — observed as
+  `%USERPROFILE%\.cache\chrome-devtools-mcp\chrome-profile` on Windows 10 Pro 10.0.19045
+  with chrome-devtools-mcp 1.10.1, 2026-10-10.
+- `disallowed-tools` on browser tools: under both recommended server keys the removed names
+  are absent from the session's tool set before the first model call, and `ToolSearch`
+  reports them unavailable while `take_snapshot` answers (Claude Code 2.1.278); the
+  server-wildcard form is covered under "Use `disallowed-tools`" above.
 
 ## Adding a pack
 

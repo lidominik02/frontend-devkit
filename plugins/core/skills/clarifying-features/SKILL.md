@@ -86,8 +86,7 @@ every question of the dispatch prompt in `references/sources.md`. When the form 
 `path:line`, as that prompt asks. When it will propose `feature`, dispatch the research before
 the form with `run_in_background: true`, and read none of them yourself, a small
 repository included: the route, not the size of the codebase, decides who reads. Use the
-built-in `Explore` agent type where the host offers it (observed in Claude Code 2.1.283),
-else `general-purpose` told to stay read-only. When bounded work ratchets to the feature
+built-in `Explore` agent type where the host offers it, else `general-purpose` told to stay read-only. When bounded work ratchets to the feature
 route, dispatch the research then, before the next round's form; what the main thread
 already read is evidence the notes may cite. The dispatch prompt, its model and effort, and
 the note shape are in `references/sources.md`. On the feature route each finding is a cited
@@ -132,7 +131,9 @@ No PLAN.md.
      SAID, and with no reason given its rationale reads `unknown — ask <owner>`; only a
      rule you inferred is ASSUMED. A reason a source gives for a control as a whole is the reason of each rule that
      implements it: quote it, word for word, on each such rule — a pointer to it is not the
-     reason. A reason no source and no answer gave is your own: never tag it SAID.
+     reason. A rule the source states apart, with no reason of its own — an expiry beside a
+     threshold — is not covered: ask its reason. A reason no source and no answer gave is
+     your own: never tag it SAID.
    - Cross-check what the user states against the code and the research ("the list already
      paginates" → open it). A contradiction becomes a question
      carrying the evidence at its `path:line`.
@@ -159,15 +160,17 @@ No PLAN.md.
    criterion; one the client would see also gets an `OQ<n>` line for approval, owner
    `client` or `product owner`.
 5. **Veto.** One multi-select form lists every default the triage took, at most four
-   options a question; a checked one returns to the frontier, an unchecked one stays
-   ASSUMED.
+   options a question; a checked one returns to the frontier, an unchecked one or a blank
+   question stays ASSUMED.
 6. **Exit gate.** The frontier is empty; no open question blocks a task, or each blocking one
    is listed with what it blocks; and the self-check "an implementer could build this
    without asking" passes for every spec section (`references/question-rounds.md`). Then one
    form asks the user to confirm: Plan it (recommended), Change something, Stop here. The
    form names each question that blocks a task, and lists apart the rules you inferred
    (ASSUMED) and the stated rules whose reason is unknown, each with whom to ask. Change something returns to the rounds;
-   Stop here leaves STATUS.md with the confirmation as the next action.
+   Stop here leaves STATUS.md with the confirmation as the next action. Only this form
+   answers the gate: a chat reply, or an answer to an earlier form, does not, and the form
+   is shown.
 7. **Write PLAN.md's spec sections in full** in the artifact contract's shape, every section
    present — "none" where empty. STATUS.md's Next action: write the plan. Then call the Skill
    tool with "core:planning-features" in `plan` mode for the feature, in this session.

@@ -93,9 +93,8 @@ acts on the page or the machine prompts. `emulate` carries the dark-mode, error 
 techniques, and also `extraHttpHeaders`, `userAgent` and `geolocation` — a deliberate trade.
 
 **Removed from the pool outright**, via `disallowed-tools`, because a prompt is not a good
-enough boundary. Checked against Claude Code 2.1.278 under both recommended keys, the names
-are absent from the session's tool set before the first model call and `ToolSearch` reports
-them unavailable, while `take_snapshot` from the same server answers normally.
+enough boundary. Under any server key they are absent and `ToolSearch` reports them
+unavailable, while `take_snapshot` from the same server answers normally.
 
 - **`evaluate_script` / `browser_evaluate`** run arbitrary JavaScript in the page — a
   debugging tool, and the shortest path from a page to anywhere else.
@@ -109,21 +108,14 @@ human sees what is about to be typed into what — and extension or PWA installs
 the machine, not the page.
 
 The grants are keyed to the two recommended server keys; **under any other key every grant
-misses** and the tool prompts instead, the harmless direction. The removals put a wildcard in
-the server segment, `mcp__*__evaluate_script`, so they hold under any key: on Claude Code
-2.1.283, under a plugin-provided server's key, it withdrew `evaluate_script` although
-`--allowedTools` granted it, and left `take_snapshot` callable. The withdrawal is scoped to
-this skill's invocation: observed with the skill invoked as a slash command; a model-fired
-invocation is unobserved. **Never put the wildcard in the tool segment**:
-`mcp__chrome-devtools__*` in `disallowed-tools` withdraws the whole server, and a tool named
-in both lists is withdrawn, so the wildcard silently wins over the grants.
+misses** and the tool prompts instead, the harmless direction. The removals hold under any key, even against an `--allowedTools`
+grant.
 
 ## Caveats worth knowing before trusting a result
 
 - **The profile persists.** Without `--isolated`, Chrome DevTools MCP keeps a profile under
-  the user's home, `.cache/chrome-devtools-mcp/` on every OS (observed as
-  `%USERPROFILE%\.cache\chrome-devtools-mcp\chrome-profile` on Windows 10 Pro 10.0.19045
-  with chrome-devtools-mcp 1.10.1, 2026-10-10), so a login survives into the next session.
+  the user's home, `.cache/chrome-devtools-mcp/` on every OS, so a login survives into the
+  next session.
 - **Page content reaches the transcript.** Never point it at production customer data.
 - **`--headless` hides the window that never got focus.** Headed is the honest default.
 - **`lighthouse_audit` is a score, not a review** — contrast and labels, not focus order.
