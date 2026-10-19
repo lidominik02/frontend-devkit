@@ -155,6 +155,8 @@ Observed platform behaviour the components rely on without saying so:
 - AskUserQuestion takes one to four questions of two to four options each and adds a
   free-text "Other" answer itself (Claude Code 2.1.283).
 - The built-in `Explore` agent type is offered for read-only research (Claude Code 2.1.283).
+- `claude plugin details` does not show a pack's README, so the READMEs are written for
+  GitHub, where their links resolve (Claude Code 2.1.283).
 - Without `--isolated`, Chrome DevTools MCP keeps its profile under the user's home,
   `.cache/chrome-devtools-mcp/` — observed as
   `%USERPROFILE%\.cache\chrome-devtools-mcp\chrome-profile` on Windows 10 Pro 10.0.19045

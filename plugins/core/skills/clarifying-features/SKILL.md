@@ -86,11 +86,12 @@ every question of the dispatch prompt in `references/sources.md`. When the form 
 `path:line`, as that prompt asks. When it will propose `feature`, dispatch the research before
 the form with `run_in_background: true`, and read none of them yourself, a small
 repository included: the route, not the size of the codebase, decides who reads. Use the
-built-in `Explore` agent type where the host offers it, else `general-purpose` told to stay read-only. When bounded work ratchets to the feature
-route, dispatch the research then, before the next round's form; what the main thread
-already read is evidence the notes may cite. The dispatch prompt, its model and effort, and
-the note shape are in `references/sources.md`. On the feature route each finding is a cited
-note in `temp/<feature>/research/`; on the bounded route the findings feed the in-chat design. A
+built-in `Explore` agent type where the host offers it, else `general-purpose` told to stay
+read-only. When bounded work ratchets to the feature route, dispatch the research then,
+before the next round's form; what the main thread already read is evidence the notes may
+cite. The dispatch prompt, its model and effort, and the note shape are in
+`references/sources.md`. On the feature route each finding is a cited note in
+`temp/<feature>/research/`; on the bounded route the findings feed the in-chat design. A
 finding that contradicts what the user said becomes a question in the next round. Design
 frames are read on the main thread, through the design tool's read tools.
 

@@ -33,4 +33,4 @@ tests the split itself: [`evals/`](evals/README.md).
 
 This README is written to be read on GitHub, where its links into `docs/` and the other
 packs resolve. An installed copy of the pack carries neither, and `claude plugin details`
-does not show this file (observed on Claude Code 2.1.283).
+does not show this file.
