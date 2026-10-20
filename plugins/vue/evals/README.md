@@ -154,7 +154,8 @@ build-time `VITE_SEARCH_URL` because the one promoted bundle carries the product
 URL into staging, and moved it into the per-environment `config.json` beside `apiUrl` and
 `cdnUrl`. Both with-plugin runs read `references/review-checklist.md` and
 `references/env-and-config.md`, so the guard is credited on both; the `core`-only baseline
-reached the same verdict unaided, as the case expects.
+reached the same verdict unaided, as the case expects. The prompt's two hunk headers were
+corrected after these runs; no line of the diff changed, and no clause reads the counts.
 
 ## The matched pair
 

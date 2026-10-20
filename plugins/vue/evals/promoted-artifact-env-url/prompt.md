@@ -44,7 +44,7 @@ deploy-production:
 +VITE_SEARCH_URL=https://search.shop.example
 --- a/src/config.ts
 +++ b/src/config.ts
-@@ -1,14 +1,16 @@
+@@ -1,15 +1,17 @@
  export interface AppConfig {
    apiUrl: string
    cdnUrl: string
@@ -64,7 +64,7 @@ deploy-production:
 +export const searchUrl = import.meta.env.VITE_SEARCH_URL
 --- a/src/features/search/searchClient.ts
 +++ b/src/features/search/searchClient.ts
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
 -import { config } from '@/config'
 +import { config, searchUrl } from '@/config'
 
