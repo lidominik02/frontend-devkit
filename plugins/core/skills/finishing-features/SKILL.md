@@ -37,27 +37,29 @@ One line per source — done, or open with what is open — in the chat, and aga
   them, are open. No report at all is open: the review has not seen the work.
 - **QA.** A current qa/REPORT.md with no findings, or the user's skip, asked in section 3.
   A report is current unless, after its `QA report` line in STATUS.md's Log, a line records
-  a task done, a fix or a sync, or the branch's last commit (`git log -1 --format=%cs`) is
-  dated that line's day or later; its own line never makes it stale. Gate results are not read here.
+  a task done, a fix or a sync, or `git rev-parse --short HEAD` differs from the hash that
+  line records; its own line never makes it stale. Gate results are not read here.
 - **Open questions.** DECISIONS.md's OQ lines without `answered:` whose `blocks:` is not
   `nothing` are open; the rest are listed as a reminder.
 - **Contract gaps.** Every CONTRACT-GAPS.md line, as a reminder only.
 - **Gates.** STATUS.md's `Verified` `latest:` results — the final review's run; with none,
   each gate is NOT RUN on the final code. Nothing runs again.
 - **Evidence.** Each `SC<n>` of PLAN.md's Success criteria with its lines from STATUS.md's
-  `## Evidence`; one with no line is `none`. Run evidence is a `QA: TC<n> observed`, or a
-  passing gate line of a gate that runs the behaviour — a test, not a lint or a type check —
-  and still passes in `latest:`. A `task:` line, a check by hand, and a QA line other than
-  `observed` are not run evidence.
+  `## Evidence`; one with no line is `none`. Run evidence is a `QA: TC<n> observed` from a
+  current report with no later `finding` line for the same `TC<n>`, or a passing gate line
+  of a gate that runs the behaviour — a test, not a lint or a type check — and still passes
+  in `latest:`. A `task:` line, a check by hand, and a QA line other than `observed` are
+  not run evidence.
 
 Then the delivery state, from the lines above:
 
-- `verified` — every `SC<n>` has run evidence, and no finding is open, no gate FAILs and no
-  open question blocks.
-- `blocked` — a gate FAILs, an open question blocks, or a critical finding is open, and the
-  user has not accepted it on the section 3 form.
+- `verified` — every `SC<n>` has run evidence, no review or QA finding is open, no gate
+  FAILs and no open question blocks.
+- `blocked` — a gate FAILs, an open question blocks, or a critical review or QA finding is
+  open, and the user has not accepted it on the section 3 form.
 - `accepted with known gaps` — otherwise: an `SC<n>` without run evidence, a skipped QA, a
-  NOT RUN gate, an open finding that is not critical, or a blocker the user accepted. It
+  NOT RUN gate, an open review or QA finding that is not critical, or a blocker the user
+  accepted. It
   stands only once the user answers Done in section 3 with each gap named.
 
 And the confidence: `high` when every `SC<n>` has run evidence · `partial` when one lacks it
@@ -77,8 +79,8 @@ gaps by name.
   `fix-findings` mode; a bug the user found, or a QA finding, to `core:fixing-bugs`.
 - **Want something more** — `core:clarifying-features` in `gap` mode for the feature.
 
-Without a current QA report — none, or a stale one, named with the line that made it
-stale — the same form asks a second question: run the QA list first
+Without a current QA report — none, or a stale one, named with the line or the commit that
+made it stale — the same form asks a second question: run the QA list first
 (`core:testing-changes`), or skip it. A route other than Done writes nothing and ends this
 run.
 

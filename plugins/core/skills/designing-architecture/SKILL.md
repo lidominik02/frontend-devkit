@@ -29,8 +29,8 @@ Every form follows "The form" in `../clarifying-features/references/question-rou
 Cancel at any form stops the run with nothing written beyond what the user approved. Every `temp/` path below is under the repository root that
 `git rev-parse --show-toplevel` prints; outside a git repository, the working directory.
 
-**No question:** ask for one in a sentence, with an example — "should this be a composable
-or a util?", "is this wrapper worth keeping?"; nothing is surveyed.
+**No question:** ask for one in a sentence, with an example — "should this be a shared
+module or stay in its caller?", "is this wrapper worth keeping?"; nothing is surveyed.
 
 ## 1. The question
 
@@ -59,7 +59,7 @@ the user's.
 
 Facts are looked up, never asked.
 
-- **The existing mechanism first.** Search for a helper, composable, component, utility or
+- **The existing mechanism first.** Search for a helper, a shared module, a component or a
   pattern that already does the job, as the guards require. Show each query and the
   call-site count of every match, and open each match before counting it as one. A
   question about an existing pattern states what that pattern is for before anything
@@ -105,8 +105,8 @@ in this table, in the project's words:
 - **A future need is flagged, never built in silently**: an option that adds an
   abstraction for a need nobody has stated, or one with a single consumer, is labelled a
   proposal as the single-consumer guard requires.
-- **Names follow the repository's conventions** — a composable holds reactive state, a
-  util does not.
+- **Names follow the repository's conventions** — a new piece of code takes the name
+  the repository gives to its kind: a helper, a shared module, a component.
 - **An improvement outside the question is parked**, and goes under Parked in the record.
 
 ## 4. The recommendation
@@ -159,8 +159,8 @@ One form, two questions:
   one; "Another place" (named in the free-text answer); "Keep it in temp/ only".
 - **Build it** — "Build it through clarifying-features, `<route>` route (recommended)",
   "Stop here". The route follows the size rule in clarifying-features' Round 1: `bounded`
-  for one surface, a few files, no new API need and no open product question; `feature`
-  otherwise. Say the route and its reason.
+  for one surface, a few files, no new external contract and no open product question;
+  `feature` otherwise. Say the route and its reason.
 
 Write the repository record if one was chosen. On "Build it", call the Skill tool with
 "core:clarifying-features", naming the record's path as the source and the route. A

@@ -1,5 +1,15 @@
 # Reactivity
 
+## Contents
+- ref vs reactive vs shallowRef
+- Crossing a composable boundary
+- Props destructuring
+- computed vs watch vs watchEffect
+- Cleanup and ownership
+- Extending a binding without touching its shared source
+- Template refs
+- Common failure modes
+
 ## ref vs reactive vs shallowRef
 
 `ref` is the default choice. It works for primitives and objects, survives

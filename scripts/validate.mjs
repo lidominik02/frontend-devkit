@@ -317,6 +317,61 @@ export function checkReferences(root = ROOT) {
   return { name: 'references', findings: bad, ok: bad.length === 0 };
 }
 
+// --- a long reference lists its sections first --------------------------------
+
+// A reference past this many lines may be read only from its top, so it opens with a
+// `## Contents` list of its `##` sections; query the number here, never in the docs.
+export const CONTENTS_THRESHOLD = 100;
+
+// The `##` headings outside code fences, in order.
+function sectionHeadings(body) {
+  const out = [];
+  let fenced = false;
+  for (const line of body.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; continue; }
+    if (!fenced && line.startsWith('## ')) out.push(line.slice(3).trim());
+  }
+  return out;
+}
+
+// The `- <heading>` items under `## Contents`, up to the next heading.
+function contentsItems(body) {
+  const lines = body.split('\n');
+  const start = lines.findIndex((l) => l.trim() === '## Contents');
+  const items = [];
+  for (const line of lines.slice(start + 1)) {
+    if (line.startsWith('#')) break;
+    const m = line.match(/^- (.+)$/);
+    if (m) items.push(m[1].trim());
+  }
+  return items;
+}
+
+export function checkContents(root = ROOT) {
+  const { list, findings: bad } = loadPacks(root);
+  for (const pack of list) {
+    for (const p of markdownUnder(r(root, pack.dir, 'skills'))) {
+      if (!path.dirname(p).split(path.sep).includes('references')) continue;
+      const body = read(p);
+      const length = body.replace(/\n+$/, '').split('\n').length;
+      const headings = sectionHeadings(body);
+      if (headings[0] !== 'Contents') {
+        if (headings.includes('Contents')) bad.push(`${rel(root, p)} -> ## Contents is not its first section`);
+        else if (length > CONTENTS_THRESHOLD) {
+          bad.push(`${rel(root, p)} -> ${length} lines and no ## Contents; list its ## sections after the title`);
+        }
+        continue;
+      }
+      const listed = contentsItems(body);
+      const sections = headings.slice(1);
+      if (listed.join('\n') !== sections.join('\n')) {
+        bad.push(`${rel(root, p)} -> ## Contents lists [${listed.join(', ')}], but its sections are [${sections.join(', ')}]`);
+      }
+    }
+  }
+  return { name: 'contents', findings: bad, ok: bad.length === 0 };
+}
+
 // --- every script parses -------------------------------------------------------
 
 // The packs and the repository's own tooling; .claude/ holds no script.
@@ -509,6 +564,7 @@ export const CHECKS = {
   structure: checkStructure,
   budget: checkBudget,
   references: checkReferences,
+  contents: checkContents,
   scripts: checkScripts,
   versions: checkVersions,
   changelog: checkChangelog,

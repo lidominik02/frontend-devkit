@@ -1,5 +1,13 @@
 # Imports and structure
 
+## Contents
+- Imports are explicit unless the project opted in
+- Barrels versus subpaths
+- Package boundaries, if there are packages
+- Where code goes
+- Extract on the second occurrence, not the first
+- Generated code
+
 ## Imports are explicit unless the project opted in
 
 Imports are explicit unless `vite.config.*` imports an auto-import plugin. Plain Vite

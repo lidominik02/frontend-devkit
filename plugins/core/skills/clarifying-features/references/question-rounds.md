@@ -1,5 +1,15 @@
 # Question rounds — read before the first form of a round
 
+## Contents
+- The form
+- Triage
+- Non-functional requirements
+- Question kinds
+- The cross-check probe
+- The rationale probe
+- The extras block
+- The exit self-check
+
 ## The form
 
 - Every question goes through AskUserQuestion. One call takes one to four questions of two
@@ -11,7 +21,7 @@
   recommendation built on the user's own proposal says which part it keeps and what it
   changes.
 - A fact is looked up, never asked. A question whose answer sits in the repository, the
-  design or the API contract is a lookup not yet done, and so is an option that amounts to
+  design or an external contract is a lookup not yet done, and so is an option that amounts to
   "let me look first". Do that lookup before the form, and ask only what it leaves open.
 - Chat stays short, because the user often reads on a phone. Before a form, a few lines: what
   the last round settled and what this form decides. Long material goes into a file
@@ -35,10 +45,13 @@ carries weight is asked, however many there are.
 
 **The veto form**, before the exit gate: one AskUserQuestion call, `multiSelect: true`,
 listing each default as an option — its label the default, its description what it decides
-and the precedent it follows — at most four options a question, more defaults in further
-questions of the same call or a following one, grouped by topic. A checked default returns
-to the frontier as a question; an unchecked one stays ASSUMED. A question left blank keeps
-every default it lists: never ask again in chat. With nothing checked, the exit gate form
+and the precedent it follows — at most three defaults a question, then "Keep these
+defaults" as its last option; more defaults go in further questions of the same call or a
+following one, grouped by topic. A checked default goes to the rounds as a question, and
+the veto form comes again afterwards with only the defaults taken since; an unchecked one
+stays ASSUMED. A checked default is vetoed even when "Keep these defaults" is checked
+beside it, which then keeps only the unchecked ones. A question answered "Keep these
+defaults" alone, or left blank, keeps every default it lists: never ask again in chat. With no default checked, the exit gate form
 follows at once.
 
 ## Non-functional requirements
@@ -47,13 +60,13 @@ Once the must-haves are settled and before the extras, one AskUserQuestion call 
 `multiSelect: true` question per group, each option one item:
 
 - **Load and data** — performance and data volume; concurrency.
-- **Access** — permissions and security.
+- **Access** — permissions; security.
 - **Users**, only for UI work — accessibility; internationalisation.
 - **Operations** — logging and observability; migration and compatibility; rollout; error
   policy.
 
-A checked item gets its own question in the next round. Every unchecked item is written in
-Constraints as "<item>: not applicable".
+A checked item gets its own question in the rounds, and the flow then resumes at the
+extras. Every unchecked item is written in Constraints as "<item>: not applicable".
 
 ## Question kinds
 
@@ -76,7 +89,7 @@ DECISIONS.md entry.
 ## The cross-check probe
 
 When the user states a fact about the current system — "the list already paginates", "the
-API returns the total" — check it in the code or the research before building on it: it
+service returns the total" — check it in the code or the research before building on it: it
 holds → the spec cites the evidence, `path:line`; it does not → a question that quotes the
 statement and shows the evidence, and the user decides; it cannot be checked → the spec
 carries it tagged ASSUMED, with what would check it.
@@ -94,10 +107,10 @@ inferred rules, and the stated rules whose reason is unknown with whom to ask.
 
 Once the must-haves are settled, one block, apart from the must-have questions. Each extra —
 UX polish, stricter validation, defensive handling — is one question: what it is, its cost
-(the files it touches, a new component, a new API need), and whether the client would see
+(the files it touches, a new module, a new external contract), and whether the client would see
 it. Options: include it, leave it out. An included extra becomes a DECISIONS.md entry and an
 EXTRA-tagged success criterion; one the client would see also gets an `OQ<n>` line for
-approval. An extra that needs the API is a contract gap too.
+approval. An extra that needs a new external contract is a contract gap too.
 
 ## The exit self-check
 

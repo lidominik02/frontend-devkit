@@ -40,10 +40,10 @@ merge deny rule blocks it here), then the rebase, or stopping.
 
 ## 1. Set up
 
-1. **Facts.** By `../planning-features/references/project.md`: the package manager, the
-   framework packs (load each), the gates and the base branch. The target is that base
-   branch — `origin/<base>`, else the local branch; none found: ask. A stacked child's
-   target is its parent until the parent has merged.
+1. **Facts.** By `../planning-features/references/project.md`: the tool that runs a
+   manifest, the framework packs (load each), the gates and the base branch. The target is
+   that base branch — `origin/<base>`, else the local branch; none found: ask. A stacked
+   child's target is its parent until the parent has merged.
 2. **Branch and state.** `git rev-parse --abbrev-ref HEAD` names the branch; "An operation
    in progress" in `references/conflicts.md` detects a rebase, cherry-pick or merge under
    way and, HEAD being detached then, gives the branch. On the base branch itself: nothing
@@ -160,9 +160,9 @@ After every sync onto main, conflicts or not, find what main brought that the br
 1. **Compare** what main brought, `git diff <old merge-base> <new target>`, with what the
    branch added, `git diff <branch base> <pre-sync state>`. The branch base is the old
    merge-base; for a child moved onto main after its parent merged, it is the parent's last
-   commit (`references/stacks.md`). A candidate is a new export, component, composable,
-   util, store or type on each side with a similar name or the same purpose, read from both
-   bodies. The scan proposes; the user decides.
+   commit (`references/stacks.md`). A candidate is a new export, helper, shared module,
+   component, store or type on each side with a similar name or the same purpose, read from
+   both bodies. The scan proposes; the user decides.
 2. **Ask** each candidate in batched forms, one question each: both definitions at
    `path:line`, their callers, and every behavioural difference — signature, defaults,
    edge cases, errors. The options, the recommended one first, named with the side labels,

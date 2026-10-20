@@ -36,13 +36,20 @@ check records which applied.
 A fresh directory per run, a git repository with one commit:
 
 ```
-.gitignore                   node_modules/ and temp/, one per line
+.gitignore                   below
 package.json                 below
 tsconfig.json                below
 src/reports/toCsv.ts         below
 src/reports/toCsv.test.ts    below
 src/reports/downloadBlob.ts  below, the committed version
 src/reports/exportReport.ts  below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 `package.json`:

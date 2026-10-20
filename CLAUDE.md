@@ -11,8 +11,8 @@ devkit. This file is only the rules that must hold; `docs/adr/` records why they
 
 **Packs are framework-level.** A pack carries no fact about an individual repository —
 no file paths, helper names or conventions from a specific codebase. Those belong in
-that repo's own `CLAUDE.md`. Every project-specific fact — package manager, gates, base
-branch, git host, commit convention — is read at the moment of use by
+that repo's own `CLAUDE.md`. Every project-specific fact — the tool that runs a
+manifest, gates, base branch, git host, commit convention — is read at the moment of use by
 the skill, with the rules in `project.md`, from a file the project already maintains.
 Nothing is cached, so nothing goes stale. (ADR 0003)
 

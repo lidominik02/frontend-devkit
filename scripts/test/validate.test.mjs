@@ -8,7 +8,7 @@ import path from 'node:path';
 import { describe, test } from 'node:test';
 
 import { REPO_ROOT, runScript, tempDir } from './helpers.mjs';
-import { BUDGET_CEILING, CHECKS, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
+import { BUDGET_CEILING, CHECKS, CONTENTS_THRESHOLD, budget, checkFrontmatter, components, frontmatter, isComponent, localComponents, runChecks } from '../validate.mjs';
 
 const SKILL = 'plugins/core/skills/demo/SKILL.md';
 const GUIDE = 'plugins/core/skills/demo/references/guide.md';
@@ -20,6 +20,16 @@ const AGENT_DESCRIPTION = 'Demo agent used as a validate.mjs fixture.';
 // Long enough to change the listed total, were it counted.
 const LOCAL_DESCRIPTION = `Repo-local fixture component, never shipped. ${'Padding. '.repeat(30)}`.trim();
 const CHANGELOG = '# Changelog\n\n## 1.0.0 - 2026-01-01\n\nFirst release.\n';
+
+// A reference of `lines` lines with two sections and a fenced heading; `contents` is its
+// `## Contents` list, or null for none.
+function longReference(lines, contents = null) {
+  const head = ['# Guide', ''];
+  if (contents) head.push('## Contents', ...contents.map((c) => `- ${c}`), '');
+  const body = ['## First', '```', '## not a section', '```', '## Second'];
+  const filler = Array.from({ length: Math.max(0, lines - head.length - body.length) }, (_, k) => `Line ${k}.`);
+  return [...head, ...body, ...filler].join('\n') + '\n';
+}
 
 function skillText({ extraField = '', blocked = 'mcp__srv__tool_a', cite = 'references/guide.md', script = 'ok.mjs' } = {}) {
   return [
@@ -77,6 +87,7 @@ function fixture(t, { defect = null, crlf = false, override = {} } = {}) {
   };
   if (defect === 'scripts') files['plugins/core/scripts/broken.mjs'] = 'export const x = ;\n';
   if (defect === 'structure') files['plugins/core/skills/orphan/notes.md'] = '# Notes\n';
+  if (defect === 'contents') files[GUIDE] = longReference(CONTENTS_THRESHOLD + 1);
   // Seven listed skills of 1000 characters each take the listing past the ceiling.
   if (defect === 'budget') {
     for (let k = 0; k < 7; k++) {
@@ -121,6 +132,7 @@ describe('validate.mjs checks run against the root they are given', () => {
     frontmatter: /plugins\/core\/skills\/demo\/SKILL\.md -> unknown frontmatter field 'disable-model-invokation'/,
     budget: new RegExp(`^always-on listing is \\d+ chars, over the ${BUDGET_CEILING}-char ceiling\\.`),
     references: /plugins\/core\/skills\/demo\/SKILL\.md -> references\/missing\.md: no such file/,
+    contents: new RegExp(`^plugins/core/skills/demo/references/guide\\.md -> ${CONTENTS_THRESHOLD + 1} lines and no ## Contents`),
     scripts: /^plugins\/core\/scripts\/broken\.mjs -> SyntaxError/,
     versions: /^plugins\/core\/\.claude-plugin\/plugin\.json -> version "1\.0" is not X\.Y\.Z$/,
     structure: /^plugins\/core\/skills\/orphan -> no SKILL\.md$/,
@@ -391,5 +403,30 @@ describe('the budget ceiling is a constant in validate.mjs', () => {
     const { budget: result } = byName(runChecks(['budget'], root));
     assert.deepEqual(result.findings, []);
     assert.equal(result.detail, `${DESCRIPTION.length + AGENT_DESCRIPTION.length}/${BUDGET_CEILING} chars always-on`);
+  });
+});
+
+describe('a reference past the threshold lists its sections first', () => {
+  const contentsOf = (t, text) => byName(runChecks(['contents'], fixture(t, { override: { [GUIDE]: text } }))).contents;
+
+  test('a reference at the threshold needs no list', (t) => {
+    assert.deepEqual(contentsOf(t, longReference(CONTENTS_THRESHOLD)).findings, []);
+  });
+
+  test('a list matching the sections passes, and a fenced heading is no section', (t) => {
+    assert.deepEqual(contentsOf(t, longReference(CONTENTS_THRESHOLD + 20, ['First', 'Second'])).findings, []);
+  });
+
+  test('a list that differs from the sections fails, below the threshold too', (t) => {
+    for (const lines of [CONTENTS_THRESHOLD + 20, 20]) {
+      const result = contentsOf(t, longReference(lines, ['First', 'Third']));
+      assert.equal(result.ok, false);
+      assert.match(result.findings[0], /lists \[First, Third\], but its sections are \[First, Second\]/);
+    }
+  });
+
+  test('a list that is not the first section fails', (t) => {
+    const text = longReference(CONTENTS_THRESHOLD + 20).replace('## Second', '## Second\n\n## Contents\n- First\n- Second');
+    assert.match(contentsOf(t, text).findings[0], /## Contents is not its first section/);
   });
 });

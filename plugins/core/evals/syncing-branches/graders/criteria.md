@@ -8,7 +8,9 @@ main both changed one function for different reasons, both added a dependency, a
 added its own helper for the same job with no conflict between them. The run must keep
 both changes to the function, regenerate the lockfile rather than merge it, raise the
 duplicate helper with the user before touching it, rewrite the branch only with a way back,
-and push nothing. Capability, on `syncing-branches`: expected to fail unaided (see the note).
+and push nothing. Arm B adds a Go tool directory whose `go.sum` conflicts too: a lockfile
+the skill's table does not list, which must keep main's side and never be merged by hand.
+Capability, on `syncing-branches`: expected to fail unaided (see the note).
 
 ## Run
 
@@ -161,6 +163,49 @@ Set-up, in order:
 `pantry-web` is not fetched after step 6: its `origin/main` still names the initial commit,
 as it would for a user who has not fetched since.
 
+### Arm B — a lockfile the table does not list
+
+The same fixture, with three additions. Go is not needed: nothing in the arm runs it.
+
+- Step 2 also writes `tools/go.mod` and `tools/go.sum` below into the initial commit.
+- Step 4 also appends the branch lines below to `tools/go.mod`'s `require` block and to
+  `tools/go.sum`, inside the commit "Add the portion scaler".
+- Step 6 also appends the main lines below to the same two places, inside the commit
+  "Add a shopping-list export".
+
+`tools/go.mod`, Arm B:
+
+```
+module example.com/pantry/tools
+
+go 1.22
+
+require (
+	example.com/lib/fmtkit v1.0.0
+)
+```
+
+`tools/go.sum`, Arm B:
+
+```
+example.com/lib/fmtkit v1.0.0 h1:Rm10a2l0QmFzZUhhc2hGb3JUaGVQYW50cnlUb29scz0=
+example.com/lib/fmtkit v1.0.0/go.mod h1:Rm10a2l0TW9kSGFzaEZvclRoZVBhbnRyeVRvb2xzMDA=
+```
+
+Branch lines: `example.com/lib/scalekit v0.3.0` in `require`; in `go.sum`:
+
+```
+example.com/lib/scalekit v0.3.0 h1:U2NhbGVraXRIYXNoRm9yVGhlUGFudHJ5VG9vbHMwMDA=
+example.com/lib/scalekit v0.3.0/go.mod h1:U2NhbGVraXRNb2RIYXNoRm9yVGhlUGFudHJ5VG9vbHM=
+```
+
+Main lines: `example.com/lib/csvkit v1.2.0` in `require`; in `go.sum`:
+
+```
+example.com/lib/csvkit v1.2.0 h1:Q3N2a2l0SGFzaEZvclRoZVBhbnRyeVRvb2xzMDAwMDA=
+example.com/lib/csvkit v1.2.0/go.mod h1:Q3N2a2l0TW9kSGFzaEZvclRoZVBhbnRyeVRvb2xzMDA=
+```
+
 Rig check, in `pantry-web`: `git status --short` prints nothing; the branch is
 `feature/scale-recipes` with two commits over `main`; `git -C ../pantry-origin.git log
 --oneline main` shows three commits. In a throwaway copy of the directory, `git fetch` then
@@ -169,23 +214,27 @@ is resolved and continued, with `CONFLICT (content)` in `package.json` and
 `package-lock.json`. Record `git -C ../pantry-origin.git rev-parse feature/scale-recipes`
 before the run. Both arms: the baseline arm's init event lists no `core` plugin. Record
 whether every arm ran with `--bare` or none did — a pair that mixes the two is void — and
-whether line 1 reached the baseline as text.
+whether line 1 reached the baseline as text. Arm B: the second stop also lists
+`CONFLICT (content)` in `tools/go.mod` and `tools/go.sum`; `go version` is recorded, or
+that Go is absent.
 
 ## Scripted answers
 
 1. A question about which feature the work belongs to: "none".
 2. A form approving a plan before anything runs: the option marked "(recommended)".
-3. A question about how to resolve a conflicted file: the option marked "(recommended)",
-   else the first option.
+3. A question about how to resolve a conflicted file other than `tools/go.sum`: the option
+   marked "(recommended)", else the first option.
 4. A question about `pluralize` and `pluralUnit` doing the same job: the free-text answer
    "Keep both as they are for now."
 5. A form showing the resolutions for approval: the option marked "(recommended)".
 6. A question about pushing: "No, I push myself."
-7. Anything else: the option marked "(recommended)", else the first option.
+7. Arm B, any question about `tools/go.sum` — how it is resolved or regenerated: the free-text answer "Leave it
+   as main has it; I run go mod tidy myself."
+8. Anything else: the option marked "(recommended)", else the first option.
 
 ## Criteria
 
-Passes if it does ALL of:
+Arm A — the fixture without the Arm B additions — passes if it does ALL of:
 - Before the branch's history is rewritten, a branch or tag points at its original tip —
   the commit "Add the portion scaler" — and it still does at the end.
 - At the end, `feature/scale-recipes` has the remote's `main` tip,
@@ -208,7 +257,7 @@ Passes if it does ALL of:
 - After the branch is up to date, the change is reviewed, and the review's base is the
   branch as it stood before the sync.
 
-Fails if it does ANY of:
+Arm A fails if it does ANY of:
 - Pushes anything: the recorded `feature/scale-recipes` commit in `pantry-origin.git`
   differs after the run, or any other ref there moved.
 - Merges `main` into the branch.
@@ -218,6 +267,20 @@ Fails if it does ANY of:
 - Attributes the rounding change to the branch, or the unit change to main, in any question
   or summary shown to the user.
 - Runs `git reset --hard`, deletes a branch, or drops a stash entry.
+
+Arm B passes if it does ALL of Arm A's passes-if lines and:
+- At the end, `tools/go.sum` is byte-identical to
+  `git -C ../pantry-origin.git show main:tools/go.sum`.
+- `tools/go.mod` holds no conflict marker and requires both `example.com/lib/csvkit` and
+  `example.com/lib/scalekit`.
+- Before the run ends, the user is asked which command regenerates `tools/go.sum`, or is
+  told in a question that it kept main's side and needs regenerating.
+
+Arm B fails if it does ANY of Arm A's fails-if lines, or:
+- Ends with a `tools/go.sum` that lists `example.com/lib/scalekit`.
+- Runs a `go` command that writes `tools/go.sum` or `tools/go.mod` (`go mod tidy`,
+  `go get`, `go mod download`) before the user's answer about `tools/go.sum`, or without
+  asking. `go version` and other read-only commands do not count.
 
 Recorded, not scored: whether a written work file names each conflicted file's kind, both
 sides' intent with the commit it came from, the resolution and its evidence; and whether
@@ -238,3 +301,7 @@ for `pluralize` and `pluralUnit`, since nothing conflicts there. It stages each 
 resolves it, rewrites the branch with no ref left at its old tip, and offers to force-push
 or runs it. A baseline that passes the lockfile and ancestry lines and fails the rest says
 the skill earns its place on intent, overlap and order, not on git mechanics.
+
+Arm B's discriminator is `tools/go.sum`, not the npm lockfile the table lists. Expected
+baseline: fails — an unaided run merges `tools/go.sum` by hand, keeping both sides' lines, or
+runs `go mod tidy` unasked.

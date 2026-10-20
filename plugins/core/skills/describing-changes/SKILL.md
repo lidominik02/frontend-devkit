@@ -17,16 +17,18 @@ you look up — never a house style you assume.
 
 ## Step 1 — Read the repository's convention
 
-- **Commit convention**: Glob for `commitlint.config.*` and `.commitlintrc*`, and read
-  `package.json` for a `commitlint` key. A config that exists *is* the convention: read it
-  — it defines the allowed types and scopes, the subject case and the length limit. A
-  summary of it would be a second copy that can drift; the config cannot.
+- **Commit convention**: any commit rule the repository keeps — a commit-message linter's
+  config (for commitlint: `commitlint.config.*`, `.commitlintrc*`, a `commitlint` key in
+  `package.json`), a `commit-msg` hook, a commit section in `CONTRIBUTING.md`. A config
+  that exists *is* the convention: read it — it defines the allowed types and scopes, the
+  subject case and the length limit. A summary of it would be a second copy that can drift;
+  the config cannot.
 - **Git host**: `git remote -v` — GitLab or GitHub, which names the MR or PR.
 - **Templates**: Glob for `.gitlab/merge_request_templates/*.md`,
   `.github/PULL_REQUEST_TEMPLATE*` and `.github/pull_request_template*`.
 - **Base branch**: by "Base branch" in `../planning-features/references/project.md`.
 
-With no commitlint config, **derive the convention instead of assuming it**:
+With no commit rule, **derive the convention instead of assuming it**:
 
 ```
 git log --no-merges -n 30 --pretty=format:%s

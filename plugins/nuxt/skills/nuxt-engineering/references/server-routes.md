@@ -1,5 +1,15 @@
 # Nitro server routes
 
+## Contents
+- Layout
+- A handler
+- Validation is not optional here
+- Authorisation belongs here
+- Secrets and outbound calls
+- Errors and caching
+- Version-gated surface
+- Review list
+
 A file under `server/` is a real HTTP endpoint on a real server. This is what the `vue`
 pack means when it says an SPA has nowhere to put a secret and no backend of its own —
 here you have both, and with them the obligations of a backend.

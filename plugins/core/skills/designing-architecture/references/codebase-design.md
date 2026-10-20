@@ -1,5 +1,13 @@
 # Codebase design
 
+## Contents
+- Worth extracting
+- Fits the structure
+- Earns its keep
+- The better option
+- Guards
+- Words for the user
+
 Shared terms for judging structure: whether something is worth extracting, where it belongs,
 whether an abstraction earns its keep, and which of several designs is better. Each term names
 its standard source. The terms are for reasoning; the guards below hold for anyone who uses
@@ -81,8 +89,8 @@ with its evidence and its cost, and never restructures, extracts or redesigns un
 
 ## Guards
 
-- Search for an existing mechanism before proposing a new one: a helper, composable,
-  component, utility or pattern that already does the job. Show the search — the query and
+- Search for an existing mechanism before proposing a new one: a helper, a shared
+  module, a component or a pattern that already does the job. Show the search — the query and
   the call-site count of each match — and extend or reuse a match rather than building beside
   it.
 - Treat a pattern match as a candidate, not a finding. Open the code and confirm it before
@@ -105,7 +113,7 @@ with its evidence and its cost, and never restructures, extracts or redesigns un
 ## Words for the user
 
 Text written for the user — a finding, a question, a proposal — uses the project's and the
-framework's words: component, composable, util, store, page, feature, or whatever the
+framework's words: helper, component, util, store, page, feature, or whatever the
 repository itself calls the thing. The terms in this reference, such as module, depth, seam or
 connascence, stay in the reasoning. Where one helps the user, give its meaning in plain words
 rather than its name.

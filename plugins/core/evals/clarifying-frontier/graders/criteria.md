@@ -58,7 +58,7 @@ names as non-discriminating on that machine.
 A fresh directory per run, a git repository with one commit:
 
 ```
-.gitignore                         node_modules/ and temp/, one per line
+.gitignore                         below
 package.json                       below
 tsconfig.json                      below
 openapi.yaml                       below
@@ -68,6 +68,13 @@ src/components/BaseToggle.vue      below
 src/suppliers/SupplierList.vue     below
 src/suppliers/SupplierForm.vue     below
 src/orders/NewOrderForm.vue        below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 `package.json`:

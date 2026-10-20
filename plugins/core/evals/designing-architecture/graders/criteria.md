@@ -39,7 +39,7 @@ decide retention.
 A fresh directory per run, a git repository with one commit, "Initial commit", holding:
 
 ```
-.gitignore                          node_modules/ and temp/, one per line
+.gitignore                          below
 package.json                        below
 tsconfig.json                       below
 src/api/types.ts                    below
@@ -49,6 +49,13 @@ src/pages/InvoicesPage.vue          below — caller 2
 src/pages/ProductsPage.vue          below — caller 3
 src/pages/OrdersPage.vue            below — the one consumer of the proposal
 src/main.ts                         below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 Install the dependencies in `node_modules`, the one thing runs may share. Observed with

@@ -19,8 +19,8 @@ In the feature lifecycle this runs after implementation — `executing-plans` ca
 work is built, `clarifying-features` once a bounded change is done — and the user can invoke
 it directly. Fixing is not its job: the user reads the code and the report together, and
 `executing-plans` fixes, then calls this skill again in `re-review` mode. Read
-`../planning-features/references/project.md` first: the package manager, the framework
-packs, the gates and the base branch come from there.
+`../planning-features/references/project.md` first: the tool that runs a manifest, the
+framework packs, the gates and the base branch come from there.
 
 ## 1. Scope
 
@@ -68,7 +68,7 @@ too.
 ## 4. Dispatch
 
 One `core:reviewer` with `Role: two-axis`, then one with `Role: verify` over its candidates
-— by that fully-qualified name, in the foreground, on the model and effort
+— by that fully-qualified name, with `run_in_background: false`, on the model and effort
 `references/formats.md` names. Each carries the dispatch shape there: the role, the absolute diff path, the intent
 sources, the `Packs:` line `project.md` gives, the gate block, what is released, and the
 role material. `verify` gets each candidate's id, location, category, severity, summary and

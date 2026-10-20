@@ -1,5 +1,14 @@
 # Browser tools: which one, how it is installed, what it is named
 
+## Contents
+- Which one
+- Installing
+- Tool names
+- What is granted, and what deliberately is not
+- Caveats worth knowing before trusting a result
+- Manual contrast, when the audit tool cannot run
+- Why this is not bundled
+
 ## Which one
 
 | | **Chrome DevTools MCP** | **Playwright MCP** |

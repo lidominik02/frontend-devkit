@@ -23,10 +23,10 @@ The feature lifecycle is a chain of skills, and this one is second:
 ## The files
 
 A feature lives in `temp/<feature>/`: `PLAN.md`, `STATUS.md`, `DECISIONS.md`, and
-`CONTRACT-GAPS.md` when the API is involved. `references/artifacts.md` is the shape of each
-file and the rule for reading it — read it before writing one. Read
-`references/project.md` first: the package manager, the framework packs, the gates and the
-base branch come from there.
+`CONTRACT-GAPS.md` when an external contract is involved. `references/artifacts.md` is the
+shape of each file and the rule for reading it — read it before writing one. Read
+`references/project.md` first: the tool that runs a manifest, the framework packs, the
+gates and the base branch come from there.
 
 1. Write a file in the same turn as the work it records: a decision that exists only in the
    conversation is lost with the context window.

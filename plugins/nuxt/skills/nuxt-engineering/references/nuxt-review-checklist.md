@@ -1,5 +1,11 @@
 # Review checklist — Nuxt
 
+## Contents
+- Blocking (Critical)
+- Warning
+- What is NOT a finding in Nuxt
+- Before writing the verdict
+
 **This is a delta. Invoke `/vue:vue-engineering` and run its review checklist first**
 — lost reactivity, a cache key missing its varying input, prop mutation, a missing error
 branch, an uncleaned watcher, unvalidated external input and a guard failing open are

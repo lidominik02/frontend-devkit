@@ -1,5 +1,13 @@
 # Briefs, dispatch prompts, fix rounds and troubleshooting
 
+## Contents
+- The task brief
+- Implementer dispatch
+- Task review and re-review dispatch
+- Fix rounds
+- Fix brief for `fix-findings`
+- Troubleshooting
+
 Every `temp/…` path below is handed on as an absolute path under the repository root.
 
 ## The task brief
@@ -49,13 +57,13 @@ Place: task <N> of <M>. Earlier tasks built: <one line each> | none. Later tasks
 Scratch: <the brief's scratch location>
 ```
 
-**Model and effort.** `mechanical` task: model: sonnet · effort: not set.
-`judgment` task: model: the session's · effort: not set. Fix round 3: model: the session's,
-whatever the Tier — a step up after two rounds that did not close the findings. A fresh
-implementer that replaces one which cannot be continued, in round 1 or 2, takes its task's
-Tier line. The fix brief for `fix-findings` takes the `mechanical` line only when every
-finding to fix lies in a `mechanical` task's Files, else the session's. The dispatch passes
-the model named; "the session's" and "not set" leave that parameter out.
+**Model and effort.** Every dispatch: run_in_background: false. `mechanical` task: model:
+sonnet · effort: not set. `judgment` task: model: the session's · effort: not set. Fix round
+3: model: the session's, whatever the Tier — a step up after two rounds that did not close
+the findings. A fresh implementer that replaces one which cannot be continued, in round 1 or
+2, takes its task's Tier line. The fix brief for `fix-findings` takes the `mechanical` line
+only when every finding to fix lies in a `mechanical` task's Files, else the session's. The
+dispatch passes the model named; "the session's" and "not set" leave that parameter out.
 
 ## Task review and re-review dispatch
 

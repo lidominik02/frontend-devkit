@@ -1,4 +1,14 @@
 # The fix loop: lookup
+
+## Contents
+- Running one test file
+- Skipping a repro that stays red
+- Repro by kind of bug
+- A correct seam
+- The revert proof
+- The owner report
+- FIX.md
+
 ## Running one test file
 
 Only the repro's own file runs. The runner is the test command the project declares for
@@ -28,12 +38,12 @@ repro is `NOT RUN (no declared test command)`, and section 5 of `SKILL.md` gover
 Only the repro test is skipped, never its neighbours or its group, by the runner's own skip
 form — a `.skip` call, a skip option, a skip marker. The one-line comment sits above it:
 ```ts
-// Fails until the pricing API returns a VAT rate for every country it lists.
+// Fails until the pricing service returns a VAT rate for every country it lists.
 it.skip('adds VAT to the cart total for every listed country', () => {
 ```
 ```python
-# Fails until the pricing API returns a VAT rate for every country it lists.
-@pytest.mark.skip(reason="the pricing API omits VAT rates")
+# Fails until the pricing service returns a VAT rate for every country it lists.
+@pytest.mark.skip(reason="the pricing service omits VAT rates")
 def test_vat_for_every_listed_country():
 ```
 

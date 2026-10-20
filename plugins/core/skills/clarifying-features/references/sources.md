@@ -1,6 +1,16 @@
 # Sources, the draft, the design and the research
 
-Read this in round 1, and whenever a round touches the design, the API or the research.
+## Contents
+- The round-1 inventory
+- Drafting when nothing written exists
+- The no-design proposal
+- The design gap check
+- External contract
+- The research dispatch
+- The research note
+
+Read this in round 1, and whenever a round touches the design, an external contract or the
+research.
 ## The round-1 inventory
 
 Look in this order, and stop asking about a source once it is found. A link or a ticket
@@ -59,18 +69,19 @@ the precedent recommended, cited by path; no precedent → a question with a rea
 default, said to be one; only the designer can answer → an `OQ<n>` line with owner
 `designer` and what it blocks. Design's coverage is then partial, naming what is missing.
 
-## API involvement
+## External contract
 
-Round 1 decides it, checked against the contract the code research found — the API client,
-its types, a schema. Each gap becomes a CONTRACT-GAPS.md entry the moment it surfaces, in any
-round; bounded work that finds an API need is no longer bounded.
+Round 1 decides whether the feature touches one, checked against the contract the code
+research found — its client, its types, a schema. Each gap becomes a CONTRACT-GAPS.md entry
+the moment it surfaces, in any round; bounded work that finds a new external contract is no
+longer bounded.
 
 ## The research dispatch
 
 Round 1 dispatches it in the background on proposed `feature` work — `bounded` work reads the
-same questions on the main thread instead; `research <question>` in the foreground, with the
-user's question alone as the numbered list. The agent type is `Explore` where the host offers
-it, else `general-purpose`.
+same questions on the main thread instead; `research <question>` with `run_in_background:
+false`, with the user's question alone as the numbered list. The agent type is `Explore` where
+the host offers it, else `general-purpose`.
 
 **Model and effort.** model: sonnet · effort: not set. The dispatch passes the model named;
 "the session's" and "not set" leave that parameter out.
@@ -81,11 +92,11 @@ command that modifies the repository or its git state.
 Repository: <path>
 Questions:
 1. Conventions: what the repository's CLAUDE.md, ADRs and docs require for <the surface>.
-2. Reusable assets: the components, composables, helpers and design tokens <the feature>
+2. Reusable assets: the helpers, shared modules, components and design tokens <the feature>
    could build on.
 3. The closest existing feature: its files, its states, how it is tested.
-4. The API contract the feature touches: the endpoints, fields and types, and where the
-   API client lives.
+4. The external contract the feature touches — endpoints, messages or schemas — and where
+   its client lives.
 5. Existing mechanisms: for each mechanism <the feature> needs, the one the repository
    already uses for that job, with the search that found it and its call-site count.
 <any question the conversation added>

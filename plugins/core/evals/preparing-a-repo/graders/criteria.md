@@ -34,7 +34,7 @@ A fresh directory per run, a git repository on branch `main` with one commit, wh
 is `chore(release): initial package`:
 
 ```
-.gitignore               node_modules/ and dist/, one per line
+.gitignore               below
 package.json             below
 tsconfig.json            below
 commitlint.config.js     below
@@ -42,6 +42,13 @@ CLAUDE.md                below
 src/index.ts             below
 src/slugify.ts           below
 src/truncate.ts          below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+dist/
 ```
 
 `package.json`:

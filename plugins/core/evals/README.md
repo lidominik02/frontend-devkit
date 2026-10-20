@@ -9,7 +9,7 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | Baseline (no plugin) | With plugin | Verdict |
 | --- | --- | --- |
 | fails | passes | **keep** — the rule adds capability |
-| passes | passes | **remove** — the model already knew |
+| passes | passes | **remove** — the model already knew; **keep** only when the pair shows the plugin does it better: fewer turns, questions or tokens for the same result |
 | fails | fails | rewrite, or accept it is out of reach |
 
 **`core`'s bar is higher than a framework pack's.** `core` carries most of the listed
@@ -21,8 +21,8 @@ framework is. A `core` skill that passes baseline is several times the waste, an
 Cases fall into two kinds. **Capability**: the model cannot solve it unaided — a
 distinction it does not draw, an ordering it does not follow, a guardrail it does not
 hold under pressure; in a framework pack, version-specific behaviour or anything past
-the training cutoff. **Efficiency**: it can, but not well. Only capability rules are
-worth paying for at this altitude.
+the training cutoff. **Efficiency**: it can, but not well. A capability rule earns its
+cost by the gap; an efficiency rule only by a measured gain, recorded in its case.
 
 The rest of this file is the methodology for every pack in this repo. The framework
 packs' eval READMEs cover only what is specific to them and point back here.
@@ -35,7 +35,7 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `fixing-bugs` | Whether a fix from a diagnosis is proven — the test red before it, green after, red with the fix taken out and green once it is back, only that test file run, the fix left in place — and whether a root cause in an API this repository only consumes leaves the API's code and this repository's source untouched and hands the owner a report |
 | `bug-in-own-server-route` | Whether a bug in the repository's own server code, which the diagnosis calls backend, is fixed under `server/` rather than handed to an owner, and proven with the revert proof through the runner the project declares |
 | `bug-in-repo-without-ui` | Whether, in a repository with no UI and no `package.json`, an untyped "fix this bug" reaches `fixing-bugs`, the cause is treated as the repository's own, the fix is proven with one test file by the declared runner, and the gates come from `CLAUDE.md` with their source and the suite held |
-| `syncing-branches` | Whether bringing a branch up to date loses nothing from either side — both changes to a function kept, the lockfile regenerated rather than merged, a duplicate helper raised with the user before it is touched, the branch rewritten only with a way back, nothing pushed |
+| `syncing-branches` | Whether bringing a branch up to date loses nothing from either side — both changes to a function kept, the lockfile regenerated rather than merged, a duplicate helper raised with the user before it is touched, the branch rewritten only with a way back, nothing pushed; and, in arm B, whether a lockfile the table does not list (`go.sum`) keeps main's side and is never merged by hand |
 | `describing-changes` | Reading the commit convention from the file that enforces it, and reporting unrun gates as NOT RUN rather than implying they passed |
 | `shaping-commits` | Offering genuine alternatives on request, and basing the one-commit-or-several call on whether an intermediate commit would still build rather than splitting mechanically by file |
 | `describing-changes-trigger` | Whether the `Skill` tool actually fires on the user's own informal register, not only whether the description matches it in isolation |

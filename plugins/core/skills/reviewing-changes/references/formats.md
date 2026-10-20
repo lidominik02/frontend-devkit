@@ -15,9 +15,9 @@ Released: <each held check the project declares: released | held> | none declare
 <role material>
 ```
 
-**Model and effort.** model: sonnet · effort: low. One line for
-`two-axis`, `verify` and `re-review` alike; `re-review` follows `two-axis`. The dispatch passes
-the model named; "the session's" and "not set" leave that parameter out.
+**Model and effort.** model: sonnet · effort: low · run_in_background: false. One line for
+`two-axis`, `verify` and `re-review` alike; `re-review` follows `two-axis`. The dispatch
+passes the model named; "the session's" and "not set" leave that parameter out.
 
 A task review adds `Implementer message:` and `Raised by the dispatcher:` after Released.
 The role material: `two-axis` — none. `re-review` — `Prior findings:` and each open finding

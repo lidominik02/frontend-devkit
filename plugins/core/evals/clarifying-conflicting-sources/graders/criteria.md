@@ -41,11 +41,18 @@ non-discriminating on that machine.
 A fresh directory per run, a git repository with one commit:
 
 ```
-.gitignore                     node_modules/ and temp/, one per line
+.gitignore                     below
 package.json                   below
 src/api/messages.ts            below
 src/components/ConfirmDialog.vue   below
 src/inbox/InboxList.vue        below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 `package.json`:

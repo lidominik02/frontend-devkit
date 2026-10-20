@@ -13,8 +13,8 @@ You carry out an approved plan, one task at a time. In subagent mode `core:imple
 workers write the code and a `core:reviewer` reviews each task; in inline mode this session
 writes it. In both, the plan, the gates and STATUS.md decide when a task is done. Every file
 you write follows `../planning-features/references/artifacts.md`. Read
-`../planning-features/references/project.md` first: the package manager, the framework
-packs, the gates and the base branch come from there.
+`../planning-features/references/project.md` first: the tool that runs a manifest, the
+framework packs, the gates and the base branch come from there.
 
 In the lifecycle this runs after `planning-features`, which takes the user's approval and
 the mode. When every task is done this skill calls `reviewing-changes` for the whole
@@ -60,8 +60,9 @@ For each task neither done nor blocked, in plan order:
    `in progress`.
 2. **Brief.** Write `temp/<feature>/tasks/<NN>-<task-slug>-brief.md`, `<NN>` the task's
    position in the plan, from the template in `references/dispatch.md`, every field filled.
-3. **Dispatch** `core:implementer` by that name, in the foreground, with the prompt in
-   `references/dispatch.md`, on the model and effort its line names for the task's Tier.
+3. **Dispatch** `core:implementer` by that name, with `run_in_background: false`, with the
+   prompt in `references/dispatch.md`, on the model and effort its line names for the task's
+   Tier.
 4. **Status.** Act on the implementer's returned status:
 
    | Status | Action |
@@ -86,11 +87,10 @@ For each task neither done nor blocked, in plan order:
    - **undecided** — the gate has no comparable baseline result (NOT RUN there, or released
      after it): reported with its location; the user rules on it, it never enters a fix
      round on its own, and it stops the run after this task even without pausing.
-7. **Task review.** Dispatch one `core:reviewer`, foreground, `Role: two-axis`, in the
-   dispatch shape and on the model and effort of
-   `../reviewing-changes/references/formats.md`, as `references/dispatch.md`
-   fills it: the diff from step 5, the intent sources, the `Packs:` line and the step 6
-   gate block.
+7. **Task review.** Dispatch one `core:reviewer` with `run_in_background: false`,
+   `Role: two-axis`, in the dispatch shape and on the model and effort of
+   `../reviewing-changes/references/formats.md`, as `references/dispatch.md` fills it: the
+   diff from step 5, the intent sources, the `Packs:` line and the step 6 gate block.
 8. **Fix rounds**, for critical and important findings and the task's own gate failures: at
    most three. Rounds 1 and 2 go to the same implementer with SendMessage; round 3 to a fresh
    `core:implementer` with the brief and the findings, on the model `references/dispatch.md`

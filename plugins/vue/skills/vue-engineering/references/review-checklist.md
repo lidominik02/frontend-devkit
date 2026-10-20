@@ -1,5 +1,11 @@
 # Vue review checklist
 
+## Contents
+- Blocking (Critical)
+- Warning
+- What is NOT a finding
+- Before writing the verdict
+
 Read this when reviewing a diff in a Vue codebase. It is the same knowledge as
 `SKILL.md`, aimed at finding defects rather than avoiding them.
 

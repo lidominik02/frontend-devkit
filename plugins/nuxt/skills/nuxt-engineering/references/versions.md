@@ -1,5 +1,13 @@
 # Version gates
 
+## Contents
+- Nuxt majors
+- Nuxt 3 → 4, the changes that break code
+- `compatibilityDate` and `compatibilityVersion`
+- Nitro
+- Type-checking — the row that matters most
+- Testing
+
 Read the installed versions before applying anything on this page. The wrong half of a
 version-gated rule is worse than no rule, and Nuxt moved the source directory in one
 major and is moving the server layer in the next.

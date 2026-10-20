@@ -1,5 +1,12 @@
 # State under SSR
 
+## Contents
+- The inversion
+- `useState`
+- Pinia
+- Per-request context
+- Common failure modes
+
 ## The inversion
 
 In a client-only SPA every module is instantiated once per browser tab, so module-scope

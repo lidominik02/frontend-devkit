@@ -67,17 +67,17 @@ outright: `ToolSearch` reports it unavailable and there is no schema left to cal
 way the call does not run. The withdrawal happens when the session starts, not when the
 body does — with the skill typed in the prompt the tools are already absent from the init
 event, and with the plugin loaded but the skill untyped nothing is withdrawn at all, so it
-is scoped to the invocation. **Name each tool.** A wildcard in the tool segment, such as
-`mcp__chrome-devtools__*`, withdraws the entire server, including the tools
-`verifying-ui` grants itself to look at a page, which leaves the skill with nothing to look
-with; a tool named in both lists is withdrawn, so `disallowed-tools` wins over
-`allowed-tools`. **The withdrawal outlasts a skill another skill calls.** When `fixing-bugs`
-called `investigating-bugs` through the Skill tool, `Edit` and `Write` stayed refused for the
-rest of the turn, after the called skill had finished — observed against 2.1.302 and 2.1.303,
-and the model stopped instead of fixing. So a skill that another skill calls mid-turn names
-in `disallowed-tools` no tool its caller needs; `investigating-bugs` keeps its no-edit rule in
-prose only. The components: `verifying-ui` drops the
-page-evaluate and file-upload tools that no deny rule covers, and `testing-changes`
+starts with the invocation and lasts the rest of the turn. **Name each tool.** A wildcard in
+the tool segment, such as `mcp__chrome-devtools__*`, withdraws the entire server, including
+the tools `verifying-ui` grants itself to look at a page, which leaves the skill with
+nothing to look with; a tool named in both lists is withdrawn, so `disallowed-tools` wins
+over `allowed-tools`. **The withdrawal outlasts a skill another skill calls.** When
+`fixing-bugs` called `investigating-bugs` through the Skill tool, `Edit` and `Write` stayed
+refused for the rest of the turn, after the called skill had finished — observed against
+2.1.302 and 2.1.303, and the model stopped instead of fixing. So a skill that another skill
+calls mid-turn names in `disallowed-tools` no tool its caller needs; `investigating-bugs`
+keeps its no-edit rule in prose only. The components: `verifying-ui` drops the page-evaluate
+and file-upload tools that no deny rule covers, and `testing-changes`
 drops the design tool's write tools. Keep the prose rule
 as well as the field, and say which of the two is doing the work — claiming enforcement
 that is not happening is worse than an honest advisory rule. Only for prohibitions that
@@ -152,6 +152,16 @@ runs.
 
 Observed platform behaviour the components rely on without saying so:
 
+- A relative path in a file resolves against that file's own folder: a `SKILL.md` names
+  `../<skill>/references/<file>`, a reference `../../<skill>/references/<file>`, and the
+  model reads the file the path names from the referencing file (Claude Code 2.1.299,
+  Windows 10 Pro 10.0.19045, 3 of 3 runs, 2026-10-19).
+- A worker dispatch the text marks `run_in_background: false` reaches the Agent call
+  without that field, in the prose and in the "Model and effort" line alike, so the worker
+  starts in the background; the main thread still waits for its hand-back before the next
+  step, and no review, pause or gate came out wrong (Claude Code 2.1.304, `claude-opus-5-5`,
+  17 of 17 `core:implementer` and `core:reviewer` dispatches, 2026-10-20). The line stays as
+  the intent; a dispatch that passes `true`, such as the research, does carry the field.
 - AskUserQuestion takes one to four questions of two to four options each and adds a
   free-text "Other" answer itself (Claude Code 2.1.283).
 - The built-in `Explore` agent type is offered for read-only research (Claude Code 2.1.283).

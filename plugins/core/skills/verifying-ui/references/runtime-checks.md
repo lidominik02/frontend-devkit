@@ -1,5 +1,14 @@
 # What to look at once the browser is attached
 
+## Contents
+- One call carries the whole emulated state
+- The states, in the order they are usually wrong
+- Beyond the states
+- The console is a source of findings, not noise
+- The network answers questions the picture cannot
+- Framework-specific criticals
+- What is NOT a finding
+
 Read this when driving the loop in `SKILL.md`. It is the list of failures that are
 invisible to a type-checker, a linter, a test suite and a diff reading, and visible in
 about ten seconds to anything that can see the page.

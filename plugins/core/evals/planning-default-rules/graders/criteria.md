@@ -35,11 +35,18 @@ runner's own rules folded in. The rig check records which applied.
 A fresh directory per run, a git repository with one commit:
 
 ```
-.gitignore                 node_modules/ and temp/, one per line
+.gitignore                 below
 package.json               below
 src/api/orders.ts          below
 src/orders/OrderPage.vue   below
 src/orders/CancelOrderDialog.vue   below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 `package.json`:

@@ -32,13 +32,20 @@ the model unaided. The rig check records which applied.
 A fresh directory per run, a git repository with one commit:
 
 ```
-.gitignore                           node_modules/ and temp/, one per line
+.gitignore                           below
 package.json                         below
 src/api/client.ts                    below
 src/invoices/InvoiceForm.vue         below
 src/invoices/invoicePdf.ts           below
 src/creditNotes/CreditNoteForm.vue   below
 src/reports/revenue.ts               below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 `package.json`:

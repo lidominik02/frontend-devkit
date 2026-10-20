@@ -1,5 +1,12 @@
 # The artifact contract
 
+## Contents
+- PLAN.md
+- DECISIONS.md
+- CONTRACT-GAPS.md
+- STATUS.md
+- The rules of these files
+
 A feature keeps its state in files, so a session that remembers nothing can continue it,
 in the repo that owns most of the feature.
 
@@ -8,7 +15,7 @@ temp/<feature>/
 ├── PLAN.md            always
 ├── STATUS.md          always
 ├── DECISIONS.md       always; open questions at the top, decisions below
-├── CONTRACT-GAPS.md   only when the feature involves the API
+├── CONTRACT-GAPS.md   only when the feature involves an external contract
 ├── research/          one cited note per question (shape below)
 ├── review/            NN-review.md, NN-re-review.md (reviewing-changes writes them)
 ├── qa/                TEST-LIST.md, REPORT.md (testing-changes writes them)
@@ -127,7 +134,9 @@ action needs>. Next action: <the action>. Rules: <each governing rule, written o
 A gate line is `<workspace> · <command> · <source> · <result>`, as `## Gates` in
 `project.md` reports it; the Tasks table's Gates cell and `Verified`'s `baseline:` and
 `latest:` join several with `; `. The Log is append-only, one free line per event, with no
-fixed shape. The Tasks table is the
+fixed shape but one: `<date> · QA report · <hash> · <n> findings, <n> skipped · <report
+path>`, which `testing-changes` writes with `git rev-parse --short HEAD` and
+`finishing-features` compares with HEAD. The Tasks table is the
 only place a task is Done. An Evidence line is
 `SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`, one piece of
 evidence for one success criterion; a criterion may carry several. Two skills write it:

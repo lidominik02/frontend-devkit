@@ -30,13 +30,20 @@ non-discriminating on that machine.
 A fresh directory per run, a git repository with one commit:
 
 ```
-.gitignore                     node_modules/ and temp/, one per line
+.gitignore                     below
 package.json                   below
 openapi.yaml                   below
 src/api/generated/transfers.ts below
 src/stores/session.ts          below
 src/stores/transfers.ts        below
 src/views/TransferList.vue     below
+```
+
+`.gitignore`:
+
+```
+node_modules/
+temp/
 ```
 
 `package.json`:

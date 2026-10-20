@@ -21,7 +21,7 @@ consumes, runs only the one test file it writes, and hands on to `reviewing-chan
 
 ## 1. Set up
 
-1. **Facts.** Read the package manager, the framework packs and the gates by
+1. **Facts.** Read the tool that runs a manifest, the framework packs and the gates by
    `../planning-features/references/project.md`, and load the packs it names; a later pack
    wins every conflict. The test runner is the declared test command, narrowed to its
    single-file form by "Running one test file" in `references/loop.md`. With no declared
@@ -59,7 +59,8 @@ consumes, runs only the one test file it writes, and hands on to `reviewing-chan
 **Confirm first**, in every layer and on the evident-cause entry too: before the first
 edit, the repro test included, ask with one form naming the layer and the files the fix
 would change — "Fix it here" (recommended) or "Owner report instead". Owner report instead
-changes no code: section 4 steps 2 and 3, then section 6.
+changes no code: section 4 step 2 only — no `CG<n>` line, since own code is no external
+contract — then section 6.
 
 1. Write the repro test at the seam the root cause sits behind ("A correct seam" in
    `references/loop.md`), built the way "Repro by kind of bug" there gives for this kind.

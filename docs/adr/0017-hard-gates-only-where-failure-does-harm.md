@@ -21,7 +21,9 @@ loaded in another framework's project.
 - Anything else — a skill, an agent, a reference, a script, new content — is admitted by
   the maintainer's decision, with its cost stated, and measured after it ships. It need not
   first pass an eval that fails without it.
-- Deletion stays the default: content the baseline handles without it is removed at cleanup.
+- Deletion stays the default: content the baseline handles without it is removed at cleanup,
+  unless a measured pair shows it does the same work better — fewer turns, questions or
+  tokens for the same result. Efficiency is a reason to keep, as capability is.
 - The hook rule of 0013 is unchanged.
 
 ## Rationale
@@ -39,7 +41,8 @@ and deleting is cheaper than proving before.
 ## Consequences
 
 - Content can ship unmeasured, so cleanup has to happen. A measured-after case the baseline
-  passes is removed along with the content it measured.
+  passes is removed along with the content it measured, unless the pair shows an efficiency
+  gain; then both stay, and the case records the gain.
 - An unmeasured addition that causes a reported regression reopens this record.
 
 ## Constraints and invariants

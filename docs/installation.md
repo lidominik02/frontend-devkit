@@ -39,6 +39,7 @@ to your user settings next to the marketplace:
       "Read(.env)", "Read(.env.*)", "Read(!.env.example)",
       "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.gnupg/**)",
       "Edit(package-lock.json)", "Edit(pnpm-lock.yaml)", "Edit(yarn.lock)", "Edit(bun.lock)", "Edit(bun.lockb)",
+      "Edit(go.sum)", "Edit(Gemfile.lock)", "Edit(Cargo.lock)", "Edit(poetry.lock)", "Edit(uv.lock)", "Edit(composer.lock)",
       "Edit(.git/**)",
       "Bash(git push:*)", "Bash(git pull:*)", "Bash(git merge:*)", "Bash(git commit-tree:*)",
       "Bash(gh pr merge:*)", "Bash(glab mr merge:*)",
@@ -48,6 +49,9 @@ to your user settings next to the marketplace:
   }
 }
 ```
+
+The lockfile lines are one `Edit` rule per lockfile your repositories keep: drop the ones you
+never use, and add any other your tools write.
 
 What these rules cover, and what they do not:
 

@@ -1,12 +1,24 @@
 # Reading the project
 
+## Contents
+- The tool that runs a manifest
+- Framework packs
+- Gates
+- Own code
+- Held checks
+- Formatter
+- Base branch
+
 The facts every lifecycle skill needs, read from files the project already keeps, at the
 moment a step needs them. Nothing is cached between steps.
 
-## Package manager
-The lockfile names it: pnpm-lock.yaml → pnpm · yarn.lock → yarn · bun.lock or bun.lockb → bun ·
-otherwise npm. A `packageManager` field in package.json wins. It applies only where package.json
-is the source: run its scripts as `<pm> run <script>`, and no other source's command through it.
+## The tool that runs a manifest
+A manifest's target runs with the tool that owns the file. Where more than one tool could, the
+project's own declaration decides, then the lockfile beside the manifest, then the manifest's
+default tool (for package.json: a `packageManager` field, then pnpm-lock.yaml → pnpm ·
+yarn.lock → yarn · bun.lock or bun.lockb → bun, else npm; that tool is `<pm>`, and a script
+runs as `<pm> run <script>`). The tool runs only its own manifest's targets, never another
+source's command.
 
 ## Framework packs
 Read the workspace's package.json — the root, or the workspace the task names in a monorepo
@@ -19,17 +31,19 @@ A later pack wins every conflict. Each dispatch to a worker names the packs it f
 ## Gates
 A gate is only a command the project declares in a file it maintains, and every gate line
 names that file. Gates run per workspace: a touched file's workspace is the nearest directory
-above it, up to the repository root, where `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, or a
-manifest or task runner's file — package.json, a `Makefile`, a `justfile` — names a check or a
-command. Work that touches one workspace runs
-only that workspace's gates.
+above it, up to the repository root, where `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`, or the
+file of a manifest or task runner that describes its targets — package.json `scripts`, a
+`Makefile`, a `justfile`, a `Taskfile` — names a check or a command. Work that touches one
+workspace runs only that workspace's gates.
 
 1. **Source.** The first of `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md` that names the
    workspace's checks is the whole list, merged with nothing, and narrowed by its own words
-   ("the first two are the gate"). Otherwise the targets of its manifest or task runner —
-   package.json `scripts`, a `Makefile`, a `justfile` — are the declaration, with no
-   documenting line needed. A CI file is evidence, never a source. Nothing declared:
-   `NOT RUN (no declared command)`, never a guess.
+   ("the first two are the gate"). Otherwise the targets its manifest or task runner's file
+   describes — package.json `scripts`, a `Makefile`, a `justfile`, a `Taskfile` — are the
+   declaration, with no documenting line needed. A tool's implicit lifecycle task
+   (`cargo test`, `go test`, `mvn test`) is not declared by its manifest: it is a gate only
+   when one of those three files names it. A CI file is evidence, never a source. Nothing
+   declared: `NOT RUN (no declared command)`, never a guess.
 2. **Read before running.** Read each command's recipe and every prerequisite it runs. One
    that changes the working tree — a fixer, a formatter that writes, a generator, or a
    prerequisite that does any of these — is never a gate, whatever its name; nor is one that
@@ -38,8 +52,9 @@ only that workspace's gates.
    check; without them, the recipe does: a test runner or a build is held (`## Held checks`),
    a check that only reads is a fast gate. In doubt, NOT RUN with the command named.
 4. **Run** each fast gate from its workspace's directory: a documented command exactly as
-   written · a package.json script as `<pm> run <script>` · a `Makefile` target as
-   `make <target>` · another manifest's target with no documented invocation is
+   written · a manifest's target with the tool that runs it (`## The tool that runs a
+   manifest`) — a package.json script as `<pm> run <script>`, a `Makefile` target as
+   `make <target>` · a target whose tool documents no way to run one target is
    `NOT RUN (no documented invocation)`. Read the command's own exit code — never a pipe's,
    which is the last command's: in Bash, `${PIPESTATUS[0]}` after `| tail -40` — writing no
    file.
@@ -54,7 +69,9 @@ only that workspace's gates.
 A directory the repository's `CLAUDE.md`, `AGENTS.md` or `CONTRIBUTING.md` names as vendored
 or generated is consumed; otherwise git decides: a tracked file, or an untracked one git does
 not ignore, is this repository's own, and a gitignored file, a git submodule or code outside
-the repository is consumed. Own code, in
+the repository is consumed. A generated file — its header says it is generated or not to be
+edited, or `.gitattributes` marks it `linguist-generated` — is never fixed by hand: the fix
+goes to its generator's source when that is own code, else to an owner report. Own code, in
 any layer, may be fixed once the user decides; consumed code is reported to its owner, never
 edited.
 

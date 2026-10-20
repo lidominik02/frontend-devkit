@@ -12,8 +12,9 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node
 ---
 
 You settle what a feature must do before anyone plans how to build it. Facts — what the
-repository already has, what the design shows, what the API offers — you look up. The user
-answers only what nobody else can: the product decisions, each rule's reason, the gaps.
+repository already has, what the design shows, what an external contract offers — you look
+up. The user answers only what nobody else can: the product decisions, each rule's reason,
+the gaps.
 What is settled lands in PLAN.md's spec sections, and the tasks are written from them alone.
 
 The feature lifecycle is a chain of skills, and this one is first:
@@ -26,8 +27,8 @@ The layout of `temp/<feature>/` and the shape of every file this skill writes �
 spec sections and tags, DECISIONS.md, CONTRACT-GAPS.md, STATUS.md, `research/` — are in
 `../planning-features/references/artifacts.md`; read it before writing one. The default
 rules are in `../planning-features/references/rules-block.md`. Read
-`../planning-features/references/project.md` first: the package manager, the framework
-packs, the gates and the base branch come from there.
+`../planning-features/references/project.md` first: the tool that runs a manifest, the
+framework packs, the gates and the base branch come from there.
 
 ## Entries
 
@@ -45,7 +46,7 @@ packs, the gates and the base branch come from there.
   each research note's `Answer:` first, then continue at the frontier. Never re-ask a
   question DECISIONS.md answers: grep it before asking.
 - **`research <question>`** — a question that is not a feature. Dispatch one research agent
-  as round 1 does, in the foreground; write its findings as one cited note at
+  as round 1 does, with `run_in_background: false`; write its findings as one cited note at
   `temp/research/<slug>.md`; answer in chat in a few lines with the note's path.
 
 ## Round 1 — classification and sources
@@ -56,11 +57,11 @@ problem, what it is not, how success is measured, each guess tagged ASSUMED — 
 the classification, each part with its reason, and asks to confirm both; a part without
 its reason, or a classification only in your reasoning, has not been said:
 
-- **Size.** `bounded`: one surface, a few files, no new API need, no open product question,
-  and small enough that one in-chat design covers it — a validation rule, a copy or state
-  change, a small component change. Anything else is `feature`. The size only ratchets up:
-  bounded work that grows a new API need, an open product question or a wider surface
-  switches to the feature route, said out loud.
+- **Size.** `bounded`: one surface, a few files, no new external contract, no open
+  product question, and small enough that one in-chat design covers it — a validation rule,
+  a copy or state change, a small component change. Anything else is `feature`. The size
+  only ratchets up: bounded work that grows a new external contract, an open product
+  question or a wider surface switches to the feature route, said out loud.
 - **UI or not.** A change with no UI is classified "no design", and nothing about design is
   asked.
 - **External contract involved or not** — whether the feature needs anything this
@@ -79,9 +80,9 @@ nothing written, draft the requirements from the design and the repository.
 `references/sources.md` holds the lookup order, what counts as found, and the draft.
 
 **Code research fits the size the round-1 form proposes.** It covers the repository's
-conventions, the reusable assets, the closest existing feature, the API contract the feature
-touches, and the mechanism the repository already uses for each job the feature needs —
-every question of the dispatch prompt in `references/sources.md`. When the form will propose
+conventions, the reusable assets, the closest existing feature, the external contract the
+feature touches, and the mechanism the repository already uses for each job the feature needs
+— every question of the dispatch prompt in `references/sources.md`. When the form will propose
 `bounded`, read them all on the main thread, before the form — every claim opened at its
 `path:line`, as that prompt asks. When it will propose `feature`, dispatch the research before
 the form with `run_in_background: true`, and read none of them yourself, a small
@@ -130,10 +131,11 @@ No PLAN.md.
      sections tagged ASSUMED, and each section is updated as it settles.
    - Probe every business rule for its rationale. A rule the user or a source states is
      SAID, and with no reason given its rationale reads `unknown — ask <owner>`; only a
-     rule you inferred is ASSUMED. A reason a source gives for a control as a whole is the reason of each rule that
-     implements it: quote it, word for word, on each such rule — a pointer to it is not the
-     reason. A rule the source states apart, with no reason of its own — an expiry beside a
-     threshold — is not covered: ask its reason. A reason no source and no answer gave is
+     rule you inferred is ASSUMED. A reason a source gives for a control as a whole is the
+     reason of each rule the control cannot reach its aim without: quote it, word for word,
+     on each such rule — a pointer to it is not the reason. Any other rule, stated beside it
+     with no reason of its own — an expiry beside a threshold, a notice on rejection — is not
+     covered: ask its reason. A reason no source and no answer gave is
      your own: never tag it SAID.
    - Cross-check what the user states against the code and the research ("the list already
      paginates" → open it). A contradiction becomes a question
@@ -154,15 +156,15 @@ No PLAN.md.
    - A contract gap becomes a CONTRACT-GAPS.md entry as it surfaces.
 3. **Non-functional requirements**, once the must-haves are settled: one form of four
    multi-select groups (`references/question-rounds.md`), the users group only for UI work.
-   Only a checked item gets a question; each unchecked one is "not applicable" in
-   Constraints.
+   A checked item goes to step 2's rounds as a question, then the flow resumes here; each
+   unchecked one is "not applicable" in Constraints.
 4. **Extras**: what goes beyond every source, proposed in a
    separate block. An accepted one becomes a DECISIONS.md entry and an EXTRA-tagged success
    criterion; one the client would see also gets an `OQ<n>` line for approval, owner
    `client` or `product owner`.
-5. **Veto.** One multi-select form lists every default the triage took, at most four
-   options a question; a checked one returns to the frontier, an unchecked one or a blank
-   question stays ASSUMED.
+5. **Veto.** One multi-select form lists every default the triage took
+   (`references/question-rounds.md`); a checked one goes to step 2's rounds, then the flow
+   resumes here and the form lists only the defaults taken since. The rest stay ASSUMED.
 6. **Exit gate.** The frontier is empty; no open question blocks a task, or each blocking one
    is listed with what it blocks; and the self-check "an implementer could build this
    without asking" passes for every spec section (`references/question-rounds.md`). Then one
@@ -181,7 +183,7 @@ rounds settled before going on.
 
 ## What this must NOT do
 
-- Ask the user a fact the repository, the design or the API can answer.
+- Ask the user a fact the repository, the design or an external contract can answer.
 - Decide a product question itself: a proposal is a recommended option, and the user
   decides.
 - Implement on the feature route. Only the bounded route implements.

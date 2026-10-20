@@ -29,9 +29,9 @@ wins a conflict.
 ## Facts are read at the moment of use
 
 The devkit runs on top of an existing project and requires nothing to be added to it.
-Every fact it needs — package manager, quality gates, base branch, git host, commit
-convention — is read at the moment of use from a file the project already maintains:
-`package.json`, the lockfile, the git remote, `commitlint.config.*`,
+Every fact it needs — the tool that runs a manifest, quality gates, base branch, git
+host, commit convention — is read at the moment of use from a file the project already
+maintains: a manifest, its lockfile, the git remote, a commit-message linter's config,
 `.gitlab/merge_request_templates/`. Nothing is cached, so nothing goes stale. It is read
 by the skill that needs it, with the four rules in
 [`project.md`](../plugins/core/skills/planning-features/references/project.md);
@@ -62,8 +62,8 @@ A rule is stated where it is enforced, and the enforcement is layered:
 1. **The skill body** states what the component must not do. On its own this is advisory.
 2. **`allowed-tools`** pre-approves only what a body actually runs, to remove prompts; a
    command held behind approval is never granted.
-3. **`disallowed-tools`** removes a tool for the invocation, for a prohibition that is
-   absolute.
+3. **`disallowed-tools`** removes a tool from the invocation to the end of that turn, for a
+   prohibition that is absolute.
 4. **The user's permission and attribution settings**, which
    [Installation](installation.md#permissions-and-attribution) recommends, apply whoever
    runs the command: credential reads, lockfile and `.git/` writes, push, pull and merge are

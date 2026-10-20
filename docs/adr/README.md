@@ -20,7 +20,7 @@ why they are that way and what would have to change to revisit it.
 | [0012](0012-tooling-values-in-config-not-prose.md) | Values the tooling reads live in a config file, never in prose | Accepted, amended by 0013 |
 | [0013](0013-no-hooks-no-facts-service-artifacts-without-a-protocol.md) | No hooks, no facts service, feature files without a protocol | Accepted, amended by 0018 |
 | [0014](0014-core-is-domain-neutral.md) | `core` is domain-neutral and runs only declared gates | Proposed; amends 0003 |
-| [0015](0015-one-frontend-plugin.md) | One `frontend` plugin holds framework knowledge and web verification | Proposed; supersedes 0004 with 0016, amends 0005 and 0008 |
+| [0015](0015-one-frontend-plugin.md) | One `frontend` plugin holds framework knowledge and web verification | Proposed; supersedes 0004 with 0016, amends 0005, 0008 and 0014 |
 | [0016](0016-framework-rules-chosen-per-workspace.md) | A router skill picks one framework's rules per workspace | Proposed, to ship as a Trial; supersedes 0004 with 0015, amends 0007 |
 | [0017](0017-hard-gates-only-where-failure-does-harm.md) | Hard gates only where a failure does harm | Proposed; amends 0013 |
 | [0018](0018-worker-model-and-effort-by-measured-pair.md) | A worker's model and effort change only with a measured pair | Accepted; amends 0013 |

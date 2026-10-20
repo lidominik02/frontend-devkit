@@ -188,7 +188,7 @@ typecheck NOT RUN (no script) · lint NOT RUN (no script)
 - 2026-09-21 · Reminder banner done
 - 2026-09-21 · review written: temp/due-reminders/review/01-review.md
 - 2026-09-22 · Q1 deferred
-- 2026-09-23 · QA report: 0 findings, 1 skipped
+- 2026-09-23 · QA report · <the commit of step 3> · 0 findings, 1 skipped · temp/due-reminders/qa/REPORT.md
 
 ## Next action
 The user checks the reminders by hand.
@@ -197,7 +197,7 @@ The user checks the reminders by hand.
 Resume the feature due-reminders with the planning-features skill, in resume mode.
 ```
 
-Replace `<the commit of step 3>` with that commit's short hash.
+Replace each `<the commit of step 3>` with that commit's short hash.
 
 `temp/due-reminders/DECISIONS.md`:
 

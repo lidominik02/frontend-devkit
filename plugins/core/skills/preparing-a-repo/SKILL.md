@@ -1,16 +1,10 @@
 ---
 name: preparing-a-repo
 description: >-
-  Audit an existing repository for how well it actually supports AI-assisted work, then
-  close the gaps that matter: missing quality gates, a CLAUDE.md that only states generic
-  advice, an absent or accreted permission allowlist, conventions that live in nobody's
-  file, and documentation that points at files which no longer exist. Produces a written
-  gap report first and changes nothing without approval. Use whenever the user says "set
-  this repo up for Claude", "onboard this project", "prepare this repo for AI", "why is
-  Claude bad in this repo", "add a type-check", "we have no lint here", "improve our
-  CLAUDE.md", or opens work in a repository with no .claude/ directory — and use it
-  before authoring any new project-local skill, because the most common finding is that
-  a suitable one already exists and nobody knew.
+  Audits how well an existing repository supports AI-assisted work — quality gates, the
+  CLAUDE.md, the permission allowlist, conventions no file holds, documentation that points
+  at files which no longer exist — writes a gap report, and closes each gap only with the
+  user's approval. Use when the user types /core:preparing-a-repo.
 disable-model-invocation: true
 allowed-tools: Bash(cat *) Bash(ls *) Bash(grep *) Read Grep Glob
 ---
@@ -35,7 +29,7 @@ drifting from their Claude counterparts; say so rather than adding a third copy.
 
 ## Step 2 — The facts
 
-Read the package manager, the framework packs, the gates and the base branch as
+Read the tool that runs a manifest, the framework packs, the gates and the base branch as
 `../planning-features/references/project.md` describes them. Every fact comes from a file the
 project already maintains; do not ask the user for anything it answers.
 
@@ -83,12 +77,12 @@ stack?** If yes it is costing context and buying nothing. What earns its place:
 - Things configured but dead, which an agent will helpfully extend.
 - Build-time versus runtime configuration, and which env vars reach the browser.
 
-A fact the project already maintains in a file — the package manager, the base branch, the
-commit convention with its allowed scopes — is not copied into CLAUDE.md: name the file that
-holds it, and propose removing a copy CLAUDE.md already carries. That holds inside another
-line too: a command names the script and its workspace, not the package manager that runs
-it, and a rule a config file sets is not restated, its values included — the line points at
-that file. A copy is a second source, and the first to go stale. A convention no file
+A fact the project already maintains in a file — the tool that runs a manifest, the base
+branch, the commit convention with its allowed scopes — is not copied into CLAUDE.md: name
+the file that holds it, and propose removing a copy CLAUDE.md already carries. That holds
+inside another line too: a command names the script and its workspace, not the tool that
+runs it, and a rule a config file sets is not restated, its values included — the line
+points at that file. A copy is a second source, and the first to go stale. A convention no file
 holds, seen only in the commit history, belongs in CLAUDE.md, with the inference shown.
 
 Keep it short. Path-specific conventions belong in `.claude/rules/*.md` with a `paths:` glob.
@@ -109,7 +103,7 @@ command.
     "deny": [
       "Read(.env)", "Read(.env.*)", "Read(!.env.example)",
       "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.gnupg/**)",
-      "Edit(package-lock.json)", "Edit(pnpm-lock.yaml)", "Edit(yarn.lock)", "Edit(bun.lock)", "Edit(bun.lockb)",
+      "Edit(<each lockfile this repository keeps>)",
       "Edit(.git/**)",
       "Bash(git push:*)", "Bash(git pull:*)", "Bash(git merge:*)", "Bash(git commit-tree:*)",
       "Bash(gh pr merge:*)", "Bash(glab mr merge:*)",
@@ -121,6 +115,9 @@ command.
 ```
 
 The devkit ships no hook: without these rules nothing stops a credential read or a push.
+The lockfile rule is one `Edit` rule per lockfile the repository keeps, found with Glob in
+every workspace — `package-lock.json`, `go.sum`, `Gemfile.lock`, whatever its tools write;
+with none kept, no rule.
 
 ## Step 7 — Check that the documentation is not lying
 

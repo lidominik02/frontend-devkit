@@ -37,19 +37,21 @@ usually finds a real but unrelated bug.
 
 A bug often shows in one layer and lives in another. Check in this order, cheapest first:
 
-1. **The data.** Is the value wrong on arrival, or wrong after rendering? Read the
-   actual network response before reading component code. A field that is empty in
-   the response is not a rendering bug — it is a backend or contract bug, and no
-   amount of reading the code that renders it will show it.
-2. **The contract.** Where types are hand-written against an API rather than generated,
-   a field the backend never populates renders empty with no error anywhere — a silent bug
-   that looks like a UI defect. Check whether the field is actually in the payload.
+1. **The input at the boundary.** Is the value wrong on arrival, or wrong after the code
+   handles it? Read what actually crossed the boundary — the response, the message, the
+   file, the argument — before reading the code that handles it. A field that is empty on
+   arrival is not a bug in that code — it belongs to whoever produced it, or to the
+   contract, and no amount of reading the code that handles it will show it.
+2. **The contract.** Where types are hand-written against an external contract rather than
+   generated, a field the producer never populates arrives empty with no error anywhere — a
+   silent bug that looks like a defect in the code that shows it. Check whether the field
+   is actually in the payload.
 3. **The identity/auth layer.** A wrong role, a missing claim, a token that expired
-   or was scoped differently, a locale set at login — all present as UI bugs.
-   **Check token claims before blaming the UI that reads them.** If a permission
-   check fails, establish whether the claim is absent or the check is wrong; these
-   have opposite fixes.
-4. **The code.** Only once the data arriving is confirmed correct.
+   or was scoped differently, a locale set at login — all present as bugs in the code that
+   reads them. **Check token claims before blaming the code that reads them.** If a
+   permission check fails, establish whether the claim is absent or the check is wrong;
+   these have opposite fixes.
+4. **The code.** Only once the input arriving is confirmed correct.
 
 State the owning layer explicitly in the report, with the evidence that settled it, and
 whether this repository owns the code at fault, by `## Own code` in
@@ -134,10 +136,10 @@ workaround costs.
 ## What this must NOT do
 
 - **Edit, write, or fix anything — not even a one-line change.** This rule is the only
-  guard: the file tools stay available, because `fixing-bugs` calls this skill and edits in
-  the same turn. Propose the fix in the report; applying it is a separate, deliberate step.
+  guard. Propose the fix in the report; applying it is a separate, deliberate step.
 - **Start the next step it names**, or rule on whether the bug is the user's to fix.
-- **Blame the UI before checking the data and the token claims it renders.**
+- **Blame the code that shows the symptom before checking the input and the token claims
+  it handles.**
 - **Stop at the first plausible cause** without following the chain to something that
   actually explains the symptom.
 - **Cite a `path:line` you did not open.**

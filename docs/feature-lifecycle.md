@@ -32,22 +32,22 @@ temp/<feature>/
 ├── PLAN.md            the spec sections (what and why), then the tasks
 ├── STATUS.md          where it stands: stage, rules, mode, tasks, verified gates, log, next action
 ├── DECISIONS.md       open questions at the top, decisions below; append-only
-└── CONTRACT-GAPS.md   only when the feature needs something from the API
+└── CONTRACT-GAPS.md   only when the feature needs something from an external contract
 ```
 
 **Reading rule:** STATUS.md and PLAN.md whole; DECISIONS.md and CONTRACT-GAPS.md by id,
 with grep; a research note's `Answer:` first. The shapes are in
 [`artifacts.md`](../plugins/core/skills/planning-features/references/artifacts.md). The
-project's facts — package manager, framework packs, gates, base branch — are read from its
-own files at the moment of use, by the four rules in
+project's facts — the tool that runs a manifest, framework packs, gates, base branch — are
+read from its own files at the moment of use, by the rules in
 [`project.md`](../plugins/core/skills/planning-features/references/project.md). A gate is
 reported as pass, FAIL or NOT RUN; NOT RUN is never a pass.
 
 ## Clarification and planning
 
-`clarifying-features` classifies the work — bounded or feature, UI or not, API or not —
-inventories the sources, researches the code in the background, and asks only what no
-source can answer, in forms with the recommended option first. A bounded change gets an
+`clarifying-features` classifies the work — bounded or feature, UI or not, external
+contract or not — inventories the sources, researches the code in the background, and asks
+only what no source can answer, in forms with the recommended option first. A bounded change gets an
 in-chat design and is built at once. A feature gets PLAN.md's spec sections, every answer a
 DECISIONS.md entry, and hands over to `planning-features`, which writes the tasks as
 vertical slices and asks for approval and the execution mode.

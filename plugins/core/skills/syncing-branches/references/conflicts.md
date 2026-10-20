@@ -1,5 +1,9 @@
 # Conflicts: lookup
 
+## Contents
+- The classes
+- Git mechanics
+
 Every git behaviour here was observed on git 2.43.0 or read in its man pages. Each
 conflicted file gets one class, which decides its resolution and its log entry's evidence.
 
@@ -8,11 +12,13 @@ conflicted file gets one class, which decides its resolution and its log entry's
 ### regenerate
 
 A file derived from others: a lockfile, or a generated file. A lockfile is any file the
-table below lists for the manager "Package manager" in
-`../../planning-features/references/project.md` finds, in any workspace package, and any
-other file the table lists: a file a package manager writes is never merged by hand. A
-generated file is one whose header says it is generated or not to be edited, that
-`.gitattributes` marks `linguist-generated`, or that a script in `package.json` writes. Its
+table below lists for the tool "The tool that runs a manifest" in
+`../../planning-features/references/project.md` finds, in any workspace package, any other
+file the table lists, and a file the table does not list that is a lockfile by its name or
+its tool's role — `go.sum`, `Gemfile.lock`, `uv.lock`, `Pipfile.lock`,
+`packages.lock.json`: a file a tool writes is never merged by hand. A generated file is one
+whose header says it is generated or not to be edited, that `.gitattributes` marks
+`linguist-generated`, or that a manifest's target writes (a script in `package.json`). Its
 lines cross-reference each other, so a merge of its hunks is wrong even when it parses.
 
 1. Resolve its sources first — `package.json`, a schema, source files — by their own class.
@@ -20,11 +26,15 @@ lines cross-reference each other, so a merge of its hunks is wrong even when it 
    `<target>`'s side, main or the parent; in a cherry-pick the receiving branch's.
 3. Regenerate: for a lockfile, the install on the table row that lists it — the manager
    that owns that file, whatever manager was found — run in the lockfile's own directory;
-   for a generated file, its generator. A generator that runs only inside a held command —
+   for a lockfile the table does not list, nothing runs: the file keeps that side, and a
+   question in the stop's batch asks which command regenerates it; for a generated file,
+   its generator. A generator that runs only inside a held command —
    the build, the dev server — is not run: the file keeps that side, and a question in the
    stop's batch says which command regenerates it. A generator not found is a question too.
-4. Evidence: the command, its directory and exit code; that `git diff --check` finds no
-   marker; for a lockfile, that it lists each dependency the branch added beside it.
+4. Evidence: that `git diff --check` finds no marker; where a command ran, the command,
+   its directory and exit code, and for a lockfile, that it lists each dependency the
+   branch added beside it; where nothing ran, the side the file kept, that it is not
+   regenerated, and the question in the stop's batch.
 
 | Package manager | Its lockfiles | Regenerates the lockfile | Source |
 | --- | --- | --- | --- |

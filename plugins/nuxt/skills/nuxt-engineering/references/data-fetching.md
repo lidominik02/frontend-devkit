@@ -1,5 +1,15 @@
 # Data fetching
 
+## Contents
+- Which one
+- The double-fetch
+- Keys
+- Reactive inputs
+- The options that matter
+- The returned handles
+- Deep vs shallow
+- Common failure modes
+
 The general rules from the `vue` pack still hold: a cache key must contain every input
 that changes the result, keys read general-to-specific, and every fetch has four states.
 What changes here is that Nuxt already ships the query layer, and getting the choice

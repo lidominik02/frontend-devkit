@@ -1,5 +1,13 @@
 # Rendering, hydration and head
 
+## Contents
+- Hydration, and why it fails quietly
+- The escape hatches, in order of preference
+- Lazy hydration
+- Rendering modes
+- Head and SEO
+- Common failure modes
+
 ## Hydration, and why it fails quietly
 
 The server sends HTML; the client mounts the same components over it and adopts the

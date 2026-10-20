@@ -1,5 +1,17 @@
 # Version gates
 
+## Contents
+- Vue
+- Vue Router
+- Pinia
+- Vite
+- TypeScript and vue-tsc
+- Tailwind
+- TanStack
+- Component libraries
+- Lint and format
+- Vitest
+
 This file exists because the Vue ecosystem changed several defaults across recent
 majors, and stating one version's API as fact makes the guidance wrong in any repo on
 the other side of the line. **Read the installed version before applying anything

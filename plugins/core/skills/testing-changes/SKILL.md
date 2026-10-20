@@ -9,7 +9,7 @@ description: >-
   feature, clarifying-features.
 argument-hint: "[plan|run] [feature]"
 disallowed-tools: mcp__*__use_figma, mcp__*__create_new_file, mcp__*__generate_figma_design, mcp__*__generate_diagram, mcp__*__generate_deck, mcp__*__upload_assets, mcp__*__add_code_connect_map, mcp__*__send_code_connect_mappings, mcp__*__create_shader, mcp__*__update_shader, mcp__*__create_generative_plugin, mcp__*__update_generative_plugin
-allowed-tools: Read Write Grep Glob Skill AskUserQuestion
+allowed-tools: Bash(git rev-parse *) Read Write Grep Glob Skill AskUserQuestion
 ---
 
 **The hold comes first, same as `verifying-ui`.** `run` does not start until the turn
@@ -123,7 +123,8 @@ and the Next action:
   `<date> · QA list · <list path>`.
 - When `run` starts: Stage `testing — owner: testing-changes`; Log `<date> · testing started`.
 - After the report: Stage `user's check — owner: the user`; Log
-  `<date> · QA report · <n> findings, <n> skipped · <report path>`; and in `## Evidence`
+  `<date> · QA report · <hash> · <n> findings, <n> skipped · <report path>`, the hash from
+  `git rev-parse --short HEAD`; and in `## Evidence`
   one line per case whose heading names an `SC<n>`, appended beside the lines already
   there, never over them:
   `SC<n> · <gate line | QA: TC<n> <result> | task: <name>> | none (<why>)`, here

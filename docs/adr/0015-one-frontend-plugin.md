@@ -1,6 +1,6 @@
 # 0015. One `frontend` plugin holds framework knowledge and web verification
 
-Status: Proposed 2026-10-14. Supersedes 0004 together with 0016; amends 0005 and 0008.
+Status: Proposed 2026-10-14. Supersedes 0004 together with 0016; amends 0005, 0008 and 0014.
 
 ## Context
 
@@ -21,6 +21,8 @@ loop.
 
 ## Decision
 
+- `core` carries no framework, no web capability and no dev server; they live in
+  `frontend`.
 - Two plugins: `core` and `frontend`, neither depending on the other. `vue` and `nuxt` are
   removed; `marketplace.json` renames `vue` to `frontend` and `nuxt` to `null`.
 - `frontend` is enabled in frontend and mixed repositories; in a team repository at local
@@ -35,7 +37,8 @@ loop.
   `frontend:verifying-ui`. When they are not listed, it says once that the frontend plugin
   is not enabled in this session and skips those cases by name.
 - `testing-changes` stays in `core` and hands web cases over by name. Called that way,
-  `verifying-ui` reports and fixes nothing.
+  `verifying-ui` reports and fixes nothing. Its QA case types stay UI-shaped until the first
+  backend QA run in a mixed repository.
 - Each fact has one owner: gates belong to `core`; the dev server, the Storybook command and
   the framework choice belong to `frontend`. The one deliberate duplicate is the line that
   maps a lockfile to a package manager.
