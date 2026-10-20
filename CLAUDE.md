@@ -77,8 +77,10 @@ would tie the documentation's wording to a check. (ADR 0012)
 says what the model does. How that was settled — the eval cases that measured it, the cost
 it saved, the CLI version a behaviour was observed on, why a frontmatter field is written as
 it is — lives in `docs/`, where it is renewed and costs no consumer a token. A version stays
-in shipped text only when the version in the user's project decides the behaviour: a git,
-framework or tool release the model checks against.
+in shipped text only as a boundary the model acts on — the release where a behaviour starts,
+stops or changes ("`zdiff3` exists from git 2.35", "stable since Vue 3.2") — because the
+model compares it with what the project runs. A release a behaviour was only checked or
+observed on is evidence, however framework-specific, and goes with the rest.
 
 ## Gates
 

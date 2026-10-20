@@ -176,9 +176,9 @@ of it, it is paid for on every load, and `/cli-upgrade-check` renews versions on
 `docs/`, so a stamp in shipped text goes stale unseen. The evidence goes where it is
 maintained: a measured setting in its ADR ([ADR 0018](../adr/0018-worker-model-and-effort-by-measured-pair.md)
 holds the worker lines), a platform observation on this page or in the guide it concerns.
-The one exception is a version the user's own project decides — "`zdiff3` exists from git
-2.35", "checked against Nuxt 4.6.1" — because the model compares it with what the project
-runs.
+The one exception is a boundary the user's own project decides — "`zdiff3` exists from git
+2.35", "stable since Vue 3.2" — because the model compares it with what the project runs; a
+release something was merely checked on is evidence.
 
 Observed platform behaviour the components rely on without saying so:
 
