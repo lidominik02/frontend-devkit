@@ -112,13 +112,38 @@ the grant does not actually follow.
 
 ## Bodies and references
 
-**Bodies under ~200 lines, front-loaded** — but not because a surviving prefix rewards it.
-Measured against 2.1.278, a manual `/compact` does not re-attach the invoked body at all,
-truncated or otherwise; what reaches the next turn is a summary of it. A summary is not a
-prefix. It can carry a detail from the very end of a long body and drop the heading that
-gave that detail its meaning, so no rule of the form "the first N tokens survive" describes
-it. Front-load for the reader working top-down, and do not plan around a cut point.
-Automatic compaction on context exhaustion is untested.
+**Bodies ~200 lines unless a measured case shows the cut costs more, front-loaded** — but
+not because a surviving prefix rewards it. A body that runs past the mark names its measured
+case here in `docs/`, never in the body.
+
+Compaction keeps no part of the invoked body. Measured against Claude Code 2.1.299
+(`claude-opus-5-5`, Windows 10 Pro 10.0.19045, 2026-10-20) with a 9,000-token body and a
+reference under 5,000 tokens read once with `Read`: neither a manual `/compact` (one
+session) nor automatic compaction (one session at a 100k `--autocompact` window, which
+compacted twice) re-attached the body, in full or as its first 5,000 tokens; what reached
+the next turn was a summary of it. The platform documentation's account — the first 5,000
+tokens of each invoked skill come back — did not hold there, and the 2.1.278 observation of
+a manual `/compact` did. A summary is not a prefix. It carried markers from the very end of
+the body as readily as from its start, and it can drop the heading that gave a detail its
+meaning, so no rule of the form "the first N tokens survive" describes it. Front-load for
+the reader working top-down, and do not plan around a cut point.
+
+The reference came back whole, as a file attachment, after the first compaction of each
+session, and not after the second. A rule stated only in the reference reached the summary
+verbatim all three times, and the answer after compaction followed it in both sessions —
+the summary's doing, not something a body can count on. In both sessions the model tried to
+read the body again on its own after compaction (the run's tool grant denied that search);
+in the automatic one it then re-invoked the skill, which loaded the whole body again.
+
+**Re-read after compaction rather than trust what survived it.** A body that must hold its
+rules across a long session — the router body of
+[ADR 0016](../adr/0016-framework-rules-chosen-per-workspace.md) is the first — names where it
+re-reads them: before a review verdict, before "done", and after compaction. After the
+compactions above, the body existed only as a summary and the reference at most once more;
+a re-read is what brought the text back. That is the whole of the claim: two sessions on
+one CLI version show the body cannot be counted on after compaction, not that a summary
+drops any given rule — it kept the one tested.
+
 Detail belongs in `references/` — the Agent Skills spec directory, alongside `scripts/` and
 `assets/` — exactly one level deep. That depth is a convention, not a measured limit: a
 second hop is one more thing that has to go right at the moment the model is furthest from
@@ -181,6 +206,11 @@ Observed platform behaviour the components rely on without saying so:
   unknown field, and a number in place of the new name fails with "expected string"
   (Claude Code 2.1.301 and 2.1.299, Windows 10 Pro 10.0.19045, 2026-10-20). What the
   rename does to an installed copy is not observed.
+- Compaction, manual or automatic, re-attaches no part of an invoked skill's body; a
+  reference under 5,000 tokens read with `Read` comes back whole after a session's first
+  compaction and not after its second (Claude Code 2.1.299, `claude-opus-5-5`, Windows 10
+  Pro 10.0.19045, 2 sessions, 3 compactions, 2026-10-20). The detail is under "Bodies and
+  references" above.
 
 ## Adding a pack
 
