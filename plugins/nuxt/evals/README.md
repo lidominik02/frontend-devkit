@@ -20,7 +20,7 @@ pack.
 not the automated harness — see `plugins/core/evals/README.md` for why.
 `payload-rich-types` is a regression guard, expected to pass at baseline and to fail only
 if the pack teaches the conversion. Every case's latest run is recorded under "The
-2026-10-14 run" below. Four other
+2026-10-14 run" or "The 2026-10-20 run" below. Four other
 candidates from the same research pass — a plain async function losing Nuxt's request
 context after an `await`, a missing `runtimeConfig.public` key, `setup` running twice
 under hydration, and an un-awaited `navigateTo` outside middleware — were tested the same
@@ -78,6 +78,18 @@ page loaded for that visitor.
 Only `ssr-shared-state` separated the arms on this run, and narrowly — one run of two with
 the pack against none without; `payload-rich-types` differed by one baseline FAIL on a
 regression guard, and every other case scored the same in both arms.
+
+## The 2026-10-20 run
+
+`ssr-shared-state` was run again after the `vue` pack's reactivity reference and review
+checklist changed, two runs per arm, `core` + `vue` + `nuxt` against `core` + `vue`, on the
+rig of the `vue` evals README's "The 2026-10-20 run" — the same CLI, model, OS and loading
+as above, plus `--add-dir` for each loaded pack. **It passed both runs with the pack and
+neither without**, as on the final 2026-10-14 re-run. Both pack runs said the initialiser
+must be a function. Both baseline runs found the leak and reached for `useState`, but
+neither met the mechanism line: one named the payload only as how the value reaches the
+client, the other only hydration. `module-scope-state`, its mirror, passed all four runs
+in the same pass.
 
 ## The matched pair
 

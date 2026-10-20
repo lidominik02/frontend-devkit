@@ -26,7 +26,8 @@ pack.
 
 `binding-composition-spread` and `vitest-jsdom-import-meta-url` were run by hand with
 `claude -p`, not the automated harness — see `plugins/core/evals/README.md` for why.
-Every case's latest run is recorded under "The 2026-10-14 run" below. Five
+Every case's latest run is recorded under "The 2026-10-14 run" or "The 2026-10-20
+run" below. Five
 other candidates from the same research pass — a shared per-instance loading flag
 beating a boolean under overlapping requests, `cn()`/tailwind-merge's last-argument-wins
 override order, re-subscribing to a DOM mutation made outside Vue's reactivity, a mock
@@ -108,6 +109,40 @@ fixture.
 
 `finding-the-cost` was not run: it needs the dispatch-board project to build and measure,
 and no fixture for it is kept in this repository.
+
+## The 2026-10-20 run
+
+Six cases were run twice per arm after the deep-watch bullet in `references/reactivity.md`
+and the one-environment rule in `references/review-checklist.md` changed: the four that
+touch those files — `composable-reactivity`, `vite-secret`, `vite-public-key`,
+`module-scope-state` — and the two guards added with them, `watch-getter-deep` and
+`per-environment-build`, `core` + `vue` against `core` alone. The rig was that of "The
+2026-10-14 run": the manual `claude -p` pair on Claude Code 2.1.299, model
+`claude-opus-5-5`, graded by hand per criterion line, on Windows 10 (10.0.19045), the packs
+loaded from the working tree through `--plugin-dir` with the installed copies disabled,
+`--strict-mcp-config` with an empty config, and a fresh, empty directory per run. Every
+init event carried the `@inline` packs and no transcript reached `plugins/cache`.
+User-level instructions reached both arms; no run used `--bare`.
+
+**Each arm also got its loaded packs' directories through `--add-dir`.** Without it, under
+`--permission-prompts none`, a Read of a pack reference is denied — the file is outside the
+run's directory and nothing can approve it — and the run carries on without the reference.
+The first run of this pass hit that and was voided.
+
+**Every run passed.** `watch-getter-deep` passed all four: every run named the getter's
+identity as the cause, gave `deep: true`, and said the teammate's direct watch of the
+`reactive` object fires without `deep`. One with-plugin run never read
+`references/reactivity.md`, so the guard is credited on one run of two.
+`per-environment-build` passed all four: no run rated the new `VITE_` URL Critical or
+asked for runtime config, and both with-plugin runs read `references/review-checklist.md`
+and named the per-environment pipeline as why the rule does not apply. Their blocking
+findings on other grounds — the v2 response shape, the variable missing from a
+development env file — score neutral, as the criteria say.
+
+`vite-public-key` and `module-scope-state` held in both arms, and `composable-reactivity`
+and `vite-secret` again passed every run, the `core`-only baseline included. One
+`vite-secret` run in each arm offered checking for a vendor browser key before the proxy;
+it is scored as passing, since that replaces the key rather than hiding this one.
 
 ## The matched pair
 
