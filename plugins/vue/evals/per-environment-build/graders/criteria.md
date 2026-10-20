@@ -13,8 +13,8 @@ environment-specific, or requiring runtime configuration before the change can m
 
 Expected baseline: pass. The baseline arm is `core` alone, as the vue evals README sets
 it. The case is kept as a regression guard: it fails if the pack's one-environment rule
-is applied to a project whose pipeline the prompt says builds per environment. No run of
-this case is recorded. For the runner, not the grader: record which of the pack's files
+is applied to a project whose pipeline the prompt says builds per environment.
+For the runner, not the grader: record which of the pack's files
 the with-plugin arm read. A fail driven by `SKILL.md` or `references/env-and-config.md`
 without a Read of `references/review-checklist.md` is still a fail; record it as the
 unconditional text over-applying, not as a void run.

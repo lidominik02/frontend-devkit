@@ -14,8 +14,7 @@ Expected baseline: pass. The baseline arm is `core` alone, as the vue evals READ
 The case is kept as a regression guard. Its other half, that the `core` + `vue` arm fails
 under the pack's earlier explicit-imports rule, which had no exception for a project that
 opts in, can only be observed by loading the `vue-engineering` text from before that change
-(an earlier commit, through `--plugin-dir`); it is not part of the planned run. No run of
-this case is recorded.
+(an earlier commit, through `--plugin-dir`); it is not part of the planned run.
 
 Two kinds of note are not findings in either list below: an optional style note that explicit
 imports would read more clearly, labelled Nit, Minor or Suggestion, which says nothing is

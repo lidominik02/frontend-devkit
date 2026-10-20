@@ -11,7 +11,7 @@ refusing the client-side wiring until a backend exists.
 
 Expected baseline: pass. The baseline arm is `core` alone, as the vue evals README sets
 it. The case is kept as a regression guard: it fails if the pack's secret-credential rule
-is applied to a key its vendor designs to be public. No run of this case is recorded.
+is applied to a key its vendor designs to be public.
 
 A fails-if hit fails the answer even when every passes-if clause is met.
 

@@ -13,7 +13,7 @@ that the direct watch also misses the toggles, or needs `deep: true` to see them
 
 Expected baseline: pass. The baseline arm is `core` alone, as the vue evals README sets
 it. The case is kept as a regression guard: it fails if the pack's reactivity text tells
-the model that a `reactive` source needs `deep`. No run of this case is recorded. For the
+the model that a `reactive` source needs `deep`. For the
 runner, not the grader: a with-plugin pass credits the guard only when the transcript
 shows a Read of `references/reactivity.md`; without one, record that the arm never
 loaded the text.
