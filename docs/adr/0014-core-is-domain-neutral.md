@@ -1,6 +1,6 @@
 # 0014. `core` is domain-neutral and runs only declared gates
 
-Status: Proposed 2026-10-14. Amends 0003.
+Status: Accepted. Amends 0003.
 
 ## Context
 

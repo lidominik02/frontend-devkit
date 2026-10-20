@@ -2,7 +2,9 @@
 
 Status: Accepted. Amended 2026-10-17: the reviewer, the research and the `mechanical`
 implementer run on the measured model and effort their role names, not the session's
-(ADR 0018).
+(ADR 0018). Amended 2026-10-20: an addition outside the four hard gates needs no reported
+failure first; the maintainer admits it with its cost, and it is measured after it ships
+(ADR 0017).
 
 ## Context
 

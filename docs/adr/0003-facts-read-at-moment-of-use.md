@@ -1,7 +1,9 @@
 # 0003. Project facts are read at the moment of use
 
 Status: Accepted. Amended 2026-10-12: the reader is the skill, not a script; the rules are
-in planning-features/references/project.md (ADR 0013).
+in planning-features/references/project.md (ADR 0013). Amended 2026-10-20: a gate is only a
+command the project declares, read per workspace, and a manifest's target runs with the tool
+that owns the file (ADR 0014).
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0017. Hard gates only where a failure does harm
 
-Status: Proposed 2026-10-14. Amends 0013.
+Status: Accepted. Amends 0013.
 
 ## Context
 
