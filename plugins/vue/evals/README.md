@@ -22,6 +22,7 @@ pack.
 | `binding-composition-spread` | Extending a shared binding for one consumer via a spread-and-override rather than folding the new condition into the shared source (which leaks it to every other consumer) |
 | `vitest-jsdom-import-meta-url` | Under Vitest + jsdom, Vite rewrites the literal `new URL('…', import.meta.url)` into an `http:` URL resolved against jsdom's location while `import.meta.url` itself stays `file://` — and that it is not the well-known jsdom `URL`-shadowing bug |
 | `watch-getter-deep` | A regression guard on the pack's own reactivity text: a getter watcher on an object misses nested changes and is fixed with `deep: true` or by watching the `reactive` object directly, which is deep implicitly — never by demanding `deep` on a `reactive` source |
+| `per-environment-build` | A negative test: a new environment-specific `VITE_` URL, in a project whose pipeline builds once per environment on purpose, is not rated Critical or held behind runtime config |
 
 `binding-composition-spread` and `vitest-jsdom-import-meta-url` were run by hand with
 `claude -p`, not the automated harness — see `plugins/core/evals/README.md` for why.
@@ -44,10 +45,11 @@ in case a future run — or a differently-worded note — closes it.
 
 `composable-reactivity` and `vite-secret` are capability cases: the pack earns its place
 only if the baseline arm gets them wrong. `module-scope-state`, `vite-public-key`,
-`auto-import-configured` and `watch-getter-deep` are expected to pass at baseline and are
-kept for a different reason, as regression guards: each fails if the pack applies a rule
-where it does not hold. `vitest-jsdom-import-meta-url` is a regression guard too: it fails if the pack says
-`import.meta.url` itself is an `http:` URL, as it did before 2026-10-14.
+`auto-import-configured`, `watch-getter-deep` and `per-environment-build` are expected to
+pass at baseline and are kept for a different reason, as regression guards: each fails if
+the pack applies a rule where it does not hold. `vitest-jsdom-import-meta-url` is a
+regression guard too: it fails if the pack says `import.meta.url` itself is an `http:`
+URL, as it did before 2026-10-14.
 
 `focus-and-announcement`, `submit-state` and `finding-the-cost` each decide whether a
 reference file is worth adding to this pack. **In the earlier run, before the 2026-10-14
