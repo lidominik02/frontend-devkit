@@ -175,6 +175,12 @@ Observed platform behaviour the components rely on without saying so:
   are absent from the session's tool set before the first model call, and `ToolSearch`
   reports them unavailable while `take_snapshot` answers (Claude Code 2.1.278); the
   server-wildcard form is covered under "Use `disallowed-tools`" above.
+- `renames` in `marketplace.json` is a known, type-checked field: a scratch marketplace
+  whose `renames` maps one plugin name to another listed in `plugins[]` and a second name
+  to `null` passes `claude plugin validate --strict`, a misspelled `renamez` fails as an
+  unknown field, and a number in place of the new name fails with "expected string"
+  (Claude Code 2.1.301 and 2.1.299, Windows 10 Pro 10.0.19045, 2026-10-20). What the
+  rename does to an installed copy is not observed.
 
 ## Adding a pack
 
