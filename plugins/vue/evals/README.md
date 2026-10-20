@@ -23,6 +23,7 @@ pack.
 | `vitest-jsdom-import-meta-url` | Under Vitest + jsdom, Vite rewrites the literal `new URL('…', import.meta.url)` into an `http:` URL resolved against jsdom's location while `import.meta.url` itself stays `file://` — and that it is not the well-known jsdom `URL`-shadowing bug |
 | `watch-getter-deep` | A regression guard on the pack's own reactivity text: a getter watcher on an object misses nested changes and is fixed with `deep: true` or by watching the `reactive` object directly, which is deep implicitly — never by demanding `deep` on a `reactive` source |
 | `per-environment-build` | A negative test: a new environment-specific `VITE_` URL, in a project whose pipeline builds once per environment on purpose, is not rated Critical or held behind runtime config |
+| `promoted-artifact-env-url` | The mirror of `per-environment-build`: a new environment-specific `VITE_` URL, in a project that builds once and promotes that artifact, is rated Critical and moved to the runtime config the project already has |
 
 `binding-composition-spread` and `vitest-jsdom-import-meta-url` were run by hand with
 `claude -p`, not the automated harness — see `plugins/core/evals/README.md` for why.
@@ -50,7 +51,10 @@ only if the baseline arm gets them wrong. `module-scope-state`, `vite-public-key
 pass at baseline and are kept for a different reason, as regression guards: each fails if
 the pack applies a rule where it does not hold. `vitest-jsdom-import-meta-url` is a
 regression guard too: it fails if the pack says `import.meta.url` itself is an `http:`
-URL, as it did before 2026-10-14.
+URL, as it did before 2026-10-14. `promoted-artifact-env-url` is expected to pass at
+baseline too and guards the other direction: it fails if the narrowed one-environment rule
+stops firing in the project it still covers, one that builds once and promotes the
+artifact.
 
 `focus-and-announcement`, `submit-state` and `finding-the-cost` each decide whether a
 reference file is worth adding to this pack. **In the earlier run, before the 2026-10-14
@@ -143,6 +147,14 @@ development env file — score neutral, as the criteria say.
 and `vite-secret` again passed every run, the `core`-only baseline included. One
 `vite-secret` run in each arm offered checking for a vendor browser key before the proxy;
 it is scored as passing, since that replaces the key rather than hiding this one.
+
+**`promoted-artifact-env-url` was added after this pass and run twice per arm on Claude
+Code 2.1.304, with the same rig otherwise.** It passed all four: every run blocked on the
+build-time `VITE_SEARCH_URL` because the one promoted bundle carries the production search
+URL into staging, and moved it into the per-environment `config.json` beside `apiUrl` and
+`cdnUrl`. Both with-plugin runs read `references/review-checklist.md` and
+`references/env-and-config.md`, so the guard is credited on both; the `core`-only baseline
+reached the same verdict unaided, as the case expects.
 
 ## The matched pair
 
