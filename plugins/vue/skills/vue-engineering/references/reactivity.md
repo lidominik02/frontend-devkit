@@ -153,8 +153,10 @@ attribute — still works but couples the two by naming convention.
 
 ## Common failure modes
 
-- Watching a `reactive` object without `deep`, then wondering why nested changes
-  are missed.
+- Watching a getter that returns an object (`watch(() => state.filters, cb)`)
+  or a deep `ref` holding one, then wondering why nested changes are missed:
+  only a replacement fires it. Pass `deep: true`, or watch the `reactive`
+  object itself, which is deep implicitly.
 - A `watch` that writes to its own source, producing an infinite loop.
 - `v-for` keyed by index, causing wrong component reuse on reorder. Key by a
   stable id; index keys are only safe for a list that never reorders or filters.
