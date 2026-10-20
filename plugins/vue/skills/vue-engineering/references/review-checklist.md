@@ -34,8 +34,11 @@ finding; it is meant to ship in the bundle. When it is not known whether a vendo
 secret, say so and ask, rather than flagging or passing it.
 
 **A build that can only serve one environment.** A new `VITE_` variable holding an
-environment-specific URL means the artifact you tested is not the artifact you can
-promote. Runtime config, not build-time.
+environment-specific URL, in a project that builds once and promotes that artifact,
+means the artifact you tested is not the artifact you can promote. Runtime config, not
+build-time. A project whose pipeline deliberately builds once per environment is not a
+finding here. When it is not known which the project does, say so and ask, rather than
+flagging or passing it.
 
 **Lost reactivity.** The value silently stops updating:
 - passing `props.thing` into a composable instead of `() => props.thing`

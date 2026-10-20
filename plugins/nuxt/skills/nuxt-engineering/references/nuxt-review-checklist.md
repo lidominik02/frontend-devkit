@@ -92,9 +92,9 @@ findings here, or misses real ones.
   here. Do not ask for the import, and do not flag its absence. Adding imports for
   auto-imported symbols is churn, and importing from `#components` has a real cost.
 - **A build that serves more than one environment.** In the `vue` list a single-environment
-  build is Critical; here it is the normal case, because `runtimeConfig` is read at
-  runtime. Do not flag the absence of a `/config.json` boot fetch — adding one is the
-  finding.
+  build is Critical when the project promotes one artifact; here it is the normal case,
+  because `runtimeConfig` is read at runtime. Do not flag the absence of a `/config.json`
+  boot fetch — adding one is the finding.
 - **A page component imported statically rather than as a dynamic import.** `app/pages/`
   is already split per file. A hand-written `() => import(...)` has nothing to do.
 
