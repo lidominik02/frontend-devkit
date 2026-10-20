@@ -62,9 +62,8 @@ whole expression is what changes. Vite's asset-URL transform (`vite:asset-import
 applies to the client environment, which Vitest's jsdom environment runs test files in,
 and rewrites the literal `new URL('<string>', import.meta.url)` into a root-relative path
 resolved against `self.location` — jsdom's `http://localhost:3000/` by default. The result
-is `http://localhost:3000/src/fixture.json`, which `fileURLToPath()` rejects. Observed on
-Vitest 5.0.4 (Vite 8.3.4) and 3.2.4 (Vite 7.3.7) with jsdom 30.1.2, Node 22.23, on
-Windows. This is **not** the jsdom global-`URL`-shadowing gotcha: with `URL` imported from
+is `http://localhost:3000/src/fixture.json`, which `fileURLToPath()` rejects.
+This is **not** the jsdom global-`URL`-shadowing gotcha: with `URL` imported from
 `node:url` the expression reads the same, is rewritten the same, and throws the same. The
 tell, if you log the values instead of assuming which bug this is: `import.meta.url`
 prints `file://…`, the `new URL(…)` built from it prints `http://localhost:3000/…`.
