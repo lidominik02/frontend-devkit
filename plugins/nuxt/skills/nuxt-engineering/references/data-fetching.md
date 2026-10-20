@@ -80,8 +80,7 @@ captures a snapshot, a getter keeps tracking.
 - **`transform`** / **`pick`** — shrink the response *before* it enters the payload.
   This is the lever for payload size: without it the entire API response is serialised
   into the HTML, whether the template uses it or not. A server route's response reaches
-  `transform` as JSON, so a `Date` in it is already a string there (Nuxt docs, Data
-  Fetching → Serializing Data From API Routes, checked against Nuxt 4.6.1).
+  `transform` as JSON, so a `Date` in it is already a string there.
 - **`getCachedData`** — return an already-known value instead of refetching. It receives
   the reason it was called, so a manual refresh can bypass the cache while a route
   revisit uses it.

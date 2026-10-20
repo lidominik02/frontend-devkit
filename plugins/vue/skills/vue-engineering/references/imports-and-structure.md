@@ -20,18 +20,15 @@ The signal is the plugin's package imported in `vite.config.*`, not the name of 
 binding it is imported as — `AutoImport` and `Components` are only the usual names. Two
 plugins are the common opt-ins:
 
-- **`unplugin-auto-import`** — auto-imports APIs and composables, as the
-  `unplugin-auto-import` README states (checked at 21.1.0).
-- **`unplugin-vue-components`** — registers components without an import, as the
-  `unplugin-vue-components` README states (checked at 32.1.0).
+- **`unplugin-auto-import`** — auto-imports APIs and composables.
+- **`unplugin-vue-components`** — registers components without an import.
 
 They are not a closed list: any Vite plugin in `vite.config.*` that auto-imports or
 auto-registers counts.
 
 The exemption holds only for what the plugin's config covers, defaults included — its
 `imports` presets, its `dirs` and its resolvers. With no `dirs` given,
-`unplugin-vue-components` scans `src/components`, as the `unplugin-vue-components` README
-states (checked at 32.1.0), so `Components()` with no options still covers that folder. A
+`unplugin-vue-components` scans `src/components`, so `Components()` with no options still covers that folder. A
 name outside what the config covers still needs its import. Within that, the
 neighbouring files' convention decides: do not add imports they omit, and do not strip
 the ones they keep. Read `vite.config.*` before flagging a missing import.

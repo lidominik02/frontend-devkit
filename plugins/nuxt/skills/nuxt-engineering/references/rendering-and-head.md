@@ -54,8 +54,7 @@ session. What the visitor then sees depends on the type:
 - **A formatted string** arrives exactly as the server formatted it, so it also stays in
   the server's timezone and locale. It looks like a fix because the mismatch warning goes
   away; it has actually removed the client's chance to ever show its own time.
-- **A `Date`** arrives as the same instant, frozen at the server's clock (Nuxt docs, Data
-  Fetching → Serializing Data From Server to Client, checked against Nuxt 4.6.1). But
+- **A `Date`** arrives as the same instant, frozen at the server's clock. But
   `toLocale*` with no timezone or locale passed formats in each runtime's default — the
   server's, then the browser's — so it follows that the mismatch is still there whenever
   the server's zone (often UTC) or locale differs from the visitor's. It hides wherever

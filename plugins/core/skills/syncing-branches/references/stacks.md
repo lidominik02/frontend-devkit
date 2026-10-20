@@ -1,8 +1,8 @@
 # Stacked branches: lookup
 
 A stacked branch — the child — builds on another branch that has not merged — the parent —
-rather than on main. Every git behaviour here was observed on git 2.43.0 or read in its man
-pages. The rebase swap applies to every `rebase` below; a `cherry-pick` does not swap.
+rather than on main. The rebase swap applies to every `rebase` below; a `cherry-pick` does
+not swap.
 
 ## Detecting a stack
 

@@ -66,8 +66,7 @@ a rule written against `mcp__chrome-devtools__*` matches nothing. The key is als
 **sanitised**: every character outside `A-Za-z0-9_-` becomes an underscore, so
 `chrome.devtools` exposes `mcp__chrome_devtools__take_snapshot`.
 
-Checked against **chrome-devtools-mcp 1.9.0** and **@playwright/mcp 0.0.80**; check your
-server before treating a missing tool as a bug.
+Check your server's tool list before treating a missing tool as a bug.
 
 **Every page-scoped tool requires a `pageId`** (`--pageIdRouting` is on by default; leave
 it, it keeps two agents out of each other's tabs). `new_page` and `list_pages` print it:

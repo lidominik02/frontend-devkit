@@ -52,19 +52,15 @@ Three rules:
   module load; `useState('x', () => [])` evaluates it per request.
 - **The value must be payload-serialisable.** The payload is serialised with devalue, so
   a `Date`, `Map`, `Set` or `RegExp` in `useState` or `useAsyncData` reaches the client
-  as itself on every Nuxt 3+ version (Nuxt docs, Data Fetching → Serializing Data From
-  Server to Client, checked against Nuxt 4.6.1; Nuxt 3.0 already rendered it with
-  `@nuxt/devalue`). `BigInt`, `ref`/`reactive`/`shallowRef`/`shallowReactive`,
-  `NuxtError` and a type registered with `definePayloadPlugin` survive only with the
-  JSON payload — default since Nuxt 3.5, behind `experimental.renderJsonPayloads` in
+  as itself on every Nuxt 3+ version. `BigInt`,
+  `ref`/`reactive`/`shallowRef`/`shallowReactive`, `NuxtError` and a type registered
+  with `definePayloadPlugin` survive only with the JSON payload — default since Nuxt 3.5,
+  behind `experimental.renderJsonPayloads` in
   3.4, so not on a project whose `nuxt.config` sets that flag `false`. On that default
   path a function or a class instance throws `Cannot stringify arbitrary non-POJOs`
   during the server render unless a `definePayloadPlugin` reducer/reviver pair registers
-  that type (the `useState` docs, Troubleshooting, checked against Nuxt 4.6.1; for a
-  function, also the devalue README, checked against devalue 6.0.3). A server
-  route is different: its response reaches `$fetch` and `useFetch` as JSON, so a `Date`
-  it returns arrives as a string (Nuxt docs, Data Fetching → Serializing Data From API
-  Routes, checked against Nuxt 4.6.1).
+  that type. A server route is different: its response reaches `$fetch` and `useFetch`
+  as JSON, so a `Date` it returns arrives as a string.
 
 Wrap it in a composable rather than calling `useState('recently-viewed')` at call sites.
 A hand-written key at each site is a typo away from a second, silent piece of state.

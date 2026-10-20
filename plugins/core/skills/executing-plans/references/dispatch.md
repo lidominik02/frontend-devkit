@@ -138,5 +138,5 @@ Forbidden index writes: git add, git commit, git write-tree, git update-index, g
 | Error | Cause | Fix |
 | --- | --- | --- |
 | `snapshot.mjs` exits 1 | Not a git work tree, a required clean filter failed (Git LFS sets `required`), or a base that names no tree | Stop and report its stderr. Never review without a diff |
-| The recorded pre-execution tree is gone: `git cat-file -e <tree>^{tree}` exits non-zero | No ref holds the tree, and a `git gc` past its prune expiry deleted it (git 2.43.0) | Ask with one form — Review from the merge-base (recommended; it also covers work that predates the run), or Stop — and write the answer as a Log line |
+| The recorded pre-execution tree is gone: `git cat-file -e <tree>^{tree}` exits non-zero | No ref holds the tree, and a `git gc` past its prune expiry deleted it | Ask with one form — Review from the merge-base (recommended; it also covers work that predates the run), or Stop — and write the answer as a Log line |
 | The user committed or staged between tasks | Normal | Nothing to do: the snapshot diff from the task's base tree still isolates the task |

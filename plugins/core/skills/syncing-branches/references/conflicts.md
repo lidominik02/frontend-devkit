@@ -4,8 +4,8 @@
 - The classes
 - Git mechanics
 
-Every git behaviour here was observed on git 2.43.0 or read in its man pages. Each
-conflicted file gets one class, which decides its resolution and its log entry's evidence.
+Each conflicted file gets one class, which decides its resolution and its log entry's
+evidence.
 
 ## The classes
 
@@ -36,16 +36,16 @@ lines cross-reference each other, so a merge of its hunks is wrong even when it 
    branch added beside it; where nothing ran, the side the file kept, that it is not
    regenerated, and the question in the stop's batch.
 
-| Package manager | Its lockfiles | Regenerates the lockfile | Source |
-| --- | --- | --- | --- |
-| npm | `package-lock.json`, `npm-shrinkwrap.json` | `npm install` | npm 5.7.0 release notes: `npm install` fixes a conflicted `package-lock.json`. npm's docs: with both files present, `npm-shrinkwrap.json` takes precedence |
-| pnpm | `pnpm-lock.yaml` | `pnpm install` | pnpm.io/git: `pnpm install` resolves conflicts in `pnpm-lock.yaml` |
-| yarn | `yarn.lock` | `yarn install` | yarnpkg/yarn#3544, Yarn Classic; Yarn Berry's behaviour is unverified |
-| bun | `bun.lock`, `bun.lockb` | `bun install` | bun.sh docs: Bun v1.2 made the text `bun.lock` the default; `bun.lockb` is the older binary form. Conflict handling unverified |
+| Package manager | Its lockfiles | Regenerates the lockfile |
+| --- | --- | --- |
+| npm | `package-lock.json`, `npm-shrinkwrap.json` (with both present, `npm-shrinkwrap.json` takes precedence) | `npm install` |
+| pnpm | `pnpm-lock.yaml` | `pnpm install` |
+| yarn | `yarn.lock` | `yarn install` |
+| bun | `bun.lock` (text, the default from Bun v1.2), `bun.lockb` (the older binary form) | `bun install` |
 
 Taking the side being built on first means the install starts from a lockfile with no
-markers, which makes the command valid where the manager's own conflict handling is
-unverified. The install runs behind the permission prompt, as the plan named it.
+markers, so the command does not depend on the manager's own conflict handling. The
+install runs behind the permission prompt, as the plan named it.
 
 ### trivial
 
@@ -117,18 +117,16 @@ the work being rebased); `man git-rebase` the same for `-X ours` and `-X theirs`
 
 `-c merge.conflictStyle=zdiff3` adds the base between the sides, from `|||||||` to
 `=======`, and moves lines both sides share out of the region. It sets nothing in the
-repository's config and lasts for that one command: observed, the first stop of a two-stop
+repository's config and lasts for that one command: the first stop of a two-stop
 rebase carried the base and the second did not, until `--continue` repeated the `-c`. It
-exists from git 2.35 (git-scm.com's `git-merge` docs: 2.34.0 lack it, 2.35.0 list it); on
-an older git, use `diff3`.
+exists from git 2.35; on an older git, use `diff3`.
 
 ### Moving only the named branch
 
 `--no-update-refs` keeps a rebase from moving any other branch that points into the
-rebased range, even where `rebase.updateRefs` is configured. Both arrived in git 2.38.0:
-its release notes add the option, and git-scm.com's `git-rebase` and `git-config` docs
-lack both at 2.37.0 and list them at 2.38.0. On an older git, leave the flag out: nothing
-there moves another branch. `git --version` tells which, behind the permission prompt.
+rebased range, even where `rebase.updateRefs` is configured. Both arrived in git 2.38.0.
+On an older git, leave the flag out: nothing there moves another branch. `git --version`
+tells which, behind the permission prompt.
 
 ### Continuing
 

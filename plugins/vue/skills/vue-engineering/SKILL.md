@@ -74,11 +74,10 @@ the client owns. See `references/data-and-state.md`.
 Plain Vite auto-imports nothing, so if you write `ref` you import it; explicit is the
 default because Nuxt habits leak into a plain Vue app. The signal is the plugin package
 imported in `vite.config.*`, whatever its binding is named. The common opt-ins are
-`unplugin-auto-import`, which auto-imports APIs and composables, as the
-`unplugin-auto-import` README states (checked at 21.1.0), and `unplugin-vue-components`,
-which registers components, as the `unplugin-vue-components` README states (checked at
-32.1.0) — not a closed list: any Vite plugin there that auto-imports or auto-registers
-counts. The exemption holds only for what its config covers, defaults included (`imports`
+`unplugin-auto-import`, which auto-imports APIs and composables, and
+`unplugin-vue-components`, which registers components — not a closed list: any Vite
+plugin there that auto-imports or auto-registers counts. The exemption holds only for what
+its config covers, defaults included (`imports`
 presets; `dirs`, which for `unplugin-vue-components` is `src/components` when none is
 given; resolvers); there the neighbouring files' convention decides — match it. See
 `references/imports-and-structure.md`.
