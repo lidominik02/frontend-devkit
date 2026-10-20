@@ -3,6 +3,63 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.5.0 - 2026-10-20
+
+### Added
+
+- `fixing-bugs` fixes the repository's own code in any layer — a server route, a service, a
+  CLI — after you confirm it on a "Fix it here" / "Owner report instead" form. Code the
+  repository only consumes still gets an owner report. A directory your `CLAUDE.md`,
+  `AGENTS.md` or `CONTRIBUTING.md` names as vendored or generated counts as consumed.
+- Success criteria are numbered `SC<n>` and QA cases `TC<n>`. `STATUS.md` carries an
+  Evidence block per criterion, written when a task closes and after a QA run;
+  `finishing-features` reads it and records a delivery state and a confidence, never in the
+  MR text.
+- `clarifying-features` opens round 1 by mirroring your intent in about 150 words — outcome,
+  user, problem, non-goal, measure of success — before its classification.
+- `clarifying-features` asks the non-functional requirements once, on one form of four
+  groups (load and data, access, users, operations). Only what you check is asked further;
+  the rest is written "not applicable".
+- Every long reference opens with a list of its sections.
+
+### Changed
+
+- `core` works in any repository, not only a JavaScript frontend. Its wording is
+  domain-neutral, and `investigating-bugs` traces a backend or CLI bug in the same order as
+  a UI one: input at the boundary, then the contract, identity and the code.
+- Gates come from any manifest or task runner that describes its targets, not only
+  `package.json`. An implicit task such as `cargo test` is a gate only when your docs name
+  it.
+- A bug's reproduction runs the test command the project declares, narrowed to one file.
+  With no declared test command it is reported NOT RUN instead of a guessed Vitest or Jest
+  call.
+- No `core` skill grants `npm`, `pnpm`, `yarn`, `bun`, `npx`, `vitest` or `jest` any more,
+  so a test or gate run asks for permission unless your own settings allow it.
+- `clarifying-features` puts on a form only the decisions that matter — one other work
+  builds on, one expensive to reverse, a source conflict, a rule's reason, a third party's
+  call. The rest takes a default from precedent, tagged ASSUMED, and a veto form before the
+  exit gate lets you send any default back.
+- A business rule you or a source stated stays SAID even when its reason is unknown; its
+  reason reads "unknown — ask <owner>". The exit gate lists inferred rules and rules with
+  an unknown reason apart.
+- A lockfile the conflict table does not list, such as `go.sum` or `Gemfile.lock`, keeps
+  the target's side during a sync and is never merged by hand.
+- Skills no longer carry eval results, savings or Claude Code version stamps — only what
+  the model does.
+- The packs are MIT licensed.
+- A feature in the old six-file layout is no longer supported.
+
+### Fixed
+
+- `fixing-bugs` proves every fix red-green-red-green, including a fix whose cause was
+  evident from the start.
+- `fixing-bugs` no longer stalls after calling `investigating-bugs`: edits stay allowed for
+  the rest of the turn.
+- `finishing-features` treats a QA report as stale once a task, fix or sync follows it, or
+  the branch has a later commit, and asks whether to rerun the QA list.
+- A blank veto question in `clarifying-features` keeps its defaults without a chat
+  follow-up.
+
 ## 0.4.1 - 2026-10-18
 
 ### Fixed
