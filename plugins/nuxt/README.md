@@ -8,6 +8,15 @@ repository.
 
 Requires `core` and `vue`, and declares both directly.
 
+Install it in one step, which also adds the marketplace:
+
+```
+/plugin install nuxt --marketplace lidominik02/frontend-devkit
+```
+
+Then set `autoUpdate` on the marketplace entry, or no release reaches you
+([Updating](../../docs/installation.md#updating)).
+
 ## A delta on `vue`
 
 Roughly half the guidance inverts between a client-only Vue app and a server-rendered one:

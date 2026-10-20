@@ -6,6 +6,15 @@ for UI work. Enable it in every repository; the framework packs depend on it.
 
 Requires Node 22 or later as `node` on the `PATH` ([Installation](../../docs/installation.md#node)).
 
+Install it in one step, which also adds the marketplace:
+
+```
+/plugin install core --marketplace lidominik02/frontend-devkit
+```
+
+Then set `autoUpdate` on the marketplace entry, or no release reaches you
+([Updating](../../docs/installation.md#updating)).
+
 ## Skills
 
 Every skill answers to `/core:<skill-name>`. References are the files under the skill's
