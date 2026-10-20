@@ -8,14 +8,14 @@ repository.
 
 Requires `core` and `vue`, and declares both directly.
 
-Install it in one step, which also adds the marketplace:
+Install it from your shell; the first time, the command also adds the marketplace:
 
 ```
-/plugin install nuxt --marketplace lidominik02/frontend-devkit
+claude plugin install nuxt --marketplace lidominik02/frontend-devkit
 ```
 
-Then set `autoUpdate` on the marketplace entry, or no release reaches you
-([Updating](../../docs/installation.md#updating)).
+Then turn auto-update on for the marketplace, or no release reaches you
+([Install](../../docs/installation.md#install)).
 
 ## A delta on `vue`
 

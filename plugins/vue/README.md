@@ -8,14 +8,14 @@ assuming them, and carries no facts about any individual repository.
 
 Requires `core`, which enabling `vue` installs and enables with it.
 
-Install it in one step, which also adds the marketplace:
+Install it from your shell; the first time, the command also adds the marketplace:
 
 ```
-/plugin install vue --marketplace lidominik02/frontend-devkit
+claude plugin install vue --marketplace lidominik02/frontend-devkit
 ```
 
-Then set `autoUpdate` on the marketplace entry, or no release reaches you
-([Updating](../../docs/installation.md#updating)).
+Then turn auto-update on for the marketplace, or no release reaches you
+([Install](../../docs/installation.md#install)).
 
 For a server-rendered Nuxt app, enable [`nuxt`](../nuxt/README.md) instead; it brings
 `vue` with it and says which of these rules do not apply under SSR.

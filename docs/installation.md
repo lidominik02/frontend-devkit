@@ -1,35 +1,33 @@
 # Installation
 
-The devkit is a Claude Code marketplace. Install it once in your user settings and it
-applies to every repository you open.
+The devkit is a Claude Code marketplace. Install it once and it applies to every repository
+you open.
 
-## Add the marketplace
+## Install
 
-Add to `~/.claude/settings.json` (on Windows, `%USERPROFILE%\.claude\settings.json`):
+From your shell, install the pack your repository needs:
 
-```json
-{
-  "extraKnownMarketplaces": {
-    "frontend-devkit": {
-      "source": { "source": "github", "repo": "lidominik02/frontend-devkit" },
-      "autoUpdate": true
-    }
-  },
-  "enabledPlugins": {
-    "core@frontend-devkit": true,
-    "vue@frontend-devkit": true,
-    "nuxt@frontend-devkit": true
-  }
-}
+```
+claude plugin install nuxt --marketplace lidominik02/frontend-devkit
 ```
 
-Then run `/reload-plugins`.
+The first time, the command adds the marketplace; then it installs the pack at user scope
+with every pack it depends on: `nuxt` brings `vue` and `core`, `vue` brings `core`, and
+`core` alone suits a repository with no framework pack. Run it again with another pack name
+to add one; the marketplace is reused. In a session that is already open, run
+`/reload-plugins`; inside a session, `/plugin install nuxt --marketplace
+lidominik02/frontend-devkit` does the same and asks for the scope.
+
+Then turn auto-update on, because a marketplace added this way has it off: run `/plugin`,
+open the **Marketplaces** tab, select `frontend-devkit` and choose **Enable auto-update**.
+Without it a release reaches no one ([Updating](#updating)).
 
 ## Permissions and attribution
 
 The devkit ships no hook, and a plugin cannot install permission rules (docs, read
 2026-10-12), so without these settings nothing stops a credential read or a push. Add them
-to your user settings next to the marketplace:
+to your user settings, `~/.claude/settings.json` (on Windows,
+`%USERPROFILE%\.claude\settings.json`):
 
 ```json
 {
@@ -81,8 +79,9 @@ trailer, where the control added one (12).
 
 ## Choosing packs
 
-Enable only the packs whose frameworks you actually use: a plain-Vue repo pays nothing for
-`nuxt`, and enabling `nuxt` alone is what a Nuxt repo wants, since it brings `vue` with it.
+Install only the packs whose frameworks you actually use: a plain-Vue repo pays nothing for
+`nuxt`, and installing `nuxt` alone is what a Nuxt repo wants, since it brings `vue` and
+`core` with it.
 
 Enabling `vue` installs and enables `core` with it — `dependencies` is enforced, not
 advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is enabled.
@@ -151,8 +150,8 @@ Code session.
 
 ## Updating
 
-Set `autoUpdate`. Auto-update is off by default for third-party marketplaces, so without
-it a release reaches nobody until someone runs `/plugin update`. A session installs the
+Turn auto-update on ([Install](#install)). It is off by default for third-party
+marketplaces, so without it a release reaches nobody until someone runs `/plugin update`. A session installs the
 `main` branch, and `main` moves only at a release.
 
 After a release, check with `claude plugin list` that every pack reports the new version,

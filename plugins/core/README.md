@@ -6,14 +6,14 @@ for UI work. Enable it in every repository; the framework packs depend on it.
 
 Requires Node 22 or later as `node` on the `PATH` ([Installation](../../docs/installation.md#node)).
 
-Install it in one step, which also adds the marketplace:
+Install it from your shell; the first time, the command also adds the marketplace:
 
 ```
-/plugin install core --marketplace lidominik02/frontend-devkit
+claude plugin install core --marketplace lidominik02/frontend-devkit
 ```
 
-Then set `autoUpdate` on the marketplace entry, or no release reaches you
-([Updating](../../docs/installation.md#updating)).
+Then turn auto-update on for the marketplace, or no release reaches you
+([Install](../../docs/installation.md#install)).
 
 ## Skills
 

@@ -37,29 +37,20 @@ at the moment of use from files the project already maintains, so nothing goes s
 | [`vue`](plugins/vue/README.md) | Vue 3 single-page apps on Vite | `core` |
 | [`nuxt`](plugins/nuxt/README.md) | Server-rendered Nuxt apps; a delta on `vue` | `core`, `vue` |
 
-Enable only the packs whose frameworks you use.
+Install only the packs whose frameworks you use.
 
 ## Install
 
-Add to `~/.claude/settings.json` (on Windows, `%USERPROFILE%\.claude\settings.json`):
+From your shell, install the pack your repository needs; `nuxt` brings `vue` and `core`, and
+`vue` brings `core`:
 
-```json
-{
-  "extraKnownMarketplaces": {
-    "frontend-devkit": {
-      "source": { "source": "github", "repo": "lidominik02/frontend-devkit" },
-      "autoUpdate": true
-    }
-  },
-  "enabledPlugins": {
-    "core@frontend-devkit": true,
-    "vue@frontend-devkit": true,
-    "nuxt@frontend-devkit": true
-  }
-}
+```
+claude plugin install vue --marketplace lidominik02/frontend-devkit
 ```
 
-Then run `/reload-plugins`. The plugins need Node 22 or later as `node` on the `PATH`.
+Then run `/plugin`, open **Marketplaces**, select `frontend-devkit` and choose **Enable
+auto-update**: a marketplace added this way has it off. The plugins need Node 22 or later as
+`node` on the `PATH`.
 After a release, check with `claude plugin list` that every pack reports the new version.
 More, including updating and the plugins worth installing alongside:
 [Installation](docs/installation.md).
