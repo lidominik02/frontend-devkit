@@ -44,6 +44,19 @@
         "vue",
         "hydration"
       ]
+    },
+    {
+      "name": "frontend",
+      "source": "./plugins/frontend",
+      "description": "Frontend engineering and review knowledge for Vue 3, Nuxt and Next.js: one router skill selects a framework's rules per workspace from its package.json and loads only that set. Version-gated. Contains no repo-specific facts. Depends on no other plugin.",
+      "category": "development",
+      "keywords": [
+        "vue",
+        "nuxt",
+        "nextjs",
+        "ssr",
+        "frontend"
+      ]
     }
   ]
 }

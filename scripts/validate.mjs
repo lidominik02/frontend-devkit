@@ -21,8 +21,9 @@ const rel = (root, p) => (path.relative(root, p) || p).split(path.sep).join('/')
 const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
 // Repo policy, see ADR 0007; the only machine check on the always-on tier; query it with
-// `--checks=budget`.
-export const BUDGET_CEILING = 6546;
+// `--checks=budget`. Raised from 6546 while the `vue` and `nuxt` plugins are still listed
+// beside `frontend`; it returns to 6546 in the change that removes them.
+export const BUDGET_CEILING = 7129;
 
 const MARKETPLACE = '.claude-plugin/marketplace.json';
 
