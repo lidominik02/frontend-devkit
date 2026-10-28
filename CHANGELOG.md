@@ -3,6 +3,28 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.5.1 - 2026-10-28
+
+### Changed
+
+- Every pack README gives one install route: `claude plugin install <pack> --marketplace
+  lidominik02/frontend-devkit` from your shell, which adds the marketplace the first time
+  and brings the packs it depends on, then turning auto-update on for the marketplace.
+  Hand-editing `settings.json` to install is no longer described.
+
+### Fixed
+
+- The `vue` review no longer rates every new environment-specific `VITE_` URL Critical. It
+  is a finding only in a project that builds once and promotes that artifact; a pipeline
+  that deliberately builds once per environment passes, and when it is not known which the
+  project does, the review asks.
+- `vue-engineering` describes the deep-watch mistake Vue 3 actually has: a getter returning
+  an object, or a deep `ref` holding one, fires only on replacement. Watching a `reactive`
+  object is already deep.
+- The `core`, `vue` and `nuxt` references keep a version only where it marks when a
+  behaviour starts or changes, such as git 2.35 for `zdiff3`; the versions they were merely
+  checked on are gone.
+
 ## 0.5.0 - 2026-10-20
 
 ### Added
