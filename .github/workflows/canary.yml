@@ -23,3 +23,41 @@ jobs:
           for src in $(node -e 'for (const p of JSON.parse(require("fs").readFileSync(".claude-plugin/marketplace.json","utf8")).plugins) console.log(p.source)'); do
             claude plugin validate "$src" --strict
           done
+  # Dispatch-only: the run is billed to the maintainer's subscription, so the weekly schedule
+  # never starts it.
+  behaviour-smoke:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    steps:
+      - name: Skip without a token
+        if: env.CLAUDE_CODE_OAUTH_TOKEN == ''
+        run: echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not set; behaviour smoke skipped"
+      - if: env.CLAUDE_CODE_OAUTH_TOKEN != ''
+        uses: actions/checkout@v7
+      - if: env.CLAUDE_CODE_OAUTH_TOKEN != ''
+        uses: actions/setup-node@v7
+        with: { node-version: '22' }
+      - if: env.CLAUDE_CODE_OAUTH_TOKEN != ''
+        run: npm install -g @anthropic-ai/claude-code@latest
+      - name: Router selects the Nuxt set
+        if: env.CLAUDE_CODE_OAUTH_TOKEN != ''
+        run: |
+          set -e
+          claude --version
+          dir=$(mktemp -d)
+          cd "$dir"
+          echo '{"dependencies":{"nuxt":"^4.0.0","vue":"^3.5.0"}}' > package.json
+          out=$(claude -p "/frontend:frontend-engineering Which rules apply in this workspace? Answer with the selection line only." \
+            --plugin-dir "$GITHUB_WORKSPACE/plugins/core" \
+            --plugin-dir "$GITHUB_WORKSPACE/plugins/frontend" \
+            --model sonnet \
+            --max-turns 15 \
+            --max-budget-usd 1 \
+            --permission-prompts none \
+            --no-session-persistence \
+            --output-format text)
+          echo "$out"
+          grep -qF 'vue-* + nuxt-*' <<< "$out"

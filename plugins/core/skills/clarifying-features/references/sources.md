@@ -3,8 +3,7 @@
 ## Contents
 - The round-1 inventory
 - Drafting when nothing written exists
-- The no-design proposal
-- The design gap check
+- The design call's report
 - External contract
 - The research dispatch
 - The research note
@@ -35,8 +34,7 @@ tools reach. A link with no read tool in this session is found but unreadable: a
 screenshots or an export of the frames the feature touches.
 
 **Recording.** Each requirement source goes into Sources with its location and who can
-confirm it; the design source into Design. Read a frame through the read tools' structured
-data — node names, bound variables, hierarchy — not a generated code sample.
+confirm it; the design source into Design.
 
 ## Drafting when nothing written exists
 
@@ -47,27 +45,21 @@ rationale still to be asked; the States the frames show. Every drafted line is t
 ASSUMED and cites its frame or `path:line`; Sources says "none". The user corrects the draft
 through forms, and a confirmed line becomes SAID; the draft never outranks the design. With
 neither a design nor anything written, the user's own description is the source, and a UI
-task gets the no-design proposal first.
+task gets the `design` call's proposal first.
 
-## The no-design proposal
+## The design call's report
 
-For a UI task with no design, propose one from the repository's own patterns: the closest
-existing feature, with its path; the design tokens it would use, by name; the shared
-components it would compose, with their paths. Write it to
-`temp/<feature>/research/design-proposal.md`, one short entry per screen and state, and ask
-with a decision form: Build on the proposal (recommended), Change the proposal, Wait for a
-design (an `OQ<n>` line with owner `designer` that blocks every UI task). The approved
-proposal becomes the design source: a DECISIONS.md entry with the rejected alternative, and
-Design with the type "a proposal the user approved", the file as its location, its coverage.
-
-## The design gap check
-
-Walk the design against the States — loading, empty, error, permission — and the user flow:
-every step has a screen, and every state a step can reach has one, success and per-field
-validation errors included. For each missing piece: a repository precedent → a question with
-the precedent recommended, cited by path; no precedent → a question with a reasonable-user
-default, said to be one; only the designer can answer → an `OQ<n>` line with owner
-`designer` and what it blocks. Design's coverage is then partial, naming what is missing.
+`frontend:verifying-ui`, called with `design`, reports the source it read, its coverage, a
+proposal when there is no design, and the gaps. A proposal is written to
+`temp/<feature>/research/design-proposal.md` and asked with a decision form: Build on the
+proposal (recommended), Change the proposal, Wait for a design (an `OQ<n>` line with owner
+`designer` that blocks every UI task). The approved proposal becomes the design source: a
+DECISIONS.md entry with the rejected alternative, and Design with the type "a proposal the
+user approved", the file as its location, its coverage. Each gap is a question with the
+recommendation it carries, or, when it names the designer, an `OQ<n>` line with owner
+`designer` and what it blocks; Design's coverage is then partial, naming what is missing.
+Without the call, an unreadable source asks for screenshots or an export, and each design
+question is an `OQ<n>` line with owner `designer`.
 
 ## External contract
 

@@ -1,6 +1,6 @@
 # 0007. Three tiers of context cost, and a ceiling on the always-on listing
 
-Status: Accepted
+Status: Accepted. Amended 2026-11-05: a framework's guardrails may live in the rules file its router skill reads first, not in the body (ADR 0016).
 
 ## Context
 

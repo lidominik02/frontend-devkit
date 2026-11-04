@@ -4,14 +4,14 @@
 
 | Document | Read it when |
 | --- | --- |
-| [Installation](installation.md) | Installing, choosing packs, updating, and the plugins worth installing alongside |
+| [Installation](installation.md) | Installing, choosing packs, updating, upgrading from 0.5.x, and the plugins worth installing alongside |
 | [The feature lifecycle](feature-lifecycle.md) | Working through a feature, a bug or a branch sync with the `core` skills, and what they write into a repository |
 | [Browser verification](browser-verification.md) | Checking a UI change in a real browser, running a QA list, or setting up a browser MCP server |
 | [Scripts](scripts.md) | What `snapshot.mjs`, the one shipped script, does and does not promise |
 | [Architecture](architecture.md) | Understanding how the packs, the settings and the lifecycle fit together |
 
 Each pack's README lists its components: [`core`](../plugins/core/README.md),
-[`vue`](../plugins/vue/README.md), [`nuxt`](../plugins/nuxt/README.md).
+[`frontend`](../plugins/frontend/README.md).
 
 ## Working on the devkit
 

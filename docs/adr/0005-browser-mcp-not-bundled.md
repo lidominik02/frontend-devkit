@@ -1,6 +1,6 @@
 # 0005. The browser MCP server is not bundled
 
-Status: Accepted
+Status: Accepted. Amended 2026-11-05: the browser tools belong to `verifying-ui` in the `frontend` plugin, not to `core` (ADR 0015).
 
 ## Context
 

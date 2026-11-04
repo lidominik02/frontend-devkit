@@ -1,16 +1,20 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "frontend-devkit",
-  "description": "A domain-neutral core for software work in any repository - feature lifecycle, bug fixing in any layer, review, commit and MR text - plus framework packs for frontend work (Vue, Nuxt). Every project fact is read from the files a repository already maintains; no component carries a fact about an individual repository.",
+  "description": "A domain-neutral core for software work in any repository - feature lifecycle, bug fixing in any layer, review, commit and MR text - plus a frontend plugin for Vue, Nuxt and Next.js. Every project fact is read from the files a repository already maintains; no component carries a fact about an individual repository.",
   "owner": {
     "name": "lidominik02",
     "url": "https://github.com/lidominik02"
+  },
+  "renames": {
+    "vue": "frontend",
+    "nuxt": null
   },
   "plugins": [
     {
       "name": "core",
       "source": "./plugins/core",
-      "description": "Domain-neutral, for any repository: a feature lifecycle with automatic review, bug investigation and fixing in any layer, branch syncing, commit/MR authoring and repo preparation, plus browser verification for UI work. Install in every repository.",
+      "description": "Domain-neutral, for any repository: a feature lifecycle with automatic review, bug investigation and fixing in any layer, branch syncing, commit/MR authoring and repo preparation. Install in every repository.",
       "category": "development",
       "keywords": [
         "review",
@@ -20,29 +24,16 @@
       ]
     },
     {
-      "name": "vue",
-      "source": "./plugins/vue",
-      "description": "Vue 3 / Vite SPA engineering and review knowledge: reactivity, composables, Vue Router, client vs server state, build-time config and secrets, testing. Version-gated against the installed Vue, Router, Pinia, Vite and TypeScript. Contains no repo-specific facts. Requires core.",
+      "name": "frontend",
+      "source": "./plugins/frontend",
+      "description": "Frontend engineering and review knowledge for Vue 3, Nuxt and Next.js: one router skill selects a framework's rules per workspace from its package.json and loads only that set. Version-gated. Contains no repo-specific facts. Depends on no other plugin.",
       "category": "development",
       "keywords": [
         "vue",
-        "vite",
-        "pinia",
-        "vue-router",
-        "spa"
-      ]
-    },
-    {
-      "name": "nuxt",
-      "source": "./plugins/nuxt",
-      "description": "Nuxt SSR engineering and review knowledge: per-request state with useState instead of module scope, useFetch and useAsyncData, runtimeConfig public versus private, hydration mismatches, Nitro server routes and route middleware. A delta on the vue pack -- only what server rendering inverts or adds. Contains no repo-specific facts. Requires core and vue.",
-      "category": "development",
-      "keywords": [
         "nuxt",
-        "nitro",
+        "nextjs",
         "ssr",
-        "vue",
-        "hydration"
+        "frontend"
       ]
     }
   ]

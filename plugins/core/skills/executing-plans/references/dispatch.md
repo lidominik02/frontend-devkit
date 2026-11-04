@@ -19,7 +19,8 @@ Every `temp/…` path below is handed on as an absolute path under the repositor
 
 Feature: <feature-slug>
 Plan: temp/<feature>/PLAN.md
-Packs: <each framework pack project.md found, in order> | none
+Frontend:
+- <workspace directory> · frontend:frontend-engineering | frontend plugin not enabled in this session | no framework (<manifest fact>)   (one line per workspace the task touches, by project.md's `## Frontend rules`)
 Gates:
 - <workspace directory> · <command> · source <file> · baseline <result>   (one line per fast gate of the workspaces the task touches, from STATUS.md's Verified, and one per held check the user released there, `baseline NOT RUN (held)` when it was released after the baseline; a workspace that declares nothing, its `NOT RUN (no declared command)` line)
 Formatter:
@@ -74,7 +75,8 @@ Both take the shape every `core:reviewer` dispatch has, from
 Role: two-axis
 Diff file: <the path snapshot.mjs printed for temp/<feature>/tasks/<NN>-<task-slug>.diff>
 Intent sources: <brief path> · temp/<feature>/PLAN.md, the task "<task name>"
-Packs: <the brief's Packs line>
+Frontend:
+<the brief's Frontend lines>
 Gates: <each gate line run in step 6 — <workspace> · <command> · <source> · <result> — a FAIL with its quoted error lines>
 Released: <the brief's Released line>
 Implementer message: <the implementer's returned message> — claims to check against the code, not evidence
@@ -84,7 +86,7 @@ Raised by the dispatcher: <each changed file outside the brief's Files and the m
 Re-review: `Role: re-review`, `Diff file:` the path snapshot.mjs printed for
 `temp/<feature>/tasks/<NN>-<task-slug>-fix<round>.diff`, diffed from the tree the previous
 review saw — the `snapshot tree` at the end of its diff file's first line — the task
-review's intent sources, packs and the new gate block, and `Prior findings:` followed by the
+review's intent sources, `Frontend:` lines and the new gate block, and `Prior findings:` followed by the
 open critical and important finding blocks, each as the reviewer returned it.
 
 ## Fix rounds
@@ -114,7 +116,8 @@ after the review of the whole feature; every task is built`.
 
 Review: <review report path> · <re-review report path> | none
 Plan: temp/<feature>/PLAN.md
-Packs: <each pack, in order> | none
+Frontend:
+- <workspace directory> · frontend:frontend-engineering | frontend plugin not enabled in this session | no framework (<manifest fact>)   (one line per workspace the fixes touch, by project.md's `## Frontend rules`)
 Gates:
 - <workspace directory> · <command> · source <file> · latest <result>, else baseline <result>   (one line per fast gate of the workspaces the fixes touch, and one per held check the user released there; a workspace that declares nothing, its `NOT RUN (no declared command)` line)
 Formatter:

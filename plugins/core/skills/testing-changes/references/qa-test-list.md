@@ -34,13 +34,15 @@ know which claim they are looking at.
 
 ## Naming the check
 
-Every case gets exactly one of:
+Every case gets one or more of the labels below, comma-separated — one per check that
+observes part of it, such as a command for the stored value and `web: browser` for what
+the page shows:
 
-- **browser** — anything about what renders, a runtime state, an interaction.
-- **design intent** — anything about matching the design's presence, hierarchy, states,
-  tokens, naming or copy.
-- **Storybook** — anything about a shared component's story existing and rendering
-  correctly in isolation, independent of the feature's own page.
+- **`command`** — a read-only command, or a file or git read, named in the case. `run` runs
+  it by the gate rule: a test or a build waits for the release to name it, and a check
+  only a writing command could make is `user only`.
+- **`web: <browser | design intent | Storybook>`** — anything `frontend:verifying-ui`
+  checks in that mode; `run` hands the case over by name.
 - **user only** — nothing here can check it: does the copy read naturally, does the
   feature actually solve the business problem, anything requiring a judgment no
   automated check makes. Naming this honestly is not a gap in the list — a case that
@@ -57,14 +59,23 @@ the diff">
 <each conflict between sources, when there is one — see below>
 
 ### SC<n> <criterion, stated as a claim> — <SAID | EXTRA | ASSUMED — not confirmed>
-- TC<n> · Positive: <case> — verified by: <browser | design intent | Storybook | user only>
-- TC<n> · Negative: <case> — verified by: <…>
-- TC<n> · Edge: <case> — verified by: <…>
-- TC<n> · Edge: <case> — verified by: <…>    (only the ones that matter for this criterion)
+- TC<n> · Positive: <case> — verified by: <check>[, <check>] · pre: <…> · data: <…> · retest: <…>
+- TC<n> · Negative: <case> — verified by: <…> · pre: <…> · data: <…> · retest: <…>
+- TC<n> · Edge: <case> — verified by: <…> · pre: <…> · data: <…> · retest: <…>
 
 ### Beyond the criteria: <the Review focus entry or Runtime-only item, with its source>
-- TC<n> · <case> — verified by: <…>
+- TC<n> · <case> — verified by: <…> · pre: <…> · data: <…> · retest: <…>
 ```
+
+Edge cases are only the ones that matter for the criterion. Every case carries all four
+parts. A `<check>` is `command`, `web: <mode>` or `user only`. The three fields:
+
+- **`pre`** — the state before the case starts: a signed-in role, a record, a flag.
+- **`data`** — the input the case uses, concrete enough to repeat.
+- **`retest`** — what to run again once a finding on this case is fixed: the case itself,
+  and each `TC<n>` the fix could break.
+
+A field reads `none` only when nothing applies; the run's evidence goes in the report.
 
 `TC<n>` numbers the cases through the whole list, and each case names its criterion's
 `SC<n>` by the heading it sits under. A criterion from a source without `SC<n>` ids heads its

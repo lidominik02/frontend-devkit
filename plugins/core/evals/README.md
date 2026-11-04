@@ -12,20 +12,21 @@ plugin, once without — and compare. The retention rule, borrowed from `vuejs-a
 | passes | passes | **remove** — the model already knew; **keep** only when the pair shows the plugin does it better: fewer turns, questions or tokens for the same result |
 | fails | fails | rewrite, or accept it is out of reach |
 
-**`core`'s bar is higher than a framework pack's.** `core` carries most of the listed
-descriptions — a framework pack carries one — and it is enabled in every repository, so
-that cost is paid in every session of every project. A pack at least only loads where its
-framework is. A `core` skill that passes baseline is several times the waste, and
+**`core`'s bar is higher than `frontend`'s.** `core` carries most of the listed
+descriptions — `frontend` carries two — and it is enabled in every repository, so that
+cost is paid in every session of every project. `frontend` at least only loads where a
+repository has a frontend. A `core` skill that passes baseline is several times the waste, and
 `/skill-doctor` will tell you what it actually costs.
 
 Cases fall into two kinds. **Capability**: the model cannot solve it unaided — a
 distinction it does not draw, an ordering it does not follow, a guardrail it does not
-hold under pressure; in a framework pack, version-specific behaviour or anything past
+hold under pressure; in a framework's rules, version-specific behaviour or anything past
 the training cutoff. **Efficiency**: it can, but not well. A capability rule earns its
 cost by the gap; an efficiency rule only by a measured gain, recorded in its case.
 
-The rest of this file is the methodology for every pack in this repo. The framework
-packs' eval READMEs cover only what is specific to them and point back here.
+The rest of this file is the methodology for every pack in this repo.
+[`frontend`'s eval README](../../frontend/evals/README.md) covers only what is specific to
+it and points back here.
 
 ## What each case tests
 
@@ -57,14 +58,17 @@ packs' eval READMEs cover only what is specific to them and point back here.
 | `gates-per-workspace` | Whether a review in a repository with several declaring workspaces runs only the touched workspace's gates, from its own directory, each line naming the workspace and the source, and holds the declared test |
 | `formatter-from-docs` | Whether a brief carries the formatter a project's `CLAUDE.md` names and its declared gates, and the implementer formats only the files it changed, from the brief |
 | `formatter-from-hook` | Whether a project's own `PostToolUse` formatter hook is left to format — the brief says so and the implementer runs no second formatter — while the declared gates still run |
-| `verifying-ui` | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
 | `qa-test-list` | Whether `plan` mode produces acceptance criteria mapped to positive/negative/edge cases naming a verifying check, or a flat list of things to click |
 | `qa-list-without-a-spec` | Whether, with no spec and no written requirement, `plan` derives criteria from the plan's task and the diff and discloses the weaker source, rather than inventing a story to look ordinary |
-| `design-intent-skip` | Whether `run` reports the design-intent cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
-| `storybook-skip` | The same skip discipline for the Storybook cases, when no Storybook script exists |
+| `qa-command-case` | Whether, in a repository with no UI, `plan` writes `command` cases with a precondition, test data and a retest, and `run` runs only the read-only commands, holding the tests and the build and running nothing that writes |
 | `finishing-features` | Whether closing out a feature surfaces what is left and asks whether the user is done before acting, commits only an accepted message, warns that the branch is behind before the MR text, reminds every open item including a backup branch, moves the feature's files aside rather than deleting them, recommends archiving now when only the push and the merge request are left, and pushes nothing |
 
-Two of these decide a component rather than only scoring an answer.
+The web QA cases — the browser, design-intent and Storybook checks, and `testing-changes`
+handing its `web:` cases over — test `frontend:verifying-ui`, so they live in
+`plugins/frontend/evals/` and need the `frontend` plugin loaded. A `core` case that needs
+`frontend` beside `core` says so in its `graders/criteria.md`.
+
+One of these decides a component rather than only scoring an answer.
 
 `reviewing-changes-trigger` decides the **`reviewing-changes` description and the chain behind
 it**. `reviewing-changes` is what dispatches the reviewer — the `reviewer` agent's own
@@ -72,21 +76,6 @@ description says it is not for direct use — so the untyped prompt asks two thi
 the description fires on the words a user types before a merge request, and whether the
 review then stays in `core:reviewer` workers. A with-plugin run that reviews in the main
 thread says which half to change, depending on whether the skill fired.
-
-`verifying-ui` is listed, as a trial: its description is in the always-on listing and it
-can fire unprompted, so its hold on verification is the body's first instruction. Its case
-carries the trial's question — in the arm where the skill is present but not typed, whether
-it fires on the wording, holds until released, and looks with more discipline than the arm
-with `core` disabled — and therefore whether the listing cost buys anything, or
-`disable-model-invocation` goes back.
-
-It is also the case with the most arms, because it varies two things at once. The
-environment: **a browser MCP server present, and none** — the second is not a degenerate
-case but the more important half, since most repositories are in it and it is where the
-failure the skill exists to prevent actually happens. And the invocation: the skill typed,
-the skill present but not typed, and `core` disabled entirely. Its `graders/criteria.md`
-says which combinations answer which question; run the environments against both, rather
-than reading the pass rate of one as the skill's score.
 
 **A `disable-model-invocation` skill has to be typed to be in its own with-plugin arm** —
 that is the whole point of the field, and it applies to the cases of the typed skills
@@ -104,21 +93,15 @@ claude plugin eval . --ablation with-without
 Checked against 2.1.278: both files take a YAML header, and without one the case is rejected
 with `invalid case.yaml: graders: Required`. `claude plugin eval init --bare <name>` prints
 the canonical shape — `max_turns` and `allowed_tools` on `prompt.md`, `type` and `weight` on
-each grader. Every case in `core`, `vue` and `nuxt` carries it; a new case needs it too, and
+each grader. Every case in `core` and `frontend` carries it; a new case needs it too, and
 the harness is the fastest way to find out that it does not.
 
 **The harness writes into the plugin it evaluated.** Each run leaves a timestamped directory
 and an HTML report under `<plugin>/evals/results/`. That path is gitignored — it is a run
 record, not a marketplace file — so do not add one to a commit.
 
-**The harness cannot resolve a marketplace dependency inside its own sandbox, checked
-against 2.1.278.** Running `claude plugin eval vue@frontend-devkit` or
-`nuxt@frontend-devkit` fails with `dependency-unsatisfied: Dependency "core" is not
-installed`, even with `core` installed and enabled — the sandbox's dependency check
-cannot see it, and the with-plugin arm silently loads no plugin at all, so the
-comparison measures nothing. `vue` and `nuxt` cases cannot be run through the automated
-harness until this is fixed upstream. The fallback is a manual `claude -p` pair: once
-bare, once with `--plugin-dir` pointing at `core`, `vue` and (for a `nuxt` case) `nuxt`
+**Where the harness cannot run a case, the fallback is a manual `claude -p` pair:** once
+bare, once with `--plugin-dir` pointing at `core` and (for a `frontend` case) `frontend`
 directly from the working tree, disabling the persistently-installed copies for the
 run so nothing loads twice. Grade each pair against the case's own `graders/criteria.md`
 by hand.
@@ -187,15 +170,15 @@ applied.
 **A case that has the model write or diagnose a project gets a fresh, empty directory per
 run, and never this repository.** Anything a previous run left behind is a worked answer to
 the same task lying in the workspace, and the next run reads it instead of solving it;
-running inside `frontend-devkit` is the same problem with the pack's own prose as the
+running inside `frontend-devkit` is the same problem with the packs' own prose as the
 answer. `node_modules` is the only thing safe to share between runs. Give the scratch
 project an explicit `target` and `lib` in `tsconfig.json` and a test runner, so a run spends
 its attention on the task rather than on a broken toolchain, and so "did not verify" is a
 choice the criteria can score rather than something the environment decided.
 
-`core` has one wrinkle a framework pack does not. Its skills trigger on description, so
-a baseline arm has to disable the whole plugin rather than merely avoid naming the
-skill. The plugin ships no hook, so an honest verification section is the skill's own reporting in either
+`core` has one wrinkle `frontend`'s rule-set cases do not, since those open with a slash
+invocation. Its skills trigger on description, so a baseline arm has to disable the whole
+plugin rather than merely avoid naming the skill. The plugin ships no hook, so an honest verification section is the skill's own reporting in either
 arm; note which arm you were in before crediting it to the skill.
 
 ## Writing a case

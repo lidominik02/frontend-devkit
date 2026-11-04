@@ -1,6 +1,6 @@
 # 0004. Framework packs layer as deltas
 
-Status: Accepted
+Status: Superseded by 0015 and 0016
 
 ## Context
 

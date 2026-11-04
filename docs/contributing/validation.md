@@ -43,6 +43,33 @@ such as `mcpServer` for `mcpServers` — Claude Code ignores unknown fields at l
 without it the component silently never loads. Every manifest carries `version`, so it is
 expected to exit clean here; CI fails a target on any finding or a non-zero exit.
 
+## The behaviour smoke
+
+Every check above reads files; none runs a skill. The `behaviour-smoke` job of
+`canary.yml` runs one: a `claude -p` with `core` and `frontend` loaded from the checkout by
+`--plugin-dir`, in a temporary directory whose only file is a `package.json` declaring
+`nuxt` and `vue`, invoking `/frontend:frontend-engineering`. The step fails unless the
+output carries the router's Nuxt selection, `vue-* + nuxt-*`.
+
+It runs only on a manual dispatch of the canary, never on its weekly schedule, and skips
+itself with a notice when the `CLAUDE_CODE_OAUTH_TOKEN` repository secret is not set. The
+maintainer generates that token with `claude setup-token`; the run is billed to the
+maintainer's Claude subscription, not to an API key. code.claude.com documents the token
+for CI ("Authentication precedence"), says an OAuth-authenticated run uses the
+subscription instead of API billing (GitHub Actions, "Manage costs"), and says `--bare`
+never reads OAuth credentials, so the smoke does not pass `--bare` (fetched 2026-11-05).
+The job installs the latest CLI, like the rest of the canary; its flags were checked
+against 2.1.310. `claude --help` there does not list `--max-turns`, but a `claude -p` run
+on 2.1.310 accepted `--max-turns 15` and ended at 14 turns, so the smoke passes that limit
+too. It also passes `--max-budget-usd`; whether that cap binds a subscription-billed run is
+not observed.
+
+The result is recorded here per release, from a run dispatched before that release.
+
+| Release | CLI | Result |
+| --- | --- | --- |
+| 0.6.0 | — | NOT RUN (not yet dispatched) |
+
 ## Named remainders
 
 `core` is domain-neutral ([ADR 0014](../adr/0014-core-is-domain-neutral.md)), and no check
@@ -57,16 +84,15 @@ until the trigger that ends it. A hit that fits none of them is a finding.
 
 | Remainder | Where | Why it stays | Ends when |
 | --- | --- | --- | --- |
-| K1: the held-check guardrail naming Storybook and a browser | the "must NOT" and rules lines of `clarifying-features`, `planning-features`, `executing-plans`, `reviewing-changes`, `finishing-features`, `syncing-branches`, `fixing-bugs`, `rules-block.md`, the `implementer` and `reviewer` agents | The web checks still live in `core`, and a guardrail must name what it holds back | Web verification and UI QA leave `core` ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
-| Web verification and UI QA | `verifying-ui` and its references; `testing-changes`, `qa-test-list.md`, `design-intent.md`, `storybook-check.md`; the routing lines to `verifying-ui` in `reviewing-changes` and `testing-changes`; `preparing-a-repo`'s browser question; `docs/browser-verification.md` and its row in `docs/README.md`; the browser paragraph of `docs/architecture.md`; the `core` README rows; the `reviewer` agent's runtime-only, state and screen lines | They are UI capabilities that ship in `core` today | They move to the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
-| Framework routing | `project.md` `## Framework packs`; `preparing-a-repo`'s Vue type-check question | The framework packs are chosen from `package.json` until a workspace chooses its rules | A workspace chooses its framework rules ([ADR 0016](../adr/0016-framework-rules-chosen-per-workspace.md)) |
+| Web verification in the user docs | `docs/browser-verification.md` and its row in `docs/README.md`; the browser paragraph of `docs/architecture.md` | The documentation still describes web verification as part of `core` | The user docs point at the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| Handoffs to the `frontend` plugin | `project.md` `## Frontend rules` and the "frontend rules" and `Frontend:` lines of the lifecycle skills, `dispatch.md`, `formats.md` and both agents; the calls to `frontend:verifying-ui` in `clarifying-features`, `testing-changes`, `fixing-bugs` and `loop.md`, and the routing line in `reviewing-changes`; the sentence "frontend plugin not enabled in this session"; the `web:` check types of `testing-changes` and `qa-test-list.md`, and the browser in a QA finding's Environment line; the `core` README's opening | `core` hands framework rules and web checks to the `frontend` plugin by name, and says so when that plugin is not enabled | `core` stops naming the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
 | UI repro rows | `fixing-bugs` `loop.md` "Repro by kind of bug" (component, store, route, layout rows), the component and store examples of "A correct seam", and section 5's "layout, focus, hydration, a real browser API" | Domain-neutral rows lead; the UI rows serve the UI repositories `core` still serves | The web knowledge leaves `core` ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
 | JavaScript lockfile facts | `syncing-branches` `conflicts.md`: the four JavaScript rows of the lockfile table; the JavaScript lockfile examples in `project.md`, `preparing-a-repo` and `docs/installation.md` | Each row is a verified fact about one tool's lockfile; a lockfile the table does not list is never merged by hand, and a new tool gets its own row | Never: the table grows a row per verified tool |
 | User and report vocabulary | `investigating-bugs`: the description's "is this a frontend or backend bug", "browser, native build" among where a report appears, and a screenshot among what a report holds | It is the user's wording and a report's environment, not a claim about the repository | The listing is measured again with the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
 | The framework packs and the marketplace name | `vue`, `nuxt` and `frontend-devkit` in `docs/architecture.md`, `docs/installation.md`, `docs/README.md`, the manifests, the evals README and each pack README's install line | The packs exist and the marketplace keeps its name | `vue` and `nuxt` become the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)); the name, by a rename decision |
 | Observed tool and server names | `docs/contributing/authoring.md`: `figma`, `chrome-devtools`, browser MCP observations | Each records a behaviour observed against a named server and CLI version | The component that cites it moves or is removed |
-| Design material in clarifying and planning | `clarifying-features`: the description's "build this screen", the bounded-size examples, `sources.md`'s design source, no-design proposal, design gap check and research question 2, `question-rounds.md`'s State row and empty-list example; the Design field in `artifacts.md` and `planning-features` | A UI feature's design is a requirement source while `core` plans UI work, and it is skipped for a change with no UI | The `frontend` plugin settles whether design material moves with it ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
-| Code-unit words | "component" beside a helper and a shared module in `designing-architecture`, `codebase-design.md`, `syncing-branches` and the `reviewer` agent's Reuse line | One kind of unit among others, named by the repository's own word | Never |
-| The devkit's and Claude Code's own terms | "component" for a skill or an agent in `docs/` and `preparing-a-repo`; "API key" and a server's URL in `docs/installation.md` | They name the devkit's and the CLI's own parts, not the repository's domain | Never |
+| Design material in clarifying and planning | `clarifying-features`: the description's "build this screen", the bounded-size examples, `sources.md`'s design source and research question 2, `question-rounds.md`'s State row; the Design field in `artifacts.md` and `planning-features` | A UI feature's design is a requirement source while `core` plans UI work, and it is skipped for a change with no UI | The `frontend` plugin settles whether design material moves with it ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| Code-unit words | "component" beside a helper and a shared module in `designing-architecture` | One kind of unit among others, named by the repository's own word | Never |
+| The devkit's and Claude Code's own terms | "component" for a skill or an agent in `docs/`, `preparing-a-repo` and `testing-changes`; "API key" and a server's URL in `docs/installation.md` | They name the devkit's and the CLI's own parts, not the repository's domain | Never |
 | Decision records | `docs/adr/` | A record states the context it was decided in, and an accepted record is not rewritten | Never: a later record amends it |
 | Eval fixtures | `plugins/*/evals/` | Fixture content is a test's input, not shipped behaviour | The case is retired |

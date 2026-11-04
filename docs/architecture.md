@@ -5,26 +5,35 @@ links the decision record that holds the reasoning.
 
 ## A marketplace of packs
 
-The devkit is a Claude Code marketplace of three plugins, called packs:
+The devkit is a Claude Code marketplace of two plugins, called packs, and neither depends
+on the other:
 
 - **`core`** — domain-neutral, for any repository: the feature lifecycle, bug investigation
   and fixing in any layer, branch syncing, review, commit and merge request text, and
-  browser verification for UI work. Enabled in every repository.
-- **`vue`** — Vue 3 engineering and review knowledge for single-page apps on Vite.
-- **`nuxt`** — what server rendering inverts or adds on top of `vue`.
-
-The framework packs layer instead of hedging:
+  repository preparation. Enabled in every repository.
+- **`frontend`** — the framework rules and web verification. Enabled in frontend and mixed
+  repositories; in a team repository at local scope.
 
 ```
-nuxt  ──depends on──▶  vue  ──depends on──▶  core
+core ──Skill tool, by name, optional──▶ frontend
+                                        ├─ frontend-engineering: per workspace, package.json ──▶ one framework's rule set
+                                        └─ verifying-ui: browser · design intent · Storybook
 ```
 
-`vue` holds the component-model truth that is identical everywhere. `nuxt` carries only
-what server rendering inverts or adds, names every `vue` rule that does not apply there,
-and `vue` points back at it. A skill finds the packs that serve a project from its
-`package.json`, by the rule in `core`'s `project.md`, general to specific — the later pack
-wins a conflict.
-[ADR 0004](adr/0004-framework-packs-layer-as-deltas.md)
+`core` knows exactly two names in `frontend`: `frontend:frontend-engineering` for the rules
+of the workspace being changed, and `frontend:verifying-ui` for the web QA cases. When a
+name is not listed, `core` says once "frontend plugin not enabled in this session" and goes
+on without it, skipping those cases by name.
+[ADR 0015](adr/0015-one-frontend-plugin.md)
+
+`frontend-engineering` is a router. For each workspace the work touches, it reads that
+workspace's `package.json`, selects one framework's set of references — a set that
+specialises another is loaded after its base and wins a conflict — and loads nothing of the
+others. A Vue workspace never sees Nuxt rules, and the listing carries one description
+however many frameworks there are. The selection table in
+[`frontend-engineering/SKILL.md`](../plugins/frontend/skills/frontend-engineering/SKILL.md)
+is the only place a base and its delta are paired.
+[ADR 0016](adr/0016-framework-rules-chosen-per-workspace.md)
 
 ## Facts are read at the moment of use
 
@@ -37,8 +46,8 @@ by the skill that needs it, with the four rules in
 [`project.md`](../plugins/core/skills/planning-features/references/project.md);
 [ADR 0003](adr/0003-facts-read-at-moment-of-use.md) records why.
 
-The one capability that is not self-contained is the browser: `verifying-ui` drives an MCP
-server the consuming repository installs.
+The one capability that is not self-contained is the browser: `frontend:verifying-ui`
+drives an MCP server the consuming repository installs.
 [ADR 0005](adr/0005-browser-mcp-not-bundled.md)
 
 ## Three tiers of context cost
@@ -51,8 +60,8 @@ What a component costs depends on when it loads:
 | Body | When the skill or agent is triggered | Guardrails and the order of work |
 | Reference | Only when the body points at it | Lookup material |
 
-The always-on descriptions have a ceiling, and a repository that enables only the pack for
-its framework pays only for that pack.
+The always-on descriptions have a ceiling, and a repository that does not enable `frontend`
+pays nothing for it.
 [ADR 0007](adr/0007-context-cost-tiers-and-listing-ceiling.md)
 
 ## Where a guardrail is enforced

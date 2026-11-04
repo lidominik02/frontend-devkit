@@ -21,9 +21,9 @@ consumes, runs only the one test file it writes, and hands on to `reviewing-chan
 
 ## 1. Set up
 
-1. **Facts.** Read the tool that runs a manifest, the framework packs and the gates by
-   `../planning-features/references/project.md`, and load the packs it names; a later pack
-   wins every conflict. The test runner is the declared test command, narrowed to its
+1. **Facts.** Read the tool that runs a manifest, the frontend rules and the gates by
+   `../planning-features/references/project.md`, and load the frontend rules as it says. The
+   test runner is the declared test command, narrowed to its
    single-file form by "Running one test file" in `references/loop.md`. With no declared
    test command, section 5 governs every step below.
 2. **Work folder.** A short slug for the bug. Inside a feature — one the caller or the user
@@ -139,7 +139,10 @@ is reachable only in a running app — layout, focus, hydration, a real browser 
 by mocking the code under test. The fix goes ahead without a regression test, and says so:
 
 - **Repro**: the manual steps that show the bug, for the user to run; nothing here runs the
-  app. **Fix** what the diagnosis names.
+  app. When the bug is a UI one and the skill `frontend:verifying-ui` is listed, call it
+  with `report` to observe it in a browser (it fixes nothing); when it is not listed, say
+  "frontend plugin not enabled in this session" and keep the manual steps. **Fix** what the
+  diagnosis names.
 - **Regression proof**: "NOT RUN (no declared test command)" or "none — no correct seam:
   <why>", said again in the chat brief beside the manual steps that confirm the fix. The
   fix is unproven, and the brief says so.
@@ -168,8 +171,9 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
 - **Add a guard or workaround for another owner's bug** without the user's approval in
   section 4's form.
 - **Run more than the one test file**: never the suite, the declared test command un-narrowed,
-  a watch mode, another heavier check the user did not release (`../planning-features/references/project.md`, `## Held checks`), a browser
-  or Storybook unreleased, or a command that writes as a gate (`## Gates` there).
+  a watch mode, another check beyond the fast gates — a test suite, a build, anything that
+  runs the app — the user did not release (`../planning-features/references/project.md`,
+  `## Held checks`), or a command that writes as a gate (`## Gates` there).
 - **Leave the fix reverted.** The revert proof ends with the fix restored, the test green
   and the tree equal to the one taken before the revert.
 - **Take a fix out with git.** No `git stash`, `git checkout` or `git restore`; no staging,

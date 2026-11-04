@@ -57,14 +57,14 @@ Match the repository's existing tests — location, naming, helpers, way of mock
 | A wrong value from a function or module | Call it with the input from the report; assert the expected output |
 | A request an HTTP handler or a server route gets wrong | Drive the handler with the request from the report — in process, or through a server the test starts on a free port — and assert on the status and the body |
 | A CLI or a script | Run it as a child process with the report's arguments and input, against a temporary directory; assert on the exit code, the output and the files it writes |
-| Rendering or state in a component | Mount it with the library the repository's tests use, drive the reported interaction, assert on what the user would see |
-| A value that goes stale | Mount, change the source, wait on a condition (never a fixed sleep), assert |
+| Rendering or state in a UI component | Render it with the library the repository's tests use, drive the reported interaction, assert on what the user would see |
+| A value that goes stale | Render, change the source, wait on a condition (never a fixed sleep), assert |
 | Timing: a debounce, a timeout, a retry | Fake timers, advanced by exactly the interval that matters |
 | A response from another service, mishandled here | Mock at the network boundary as the repository's tests do, with the payload from the report; a captured real payload beats an invented one |
-| A route or a navigation guard | A router in memory mode; navigate; assert where it lands |
+| A route or a navigation guard | The repository's router in its in-memory or test mode; navigate; assert where it lands |
 | A store | A fresh store per test, and the action sequence from the report |
 | Intermittent | Repeat the case in a loop inside the test and control randomness and time until it fails every run |
-| Layout, focus, hydration, a real browser API | Usually no correct seam in a unit test: see "A correct seam" |
+| Layout, focus, hydration, a real browser API | Usually no correct seam in a unit test: see "A correct seam". When the skill `frontend:verifying-ui` is listed, call it with `report` to observe the bug in a browser; when it is not, say "frontend plugin not enabled in this session" and write the manual steps |
 
 ## A correct seam
 

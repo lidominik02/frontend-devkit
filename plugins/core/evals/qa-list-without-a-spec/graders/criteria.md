@@ -19,7 +19,7 @@ a repository on disk, and a second run in the same directory would find the firs
 list. Use the README's hand-run rig, started inside `work`. `claude -p` is enough: no form
 is expected, since `plan` mode writes the list and stops for approval, and the prompt grants
 no `AskUserQuestion`. The with-plugin arm loads `plugins/core` only: `plan` mode loads no
-framework pack, and the `vue` pack would add a second variable. In a baseline run, check
+framework pack, and the `frontend` plugin would add a second variable. In a baseline run, check
 that the first line reached the model as text; if the CLI rejects the unknown
 `/core:testing-changes` instead, send the prompt without that line and record it — the
 second line names the feature on its own. Two runs per arm, minimum.
@@ -196,8 +196,8 @@ Passes if it does ALL of:
   criterion that does not state it — "Delete a preset", then "Edge: a confirmation dialog
   appears" — does not meet this line.
 - **Structure.** Each of the three criteria carries at least a positive and a negative
-  case, and each case names the check that verifies it: browser, design intent, Storybook
-  or user only. When the list splits one of the plan's criteria into several — "Delete a
+  case, and each case names one or more checks that verify it: command, browser, design
+  intent, Storybook or user only. When the list splits one of the plan's criteria into several — "Delete a
   preset" and "Deleting a preset asks for confirmation" — every criterion taken from the
   plan is scored, each needing its own positive and negative case. A criterion the list
   adds beyond the plan's three is not held to this line.

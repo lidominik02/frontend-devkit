@@ -27,11 +27,11 @@
   the last round settled and what this form decides. Long material goes into a file
   (PLAN.md's spec sections, a research note), and the question names the file.
 
-An example. Header "Empty list". Question: "The design shows the list populated only. What
-does an empty list show?" Options: "The shared empty-state component with a create action
-(recommended)" — matches the closest existing list, no new component. "A single line of
-text" — less to build, unlike every other list. "Ask the designer" — an `OQ<n>` line with
-owner `designer`; the list task waits.
+An example. Header "Retry limit". Question: "The spec says a failed import is retried, not
+how often. How many times?" Options: "Three times, then mark it failed (recommended)" —
+matches the existing export job, no new setting. "Until it succeeds" — nothing to
+configure, and a bad file retries forever. "Ask the product owner" — an `OQ<n>` line with
+owner `product owner`; the import task waits.
 
 ## Triage
 

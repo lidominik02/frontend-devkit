@@ -1,7 +1,7 @@
 # frontend-devkit
 
-A Claude Code marketplace: a domain-neutral `core` for any repository, plus framework packs
-for frontend work. Install it once and it applies to every repository you open.
+A Claude Code marketplace: a domain-neutral `core` for any repository, plus a `frontend`
+pack for frontend work. Install it once and it applies to every repository you open.
 
 It runs on top of an existing project and requires nothing to be added to it. Every fact it
 needs — package manager, quality gates, base branch, git host, commit convention — is read
@@ -22,9 +22,10 @@ at the moment of use from files the project already maintains, so nothing goes s
   changed, against the spec and the repository's own rules.
 - **Commit and merge request text** in the repository's own convention.
 - **Browser verification** — check a UI change in a real browser instead of asserting it
-  works.
-- **Framework knowledge** for Vue 3 on Vite and for Nuxt, checked against the installed
-  versions.
+  works, compare it with the design's intent, and check its Storybook stories.
+- **Framework knowledge** for Vue 3 on Vite and for Nuxt, chosen per workspace from its
+  `package.json` and checked against the installed versions; a Next.js workspace is
+  recognised and works from the documentation its installed package ships.
 - **Recommended settings** — permission deny rules and an empty attribution that keep
   credentials unread and pushes yours; the devkit ships no hook
   ([Installation](docs/installation.md#permissions-and-attribution)).
@@ -34,24 +35,25 @@ at the moment of use from files the project already maintains, so nothing goes s
 | Pack | For | Depends on |
 | --- | --- | --- |
 | [`core`](plugins/core/README.md) | Every repository: lifecycle, bugs, review | — |
-| [`vue`](plugins/vue/README.md) | Vue 3 single-page apps on Vite | `core` |
-| [`nuxt`](plugins/nuxt/README.md) | Server-rendered Nuxt apps; a delta on `vue` | `core`, `vue` |
+| [`frontend`](plugins/frontend/README.md) | Frontend and mixed repositories: Vue 3, Nuxt and Next.js rules, browser verification | — |
 
-Install only the packs whose frameworks you use.
+Install `core` everywhere, and `frontend` where a repository has a frontend; in a team
+repository, at local scope ([Installation](docs/installation.md#install)).
 
 ## Install
 
-From your shell, install the pack your repository needs; `nuxt` brings `vue` and `core`, and
-`vue` brings `core`:
+From your shell, install `core`, and `frontend` as well for a frontend or mixed repository:
 
 ```
-claude plugin install vue --marketplace lidominik02/frontend-devkit
+claude plugin install core --marketplace lidominik02/frontend-devkit
+claude plugin install frontend --marketplace lidominik02/frontend-devkit
 ```
 
 Then run `/plugin`, open **Marketplaces**, select `frontend-devkit` and choose **Enable
 auto-update**: a marketplace added this way has it off. The plugins need Node 22 or later as
 `node` on the `PATH`.
 After a release, check with `claude plugin list` that every pack reports the new version.
+Coming from 0.5.x: [Upgrading from 0.5.x](docs/installation.md#upgrading-from-05x).
 More, including updating and the plugins worth installing alongside:
 [Installation](docs/installation.md).
 
@@ -67,7 +69,8 @@ Most skills fire on ordinary wording; every skill also answers to `/<plugin>:<sk
 | "write the commit message", "MR description" | `describing-changes` |
 | `/core:preparing-a-repo` | An audit of what the repository lacks |
 
-Every skill, and what it answers to, is listed in the [`core` README](plugins/core/README.md).
+Every skill, and what it answers to, is listed in the [`core` README](plugins/core/README.md)
+and the [`frontend` README](plugins/frontend/README.md).
 
 ## What it writes to your repository
 
@@ -85,7 +88,7 @@ there and says plainly when there is nothing to drive.
 
 | | |
 | --- | --- |
-| [Installation](docs/installation.md) | Install, choose packs, update, companion plugins |
+| [Installation](docs/installation.md) | Install, choose packs, update, upgrade from 0.5.x, companion plugins |
 | [The feature lifecycle](docs/feature-lifecycle.md) | From an idea to a commit |
 | [Browser verification](docs/browser-verification.md) | UI checks, QA lists, browser MCP setup |
 | [Scripts](docs/scripts.md) | The one shipped script, `snapshot.mjs` |

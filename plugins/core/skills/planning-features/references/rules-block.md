@@ -8,10 +8,9 @@ stated rules of their own.
   it. For inline execution, approval asks whether to start a new session from the
   kickoff prompt — recommended — or to continue in it.
 - The execution mode — subagent per task or inline — is chosen when the plan is approved.
-- Code review runs automatically after implementation. Browser, design-tool and
-  Storybook checks run only on request.
-- Verification is held to the fast gates until the user releases more. No test suite,
-  no build, no Storybook and no browser check runs before that.
+- Code review runs automatically after implementation.
+- Verification is held to the fast gates until the user releases more. Checks beyond the
+  fast gates — a test suite, a build, anything that runs the app — run only on request.
 - Commit only after the user accepts a drafted message. The user pushes.
 - Artifacts are written in English. Non-English input is quoted verbatim, then
   translated — never paraphrased in place of the original.

@@ -17,8 +17,8 @@ guard (see the note).
 Hand-run from the fixture below, with the plugin and without it, two runs of each. The
 skill asks through forms, so a harness run ends at its first form. Use the evals README's
 hand-run rig, interactively (`claude`, not `-p`), so each form can be answered. The
-with-plugin runs load `plugins/core` only: the case scores the generic skill, and the `vue`
-pack is not under test. Every run gets `--strict-mcp-config` with an empty
+with-plugin runs load `plugins/core` only: the case scores the generic skill, and the `frontend`
+plugin is not under test. Every run gets `--strict-mcp-config` with an empty
 `{"mcpServers":{}}`.
 
 Line 1 of the prompt is the typed invocation; the text after it is the user's proposal.

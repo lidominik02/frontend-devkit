@@ -5,18 +5,29 @@ you open.
 
 ## Install
 
-From your shell, install the pack your repository needs:
+From your shell, install `core`, and `frontend` as well for a frontend or mixed repository:
 
 ```
-claude plugin install nuxt --marketplace lidominik02/frontend-devkit
+claude plugin install core --marketplace lidominik02/frontend-devkit
+claude plugin install frontend --marketplace lidominik02/frontend-devkit
 ```
 
-The first time, the command adds the marketplace; then it installs the pack at user scope
-with every pack it depends on: `nuxt` brings `vue` and `core`, `vue` brings `core`, and
-`core` alone suits a repository with no framework pack. Run it again with another pack name
-to add one; the marketplace is reused. In a session that is already open, run
-`/reload-plugins`; inside a session, `/plugin install nuxt --marketplace
-lidominik02/frontend-devkit` does the same and asks for the scope.
+The first command adds the marketplace and installs `core` at user scope; the second reuses
+the marketplace. Neither pack depends on the other, so each is installed by name. In a
+session that is already open, run `/reload-plugins`; inside a session, `/plugin install
+frontend --marketplace lidominik02/frontend-devkit` does the same and asks for the scope.
+
+**In a team repository, install `frontend` at local scope instead**, so the committed
+`.claude/settings.json` does not change. From the repository, once the marketplace is added:
+
+```
+claude plugin install frontend@frontend-devkit --scope local
+```
+
+`claude plugin install --help` lists the scopes as `user, project, or local` (2.1.317).
+Local scope is `.claude/settings.local.json`, the repository's settings file meant to stay
+uncommitted; `"enabledPlugins": { "frontend@frontend-devkit": true }` in that file enables
+the plugin there too.
 
 Then turn auto-update on, because a marketplace added this way has it off: run `/plugin`,
 open the **Marketplaces** tab, select `frontend-devkit` and choose **Enable auto-update**.
@@ -79,14 +90,16 @@ trailer, where the control added one (12).
 
 ## Choosing packs
 
-Install only the packs whose frameworks you actually use: a plain-Vue repo pays nothing for
-`nuxt`, and installing `nuxt` alone is what a Nuxt repo wants, since it brings `vue` and
-`core` with it.
+`core` is domain-neutral and belongs in every repository. `frontend` belongs where a
+repository has a frontend: it holds the framework rules for Vue 3, Nuxt and Next.js and
+`verifying-ui`. Its `frontend-engineering` skill reads each workspace's `package.json` and
+loads only that framework's rules, so one install serves every frontend workspace
+([ADR 0016](adr/0016-framework-rules-chosen-per-workspace.md)).
 
-Enabling `vue` installs and enables `core` with it — `dependencies` is enforced, not
-advisory. `claude plugin disable core@frontend-devkit` is refused while `vue` is enabled.
-`nuxt` declares `core` **and** `vue` directly; see
-[ADR 0004](adr/0004-framework-packs-layer-as-deltas.md).
+Neither pack declares `dependencies`. Where `frontend` is not enabled, `core` says once
+"frontend plugin not enabled in this session" and goes on without the framework rules,
+skipping its web QA cases by name, so a repository without a frontend pays nothing for them
+([ADR 0015](adr/0015-one-frontend-plugin.md)).
 
 ## Model and effort of the workers
 
@@ -162,25 +175,48 @@ and run `claude plugin update <pack>@frontend-devkit` for any that does not.
 Packs do not always update together. Observed cases:
 
 - On 2.1.283, after the marketplace entry moved from a `directory` source to the GitHub
-  source, the next session updated `core` to the release while `vue` and `nuxt` kept their
+  source, the next session updated `core` to the release while the other packs kept their
   earlier commit-SHA version.
 - On 2.1.292 on Windows 10, a session that was already open, with `autoUpdate` switched on
   in another window, did not pick up a release by itself within a few minutes: a skill
   still loaded from the previous version's folder, `claude plugin list` reported the
   previous version for every pack, and nothing was downloaded. Updating the marketplace
-  from the `/plugin` menu then moved `core` to the release while `vue` and `nuxt` stayed
+  from the `/plugin` menu then moved `core` to the release while the other packs stayed
   behind, although their release was already in the cache. In that same session the next
   skill loaded from the updated `core` folder.
 - On 2.1.292 on Windows 10, after `claude plugin update`, the CLI asks for a restart, but
   the next skill launch in the running session already loaded the updated pack.
 - On 2.1.292 on Windows 10, from 0.1.2 to 0.2.0 on 2026-10-12,
   `claude plugin marketplace update frontend-devkit` followed by
-  `claude plugin update <pack>@frontend-devkit` for each pack moved all three packs to the
+  `claude plugin update <pack>@frontend-devkit` for each pack moved every pack to the
   release together. The running session kept running the previous version's hooks until
   it was restarted.
 
 Whether a new session with `autoUpdate` on brings a release by itself has not been
 observed. Other CLI versions and platforms may behave differently.
+
+### Upgrading from 0.5.x
+
+Up to 0.5.x the framework rules came as two packs, `vue` and `nuxt`; `frontend` replaces
+both, and `/core:verifying-ui` is now `/frontend:verifying-ui`. The marketplace declares
+`"renames": { "vue": "frontend", "nuxt": null }`, which is meant to turn an enabled
+`vue@frontend-devkit` into `frontend@frontend-devkit` and to drop `nuxt@frontend-devkit`.
+What it does to an installed copy has not been observed, so the steps below cover the case
+where it did not:
+
+1. After the update, run `claude plugin list`. If `vue@frontend-devkit` or
+   `nuxt@frontend-devkit` is still listed, remove it with
+   `claude plugin uninstall vue@frontend-devkit` and
+   `claude plugin uninstall nuxt@frontend-devkit`, or turn it off with
+   `claude plugin disable`; pass `--scope` with the scope it was installed at.
+2. If `frontend@frontend-devkit` is not listed, install it as under [Install](#install).
+3. In each repository, run `git status`. A committed `.claude/settings.json` whose
+   `enabledPlugins` names `vue@frontend-devkit` or `nuxt@frontend-devkit` shows as modified
+   when the rename rewrote it, and still names the old pack when it did not. Either way,
+   decide what the team's file should say before committing it: the `frontend` key, or no
+   key and `frontend` at local scope ([Install](#install)).
+4. A typed `/vue:vue-engineering` or `/nuxt:nuxt-engineering` becomes
+   `/frontend:frontend-engineering`.
 
 ## Companion plugins
 
@@ -205,7 +241,7 @@ where they differ from this repository's conventions or from observed CLI behavi
 repository and the observation win.
 
 `modern-web-guidance` is left out: by default it sends the search queries the agent writes
-to Google as usage telemetry, and its advice competes with the `vue` and `nuxt` packs.
+to Google as usage telemetry, and its advice competes with the framework rules in `frontend`.
 
 `commit-commands` and `pr-review-toolkit` are a poor fit: both are built around GitHub pull
 requests and `gh`, neither covers GitLab merge requests, and both compete with
@@ -217,5 +253,5 @@ Among bundled skills: `/code-review` and `/verify` exist but Claude does not inv
 its own — type them. `/debug` toggles session debug logging and is not a debugging
 assistant. `/simplify` and `/security-review` also ship.
 
-A browser MCP server is needed for `verifying-ui`; see
+A browser MCP server is needed for the browser mode of `frontend:verifying-ui`; see
 [Browser verification](browser-verification.md#installing-a-browser-mcp-server).

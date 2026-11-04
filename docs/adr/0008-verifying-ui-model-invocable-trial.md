@@ -1,6 +1,6 @@
 # 0008. `verifying-ui` is model-invocable, as a trial
 
-Status: Trial
+Status: Trial. Amended 2026-11-05: the trial continues in the `frontend` plugin (ADR 0015).
 
 ## Context
 

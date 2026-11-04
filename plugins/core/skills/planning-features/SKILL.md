@@ -25,7 +25,7 @@ The feature lifecycle is a chain of skills, and this one is second:
 A feature lives in `temp/<feature>/`: `PLAN.md`, `STATUS.md`, `DECISIONS.md`, and
 `CONTRACT-GAPS.md` when an external contract is involved. `references/artifacts.md` is the
 shape of each file and the rule for reading it — read it before writing one. Read
-`references/project.md` first: the tool that runs a manifest, the framework packs, the
+`references/project.md` first: the tool that runs a manifest, the frontend rules, the
 gates and the base branch come from there.
 
 1. Write a file in the same turn as the work it records: a decision that exists only in the
@@ -136,8 +136,8 @@ For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slu
 
 - Implement anything.
 - Write tasks without the spec sections, or answer a missing product question itself.
-- Run heavier checks the user did not release (`references/project.md`, `## Held checks`),
-  or Storybook or a browser check before the user releases it.
+- Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
+  the user did not release (`references/project.md`, `## Held checks`).
 - Commit or `git add` the feature's files.
 - Mark a task done with a step skipped or a gate unrun.
 - Keep a second Next action in STATUS.md — rewrite the one that is there.

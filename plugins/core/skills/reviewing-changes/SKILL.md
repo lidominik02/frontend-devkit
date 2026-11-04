@@ -20,7 +20,7 @@ work is built, `clarifying-features` once a bounded change is done — and the u
 it directly. Fixing is not its job: the user reads the code and the report together, and
 `executing-plans` fixes, then calls this skill again in `re-review` mode. Read
 `../planning-features/references/project.md` first: the tool that runs a manifest, the
-framework packs, the gates and the base branch come from there.
+frontend rules, the gates and the base branch come from there.
 
 ## 1. Scope
 
@@ -70,7 +70,7 @@ too.
 One `core:reviewer` with `Role: two-axis`, then one with `Role: verify` over its candidates
 — by that fully-qualified name, with `run_in_background: false`, on the model and effort
 `references/formats.md` names. Each carries the dispatch shape there: the role, the absolute diff path, the intent
-sources, the `Packs:` line `project.md` gives, the gate block, what is released, and the
+sources, the `Frontend:` lines `project.md` gives, the gate block, what is released, and the
 role material. `verify` gets each candidate's id, location, category, severity, summary and
 failure scenario — never the finder's reasoning, fix suggestion or confidence. No
 candidates: skip `verify`.
@@ -78,7 +78,7 @@ candidates: skip `verify`.
 ## 5. The report
 
 Write `<review folder>/<NN>-review.md` in the shape `references/formats.md` gives: the
-header (the scope, the base, the snapshot tree, the gates, the packs, each NOT RUN item);
+header (the scope, the base, the snapshot tree, the gates, the `Frontend:` lines, each NOT RUN item);
 the overall line of counts — never a verdict, neither the reviewers nor the report approve
 or reject; the findings by axis, CONFIRMED before PLAUSIBLE, each the verifier's block with
 the finder's fix. A finding the finder marked `conflicts with D<n>` keeps that mark beside
@@ -129,8 +129,8 @@ After fixes:
   it writes.
 - Add a finding of its own, drop a verified finding, or move a severity.
 - Show the verifier the finder's reasoning.
-- Run heavier checks the user did not release (`../planning-features/references/project.md`, `## Held checks`), or a browser, the
-  design tool or Storybook unless the user released it.
+- Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
+  the user did not release (`../planning-features/references/project.md`, `## Held checks`).
 - Imply a gate passed or the spec axis ran when it did not.
 - Carry a fact about an individual repository. A repo's conventions live in its own files,
   read at the moment of use.

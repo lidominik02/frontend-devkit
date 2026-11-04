@@ -14,7 +14,7 @@ workers write the code and a `core:reviewer` reviews each task; in inline mode t
 writes it. In both, the plan, the gates and STATUS.md decide when a task is done. Every file
 you write follows `../planning-features/references/artifacts.md`. Read
 `../planning-features/references/project.md` first: the tool that runs a manifest, the
-framework packs, the gates and the base branch come from there.
+frontend rules, the gates and the base branch come from there.
 
 In the lifecycle this runs after `planning-features`, which takes the user's approval and
 the mode. When every task is done this skill calls `reviewing-changes` for the whole
@@ -45,8 +45,8 @@ Once per run. `fix-findings` needs only steps 1, 2, 3 and, inline, 6.
    A restarted run keeps the recorded tree once `git cat-file -e <tree>^{tree}` confirms it.
 5. **Untracked `temp/`.** When `git check-ignore -q temp/` exits 1, say once that the briefs
    and diffs land in an untracked `temp/`.
-6. **Inline only: framework rules.** Call the Skill tool with each pack `project.md` finds,
-   in its order. A later pack wins every conflict.
+6. **Inline only: frontend rules.** Load them by `project.md`'s `## Frontend rules`, for
+   each workspace the plan touches.
 
 A task that names a rebase or another history operation goes to `core:syncing-branches`
 before anything else runs; this skill never runs one.
@@ -90,7 +90,7 @@ For each task neither done nor blocked, in plan order:
 7. **Task review.** Dispatch one `core:reviewer` with `run_in_background: false`,
    `Role: two-axis`, in the dispatch shape and on the model and effort of
    `../reviewing-changes/references/formats.md`, as `references/dispatch.md` fills it: the
-   diff from step 5, the intent sources, the `Packs:` line and the step 6 gate block.
+   diff from step 5, the intent sources, the `Frontend:` lines and the step 6 gate block.
 8. **Fix rounds**, for critical and important findings and the task's own gate failures: at
    most three. Rounds 1 and 2 go to the same implementer with SendMessage; round 3 to a fresh
    `core:implementer` with the brief and the findings, on the model `references/dispatch.md`
@@ -183,8 +183,9 @@ The user has read the code and the review report and says what to do with each f
 - Commit or push, or stage or touch the index or refs — plumbing included. `snapshot.mjs`
   builds its tree in a private temporary index and is the exception.
 - Edit code on the main thread in subagent mode.
-- Run heavier checks the user did not release (`../planning-features/references/project.md`, `## Held checks`), or Storybook or a browser
-  before the user releases them, or a command that writes as a gate (`## Gates` there).
+- Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
+  the user did not release (`../planning-features/references/project.md`, `## Held checks`),
+  or a command that writes as a gate (`## Gates` there).
 - Decide a product question, or rule on anything but a reversible plan defect.
 - Mark a task done with a step skipped or a gate unrun.
 - Run two implementers at once.

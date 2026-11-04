@@ -1,6 +1,6 @@
 # 0015. One `frontend` plugin holds framework knowledge and web verification
 
-Status: Proposed 2026-10-14. Supersedes 0004 together with 0016; amends 0005, 0008 and 0014.
+Status: Accepted. Supersedes 0004 together with 0016; amends 0005, 0008 and 0014.
 
 ## Context
 
@@ -37,8 +37,15 @@ loop.
   `frontend:verifying-ui`. When they are not listed, it says once that the frontend plugin
   is not enabled in this session and skips those cases by name.
 - `testing-changes` stays in `core` and hands web cases over by name. Called that way,
-  `verifying-ui` reports and fixes nothing. Its QA case types stay UI-shaped until the first
-  backend QA run in a mixed repository.
+  `verifying-ui` reports and fixes nothing. A QA case names one or more checks: `command`,
+  `web: browser`, `web: design intent`, `web: Storybook` or `user only`. `command` is a
+  read-only command or a file or git read, with the command and an excerpt of its output as
+  evidence; it never writes. `core` knows only these labels, and the web modes' text and
+  prerequisites live in `frontend`.
+- On UI work `clarifying-features` calls `frontend:verifying-ui` with the `design` argument.
+  It reads the design and reports, writes no code and opens no browser. When the name is not
+  listed, `core` says once that the frontend plugin is not enabled in this session and
+  continues on the neutral path.
 - Each fact has one owner: gates belong to `core`; the dev server, the Storybook command and
   the framework choice belong to `frontend`. The one deliberate duplicate is the line that
   maps a lockfile to a package manager.

@@ -202,10 +202,10 @@ Passes if it does ALL of:
      new session from a paste-ready prompt — recommended — or to continue in it.
   2. How the plan is executed — a fresh worker per task, or every task in this session — is
      chosen when the plan is approved.
-  3. Code review runs automatically after implementation; browser, design-tool and
-     Storybook checks run only on request.
+  3. Code review runs automatically after implementation.
   4. Verification is held to the fast gates (the `typecheck` and `lint` scripts) until the
-     user releases more: no test suite, build, Storybook or browser before then.
+     user releases more: checks beyond them — a test suite, a build, anything that runs the
+     app — run only on request.
   5. A commit happens only after the user accepts a drafted message, and the user pushes.
   6. Artifacts are written in English; non-English input is quoted verbatim, then
      translated.

@@ -1,7 +1,6 @@
 # 0016. A router skill picks one framework's rules per workspace
 
-Status: Proposed 2026-10-14, to ship as a Trial. Supersedes 0004 together with 0015; amends
-0007.
+Status: Trial. Supersedes 0004 together with 0015; amends 0007.
 
 ## Context
 
@@ -104,4 +103,4 @@ hedge that [0004](0004-framework-packs-layer-as-deltas.md) forbids does not retu
 [0004](0004-framework-packs-layer-as-deltas.md),
 [0007](0007-context-cost-tiers-and-listing-ceiling.md),
 [0015](0015-one-frontend-plugin.md),
-[Authoring](../contributing/authoring.md#body-versus-reference).
+[Authoring](../contributing/authoring.md#adding-a-framework).

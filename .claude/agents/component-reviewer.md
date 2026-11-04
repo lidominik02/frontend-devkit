@@ -2,8 +2,8 @@
 name: component-reviewer
 description: >-
   Reviews a changed skill, agent, or reference file in this marketplace against
-  the invariants CI cannot check: repo-agnosticism in spirit, the vue/nuxt delta
-  contract, whether content belongs in the body or a reference, whether a tool
+  the invariants CI cannot check: repo-agnosticism in spirit, the base–delta
+  contract between framework rule sets, whether content belongs in the body or a reference, whether a tool
   grant matches what the component does, and whether a guardrail is stated where
   it is enforced. Use after editing any file under plugins/ and before opening a
   PR. Read-only, reports file:line evidence, and never edits.
@@ -31,12 +31,15 @@ uses, a gate name from one `package.json`, an assumption that a store is Pinia
 because one app's is. Flag any guidance that would be wrong in a greenfield project
 of the same stack.
 
-**2. The vue/nuxt delta contract.** `nuxt` carries only what server rendering
-inverts or adds, and names every `vue` rule that does not apply there. Check both
-directions on any change: content added to `nuxt` that is true of plain Vue belongs
-in `vue`; a rule added to `vue` that inverts under SSR needs its counterpart named
-in `nuxt`. Duplication is the failure mode — duplicated text drifts, and a rule
-correct for Vue and wrong for Nuxt manufactures confident, wrong output.
+**2. The base–delta contract.** Take every base–delta pair from the selection table in
+`plugins/frontend/skills/frontend-engineering/SKILL.md`, the only place one is written;
+a pair stated anywhere else is itself a finding. Measure the delta set against its base
+set: the delta carries only what its framework inverts or adds, and names every base rule
+that does not apply there. Check both directions on any change to either set: content
+added to the delta that is equally true of the base belongs in the base; a rule added to
+the base that inverts under the delta needs its counterpart named in the delta.
+Duplication is the failure mode — duplicated text drifts, and a rule correct for the base
+and wrong for the delta manufactures confident, wrong output.
 
 **3. Body versus reference.** The body loads on every trigger; a reference loads
 only when the body points at it. Content in a body that is consulted rarely is paid
@@ -55,13 +58,13 @@ by prose alone where one of those two fields could carry it.
 not in context when the body is followed. If a component must not do something, the
 body says so.
 
-**6. Version claims.** Both packs claim to be version-gated. A behavioural claim
+**6. Version claims.** Every framework rule set claims to be version-gated. A behavioural claim
 about a framework with no version attached is a claim that will silently rot. Flag
 any new assertion that does not say which versions it holds for.
 
 **7. Prose contracts.** A shape one file writes and another reads must agree on both
 sides: the PLAN.md and STATUS.md section names in `planning-features/references/artifacts.md`,
-the dispatch fields (`Role:`, `Diff file:`, `Intent sources:`, `Packs:`, `Gates:`,
+the dispatch fields (`Role:`, `Diff file:`, `Intent sources:`, `Frontend:`, `Gates:`,
 `Released:`) and the review-report fields. The settings snippet in `docs/installation.md` and
 in `preparing-a-repo` is identical. Name both sides as `file:line` with the failing case.
 

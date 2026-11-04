@@ -12,7 +12,7 @@ along the way. For one line per skill, see the [`core` README](../plugins/core/R
 - **Code, only after the user's say-so**: `executing-plans` and the bounded route of
   `clarifying-features` after an approved plan or in-chat design, `fixing-bugs` for a bug the
   user asked to fix, `syncing-branches` after its operation plan and resolution log are
-  approved, `verifying-ui` once the user released the check.
+  approved, `frontend:verifying-ui` once the user released the check.
 - **A commit**, only with a message the user accepted (`finishing-features`).
 - **Configuration**, only through `preparing-a-repo`, and only the fixes the user approved.
 
@@ -38,8 +38,8 @@ temp/<feature>/
 **Reading rule:** STATUS.md and PLAN.md whole; DECISIONS.md and CONTRACT-GAPS.md by id,
 with grep; a research note's `Answer:` first. The shapes are in
 [`artifacts.md`](../plugins/core/skills/planning-features/references/artifacts.md). The
-project's facts — the tool that runs a manifest, framework packs, gates, base branch — are
-read from its own files at the moment of use, by the rules in
+project's facts — the tool that runs a manifest, each workspace's frontend rules, gates,
+base branch — are read from its own files at the moment of use, by the rules in
 [`project.md`](../plugins/core/skills/planning-features/references/project.md). A gate is
 reported as pass, FAIL or NOT RUN; NOT RUN is never a pass.
 

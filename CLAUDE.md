@@ -1,8 +1,8 @@
 # frontend-devkit
 
-A Claude Code marketplace: a framework-agnostic `core` plugin plus per-framework
-packs (`vue`, `nuxt`). The product is the components themselves, so a change here is a
-change to how Claude behaves in every repository that installs it.
+A Claude Code marketplace: a domain-neutral `core` plugin plus a `frontend` plugin that
+holds the framework rules and web verification. The product is the components themselves,
+so a change here is a change to how Claude behaves in every repository that installs it.
 
 `docs/README.md` maps the full documentation and `CONTRIBUTING.md` covers working on the
 devkit. This file is only the rules that must hold; `docs/adr/` records why they hold.
@@ -16,18 +16,21 @@ manifest, gates, base branch, git host, commit convention — is read at the mom
 the skill, with the rules in `project.md`, from a file the project already maintains.
 Nothing is cached, so nothing goes stale. (ADR 0003)
 
-**A specialised pack is a delta on its base, not a copy of it.** It carries only what
-its layer inverts or adds, and names the base rules that do not apply there. Duplicated
-text drifts, and a rule correct for the base and wrong for the specialisation
-manufactures confident, wrong output — worse than no rule. A pack's base is its
-non-`core` dependency; `core` is the floor and forms no family. Today that is
-`nuxt` → `vue` → `core`. The manifests' `dependencies` are the shape; read them, and
-never hardcode a pair. (ADR 0004)
+**A specialised rule set is a delta on its base, not a copy of it.** A framework's rules
+are a set of references under `frontend:frontend-engineering`; a set that specialises
+another carries only what its framework inverts or adds, and names the base rules that do
+not apply there. Duplicated text drifts, and a rule correct for the base and wrong for the
+specialisation manufactures confident, wrong output — worse than no rule. The selection
+table in `plugins/frontend/skills/frontend-engineering/SKILL.md` is the only place a
+base–delta pair is written; read the pair there, and never write one anywhere else.
+(ADR 0015, ADR 0016)
 
 **Three tiers of context cost.** Descriptions load always, in every session of every
 repo that enables the pack. Bodies load on trigger. References load only when the body
 points at them. Guardrails and ordering belong in the body; lookup material belongs in
-a reference. (ADR 0007)
+a reference. (ADR 0007) The `frontend-engineering` router is the one exception: a
+framework's guardrails live in the rules file its body reads first and re-reads at fixed
+points. (ADR 0016)
 
 **The devkit ships no hook and runs no project code automatically.** The boundary is the
 consumer's permission and attribution settings, the sandbox and the OS; the devkit
@@ -62,9 +65,10 @@ release commit only once CI is green on it, then tags that commit; the pushed ta
 release workflow, which creates the GitHub Release. `CONTRIBUTING.md` describes the
 workflow. (ADR 0010)
 
-**Dependencies are declared directly, not transitively.** `nuxt` names both `core` and
-`vue`, because transitive resolution is not observable from `claude plugin validate` —
-only at enable time.
+**The plugins do not depend on each other.** Neither `core` nor `frontend` declares
+`dependencies`. `core` knows two `frontend` names, `frontend:frontend-engineering` and
+`frontend:verifying-ui`, calls them through the Skill tool, and skips them by name when
+they are not listed. (ADR 0015)
 
 **No runtime dependencies.** Node and the `claude` CLI alone. Do not add a
 `package.json`, a lockfile, or an npm package. (ADR 0002)

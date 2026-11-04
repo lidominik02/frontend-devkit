@@ -44,7 +44,7 @@ Hand-run from the fixture below, with the scripted answers: Arm A with the plugi
 without, Arm B with the plugin only, two runs of each. The skill asks through forms, so a
 harness run ends at its first form. Use the README's hand-run rig, interactively (`claude`,
 not `-p`), so each form can be answered. The with-plugin runs load `plugins/core` and
-`plugins/vue`, since the fixture is a Vue app. Every run gets `--strict-mcp-config` with an
+`plugins/frontend`, since the fixture is a Vue app. Every run gets `--strict-mcp-config` with an
 empty `{"mcpServers":{}}`, so no design tool can open the link. Stop where the scripted
 answers say.
 

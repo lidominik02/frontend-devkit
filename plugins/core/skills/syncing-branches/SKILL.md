@@ -41,7 +41,7 @@ merge deny rule blocks it here), then the rebase, or stopping.
 ## 1. Set up
 
 1. **Facts.** By `../planning-features/references/project.md`: the tool that runs a
-   manifest, the framework packs (load each), the gates and the base branch. The target is
+   manifest, the frontend rules (load them), the gates and the base branch. The target is
    that base branch — `origin/<base>`, else the local branch; none found: ask. A stacked
    child's target is its parent until the parent has merged.
 2. **Branch and state.** `git rev-parse --abbrev-ref HEAD` names the branch; "An operation
@@ -160,8 +160,8 @@ After every sync onto main, conflicts or not, find what main brought that the br
 1. **Compare** what main brought, `git diff <old merge-base> <new target>`, with what the
    branch added, `git diff <branch base> <pre-sync state>`. The branch base is the old
    merge-base; for a child moved onto main after its parent merged, it is the parent's last
-   commit (`references/stacks.md`). A candidate is a new export, helper, shared module,
-   component, store or type on each side with a similar name or the same purpose, read from
+   commit (`references/stacks.md`). A candidate is a new export, helper, shared module
+   or type on each side with a similar name or the same purpose, read from
    both bodies. The scan proposes; the user decides.
 2. **Ask** each candidate in batched forms, one question each: both definitions at
    `path:line`, their callers, and every behavioural difference — signature, defaults,
@@ -223,6 +223,7 @@ After every sync onto main, conflicts or not, find what main brought that the br
   and a new backup ref at the tip it discards.
 - **Decide a product question.** Where intents truly conflict, and for every overlap, the
   user decides.
-- **Run heavier checks the user did not release** (`../planning-features/references/project.md`, `## Held checks`), **Storybook or a
-  browser** unreleased, or a command that writes as a gate (`## Gates` there).
+- **Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
+  the user did not release** (`../planning-features/references/project.md`, `## Held checks`),
+  or a command that writes as a gate (`## Gates` there).
 - **Carry a fact about an individual repository**; its own files are read at use.

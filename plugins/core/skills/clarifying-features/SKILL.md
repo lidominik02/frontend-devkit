@@ -28,7 +28,7 @@ spec sections and tags, DECISIONS.md, CONTRACT-GAPS.md, STATUS.md, `research/` �
 `../planning-features/references/artifacts.md`; read it before writing one. The default
 rules are in `../planning-features/references/rules-block.md`. Read
 `../planning-features/references/project.md` first: the tool that runs a manifest, the
-framework packs, the gates and the base branch come from there.
+frontend rules, the gates and the base branch come from there.
 
 ## Entries
 
@@ -93,8 +93,15 @@ before the next round's form; what the main thread already read is evidence the 
 cite. The dispatch prompt, its model and effort, and the note shape are in
 `references/sources.md`. On the feature route each finding is a cited note in
 `temp/<feature>/research/`; on the bounded route the findings feed the in-chat design. A
-finding that contradicts what the user said becomes a question in the next round. Design
-frames are read on the main thread, through the design tool's read tools.
+finding that contradicts what the user said becomes a question in the next round.
+
+**UI work reads its design through the frontend plugin.** For a change classified UI, call
+the Skill tool with "frontend:verifying-ui" and the argument `design`, naming the design
+source the inventory found, or none, and the States and user flow settled so far. It reads
+and reports without writing code or opening a browser; `references/sources.md` says what
+becomes of its report. When this session does not list `frontend:verifying-ui`, say once
+"frontend plugin not enabled in this session" and go on with the inventory alone: what the
+design source does not settle becomes an `OQ<n>` line with owner `designer`.
 
 ## The bounded route
 
@@ -104,8 +111,8 @@ No PLAN.md.
    what it reuses — the whole design, word for word, as the `preview` of the Build it option.
    Approve it with one form: Build it (recommended), Change something. A design drafted only
    in your reasoning has not been shown, and cannot be approved.
-2. **Framework rules.** Call the Skill tool with each framework pack `project.md` finds, in
-   its order. A later pack wins every conflict.
+2. **Frontend rules.** Load them by `project.md`'s `## Frontend rules`, for each workspace
+   the change touches.
 3. **Base.** Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" take` and keep the tree
    it prints, so the review covers this change alone.
 4. Implement it on the main thread with Edit and Write only.
@@ -143,11 +150,9 @@ No PLAN.md.
    - Sources that conflict are always a question, even when one side is an owner's rule the
      user relays; the recommendation follows the authority order in
      `references/question-rounds.md`.
-   - No design for a UI task: propose one from the repository's own patterns as a decision
-     form. The approved proposal becomes the design source: a DECISIONS.md entry, and
-     PLAN.md's Design names it.
-   - Design gaps: check the design against the States and the user flow. Each missing state
-     becomes a question with a proposal from repository precedent; one only the designer can
+   - The `design` call's report: a proposed design goes to the user as a decision form, and
+     the approved one becomes the design source — a DECISIONS.md entry, and PLAN.md's Design
+     names it. Each gap becomes a question with its recommendation; one only the designer can
      answer becomes an `OQ<n>` line with owner `designer`.
    - A question only a third party can answer becomes an `OQ<n>` line with its owner and
      what it blocks; the user forwards it as they choose.
@@ -193,8 +198,8 @@ rounds settled before going on.
 - Write anything for someone else — no ticket description, no user story, no questionnaire.
 - Present an ASSUMED item as settled, or a third party's answer as given before they gave
   it.
-- Run heavier checks the user did not release (`../planning-features/references/project.md`, `## Held checks`), or Storybook or a browser
-  before the user releases them.
+- Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
+  the user did not release (`../planning-features/references/project.md`, `## Held checks`).
 - Commit, stage or touch the index.
 - Carry a fact about an individual repository or a client. A repo's conventions live in its
   own files, read at the moment of use.

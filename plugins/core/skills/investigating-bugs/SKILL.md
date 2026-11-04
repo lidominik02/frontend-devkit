@@ -23,6 +23,9 @@ If the report is not in English, **quote it verbatim first, then translate it**,
 reason only about the translation. Details get lost in silent translation, and a bug
 report is mostly details.
 
+A QA finding from `testing-changes` arrives already in this shape (steps, expected, actual,
+evidence, `TC<n>`/`SC<n>`, environment); take it as the report, and ask only for what it lacks.
+
 Pin down before going further:
 
 - What was expected, what happened instead.
@@ -32,6 +35,10 @@ Pin down before going further:
 
 If reproduction steps are missing and you cannot infer them, ask: a guessed reproduction
 usually finds a real but unrelated bug.
+
+**Frontend rules.** Load them by `## Frontend rules` in
+`../planning-features/references/project.md`, for the working directory's workspace and each
+workspace the report names.
 
 ## Step 2 — Decide which layer owns it, before reading everything
 

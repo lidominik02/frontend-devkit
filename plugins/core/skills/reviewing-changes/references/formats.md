@@ -8,7 +8,8 @@ Every dispatch to `core:reviewer` has this shape:
 Role: two-axis | verify | re-review
 Diff file: <path>
 Intent sources: <paths, the approved in-chat design pasted verbatim> | none — the spec axis is NOT RUN
-Packs: <each framework pack, in order> | none
+Frontend:
+<one line per workspace the diff touches, by project.md's `## Frontend rules` — <workspace> · frontend:frontend-engineering | frontend plugin not enabled in this session | no framework (<manifest fact>)>
 Gates (already run — report as given, do not re-run):
 <one gate line per gate — <workspace> · <command> · <source> · <result> — a FAIL with its quoted error lines>
 Released: <each held check the project declares: released | held> | none declared
@@ -37,7 +38,7 @@ Scope: <the stat summary line> · base <base> · snapshot tree <tree>
 Diff: <diff file path>
 Intent sources: <paths> | none
 Gates: <gate line>; <gate line>; ...
-Framework packs: <packs applied, in order> | none
+Frontend: <each workspace's selection line, as the reviewer gave it>
 NOT RUN: <each item, with the reason>
 Overall: CONFIRMED <n> critical · <n> important · <n> minor — PLAUSIBLE <n> — PREDATES_CHANGE <n> — REFUTED <n>
 ## Spec findings · ## Quality findings · ## Predates the change · ## Refuted
@@ -71,7 +72,7 @@ it says `none`.
 Re-reviews: <path of the earlier report>
 Scope: <the fix diff's stat summary line> · base <the earlier snapshot tree> · snapshot tree <tree>
 Diff: <fix diff path>
-Gates: ... · Framework packs: ... · NOT RUN: ...
+Gates: ... · Frontend: ... · NOT RUN: ...
 Overall: ADDRESSED <n> — NOT ADDRESSED <n> — closed by the user <n> — new findings <n>
 ## Prior findings · ## Closed by the user · ## New findings
 ## Out of scope · ## Runtime-only · ## Clean · ## Inconclusive

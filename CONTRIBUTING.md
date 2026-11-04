@@ -20,12 +20,12 @@ session installs `main` ([ADR 0010](docs/adr/0010-shared-version-and-release-bra
 ## Gates
 
 ```bash
-node scripts/validate.mjs                       # the static checks CI runs
-node --test "scripts/test/*.test.mjs"           # the tests on the scripts
-claude plugin validate . --strict               # marketplace + entries
-claude plugin validate ./plugins/core --strict  # manifest fields
-claude plugin validate ./plugins/nuxt --strict  # and ./plugins/vue
-claude plugin details core@frontend-devkit      # inventory + token cost
+node scripts/validate.mjs                           # the static checks CI runs
+node --test "scripts/test/*.test.mjs"               # the tests on the scripts
+claude plugin validate . --strict                   # marketplace + entries
+claude plugin validate ./plugins/core --strict      # manifest fields
+claude plugin validate ./plugins/frontend --strict  # the same for frontend
+claude plugin details core@frontend-devkit          # inventory + token cost
 ```
 
 The first two are the gate; run both before pushing. What each static check catches is in
@@ -54,12 +54,11 @@ A live trial loads the working tree for one session with `--plugin-dir`, once fo
 it needs (the flag is repeatable, per `claude --help` on 2.1.283):
 
 ```bash
-claude --plugin-dir <working tree>/plugins/core --plugin-dir <working tree>/plugins/vue
+claude --plugin-dir <working tree>/plugins/core --plugin-dir <working tree>/plugins/frontend
 ```
 
-`--plugin-dir ./plugins/vue` on its own leaves the plugin disabled with an unsatisfied
-dependency; pass both directories. No installed source serves the working tree, so the
-trial reaches no other session.
+`core` calls `frontend` by name, so a trial of that hand-off needs both directories. No
+installed source serves the working tree, so the trial reaches no other session.
 
 ## Tests
 

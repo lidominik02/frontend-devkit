@@ -4,11 +4,9 @@ description: >-
   Checks a feature against its acceptance criteria, from PLAN.md or any requirement
   source, through a QA list the user approves. Use when the user says "make a test list
   for this", "what should QA check", "run the QA list", "test this against the story",
-  or asks if a feature is ready to ship against its acceptance criteria. For "does it
-  look right in the browser" use verifying-ui; for "here is the user story" of a new
-  feature, clarifying-features.
+  or asks if a feature is ready to ship against its acceptance criteria. For "here is the
+  user story" of a new feature, use clarifying-features.
 argument-hint: "[plan|run] [feature]"
-disallowed-tools: mcp__*__use_figma, mcp__*__create_new_file, mcp__*__generate_figma_design, mcp__*__generate_diagram, mcp__*__generate_deck, mcp__*__upload_assets, mcp__*__add_code_connect_map, mcp__*__send_code_connect_mappings, mcp__*__create_shader, mcp__*__update_shader, mcp__*__create_generative_plugin, mcp__*__update_generative_plugin
 allowed-tools: Bash(git rev-parse *) Read Write Grep Glob Skill AskUserQuestion
 ---
 
@@ -19,7 +17,7 @@ requirements is not verification — but nothing in `run` executes without relea
 
 You produce two things, in order: a test list the user approves, then a report against
 that approved list. Neither step invents what it cannot find — a requirement source that
-does not exist, a design nobody gave you, a Storybook that is not installed — every one of
+does not exist, a design nobody gave you, a check this session cannot run — every one of
 those is a named skip, never a silent pass.
 
 ## Where the files live
@@ -49,11 +47,12 @@ in `../planning-features/references/artifacts.md`.
 3. **Seed cases beyond the criteria**: each Review focus entry, and each item under
    Runtime-only in `temp/<feature>/review/` — in the highest-numbered `<NN>-review.md` and
    in every `<NN>-re-review.md` numbered after it. Each becomes a case, under the criterion
-   it fits, else under its own heading. Only a runtime-behaviour item becomes a browser
-   case; a design-fidelity item becomes a design-intent case.
-4. **Name the check that verifies each case**: browser, design intent, Storybook, or
-   "user only" for what nothing here can verify (does the copy read naturally, does the
-   feature actually solve the stated problem). Every case gets exactly one.
+   it fits, else under its own heading. Only a runtime-behaviour item becomes a
+   `web: browser` case; a design-fidelity item becomes a `web: design intent` case.
+4. **Name the checks that verify each case**, by the labels in `references/qa-test-list.md`,
+   or "user only" for what nothing here can verify (does the copy read naturally, does the
+   feature actually solve the stated problem). A case gets one or more checks, and
+   states `pre`, `data` and `retest` (`none` when there is nothing to state).
 5. **If sources disagree**: a task disagreeing with the spec sections — or, without them,
    with the written requirement source — is a plan defect: that source wins, and the
    conflict is named at the top of the list. Two requirement sources disagreeing is not
@@ -65,52 +64,54 @@ in `../planning-features/references/artifacts.md`.
 ## Mode: `run <feature>`
 
 1. **Confirm the list is approved.** If not, stop and ask.
-2. **Establish prerequisites**, once, before running anything:
-   - Browser: your own tool list carries `mcp__*__take_snapshot` or
-     `mcp__*__browser_snapshot` — same authority rule as `verifying-ui`.
-   - Design intent: the design source PLAN.md's Design names, and the task's Design field
-     for the exact screens and states; else one the approved list names. A frame is
-     reachable only through the design tool's MCP read tools in your own tool list. Design
-     "not applicable" or coverage "none" makes every design-intent case a named skip with
-     that reason — see `references/design-intent.md`.
-   - Storybook: `package.json` has a `storybook` script (Read it).
-3. **Run what has a prerequisite; skip what does not, by name, with the reason** — "no
-   browser tool configured", "no Storybook script in package.json", "no design source
-   reachable and none named in the plan or the list". A skip is not silence: name it in the
-   report, in `Skipped`, with the same weight `Observed` gets.
-4. **Browser cases**: call the Skill tool with "core:verifying-ui" for each one, driving to
-   the state the case names. Do not re-implement the browser loop here.
-5. **Design-intent cases**: `references/design-intent.md`, which also says what each type
-   of design source can be compared on. Compare presence, hierarchy, states, token and
-   naming alignment, and copy. **Never pixel parity**: a screenshot diff reports a
-   deliberate divergence as a defect. A divergence is a finding only when nothing in the
-   repo's decisions, ADRs or docs explains it.
-6. **Storybook cases**: `references/storybook-check.md`. A touched shared component has a
-   story, it renders in both themes, and its `argTypes` match its props.
-7. **Write `REPORT.md`**, one section per case category:
+2. **Establish the prerequisite**, once, before running anything: the `web:` cases need
+   `frontend:verifying-ui` among this session's skills. When it is not listed, say once
+   "frontend plugin not enabled in this session", and skip every `web:` case by name with
+   that reason.
+3. **Run what has a prerequisite; skip what does not, by name, with the reason.** A skip is
+   not silence: name it in the report, in `Skipped`, with the same weight `Observed` gets.
+4. **`web:` cases**: call the Skill tool with "frontend:verifying-ui" and the arguments
+   `report`, for each case, naming its label and the state the case names. It checks each mode's
+   prerequisite and reports a skip with its reason; that skip goes to `Skipped`. Do not
+   re-implement its checks here.
+5. **`command` cases** run by the gate rule in `../planning-features/references/project.md`
+   (`## Gates` steps 2–4, `## Held checks`): a command or a file or git read that only reads
+   runs; a test or a build runs only when this run's release names it, else it is skipped
+   as held; a command that writes, or one in doubt, never runs and is skipped with the
+   command named. The evidence is the command and an extract of its output.
+6. **Write `REPORT.md`**, one section per case category. A case with more than one check
+   gets one line per check, `TC<n> · <check>: …`, in the section that check's result
+   belongs to; it is Clean only when every check of it was observed with no finding.
 
 ```
 ## QA report: <feature>
 
 ### Observed
-- TC<n>: <what was actually seen, with the evidence — a snapshot detail, a story path>
+- TC<n>: <what was actually seen, with the evidence — a snapshot detail, a story path, a command and its output>
 
 ### Not observed
 - TC<n>: <why it could not be reached — needs data, needs auth>
 
 ### Skipped
-- <check>: <the one-line reason — no browser tool, no Storybook script, no reachable design> — TC<n>, …
+- <check>: <the one-line reason, as `verifying-ui` gave it, or "frontend plugin not enabled in this session"> — TC<n>, …
 
 ### Findings
-- TC<n> — what is wrong, why, and the evidence
+- TC<n> / SC<n> — <one-line title>
+  - Steps: <the steps that reproduce it>
+  - Expected: <what the case or criterion requires>
+  - Actual: <what was seen>
+  - Evidence: <snapshot detail, story path, or command and its output>
+  - Environment: <URL or command, build or branch, browser, data, user role>
 
 ### Clean
 <TC<n> of the cases with no findings>
 ```
 
-8. **Stop.** Findings are the user's to rule on; `investigating-bugs` diagnoses one when
-   asked. Fix nothing until the user approves the findings: a component that fixes what it
-   finds stops checking and starts implementing. A feature's run with no findings, where
+7. **Stop.** Findings are the user's to rule on. After the report, when there are findings,
+   ask one multi-select form listing each finding, nothing pre-checked. Each finding checked
+   goes, as its bug report, to the Skill tool with "core:investigating-bugs", which only
+   diagnoses. Fix nothing until the user approves the findings: a component that fixes what
+   it finds stops checking and starts implementing. A feature's run with no findings, where
    every task in STATUS.md's Tasks table is done or blocked, calls the Skill tool with
    "core:finishing-features" instead, naming the feature, once the STATUS.md write is done.
 
@@ -135,13 +136,12 @@ Without a STATUS.md, nothing is written beyond the list and the report.
 ## What this must NOT do
 
 - **Start `run` without an explicit release.** See the hold, above.
-- **Invent a requirement, a design, or a Storybook the repository does not have.** A
+- **Invent a requirement, a design, or a result for a check that could not run.** A
   missing prerequisite is a skip, never a fabrication.
-- **Score pixels.** Presence, hierarchy, states, tokens, naming, copy — never a rendered
-  diff. See `references/design-intent.md` for why.
 - **Fix a finding before the user approves it.**
+- **Run a `command` case that writes**, or a test or a build the release does not name.
 - **Silently omit a case from the report** — Observed, Not observed, Skipped and Findings
   together must account for every case on the approved list.
 - **Contain a fact about any individual repository.** Where its requirements live, whether
-  it has Storybook — read at the moment of use from the project's own files.
-- **Re-implement the browser loop.** `core:verifying-ui` owns it.
+  it has a design source — read at the moment of use from the project's own files.
+- **Re-implement a `web:` check.** `frontend:verifying-ui` owns them.

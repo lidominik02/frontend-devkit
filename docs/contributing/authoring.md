@@ -205,6 +205,15 @@ Observed platform behaviour the components rely on without saying so:
   are absent from the session's tool set before the first model call, and `ToolSearch`
   reports them unavailable while `take_snapshot` answers (Claude Code 2.1.278); the
   server-wildcard form is covered under "Use `disallowed-tools`" above.
+- A `verifying-ui` grant written as `mcp__chrome-devtools__<tool>` matches that server key
+  only. With `/frontend:verifying-ui report` typed in `claude -p`, the same server under the
+  key `chrome-devtools` ran `new_page` and `take_snapshot` without a prompt; under
+  `chrome-devtools-headless`, `new_page` was refused ("you haven't granted it yet", listed in
+  the result's `permission_denials`) and the run reported the snapshot as not observed
+  (Claude Code 2.1.310, `claude-opus-5-5`, chrome-devtools-mcp 1.11.0 with `--headless
+  --isolated`, `--strict-mcp-config`, Linux 6.8.0, one run per key, 2026-11-03). The
+  interactive prompt on a missed grant, and a plugin-supplied `mcp__plugin_…` key, are not
+  observed.
 - `renames` in `marketplace.json` is a known, type-checked field: a scratch marketplace
   whose `renames` maps one plugin name to another listed in `plugins[]` and a second name
   to `null` passes `claude plugin validate --strict`, a misspelled `renamez` fails as an
@@ -217,28 +226,37 @@ Observed platform behaviour the components rely on without saying so:
   Code 2.1.299 and 2.1.304, `claude-opus-5-5`, Windows 10 Pro 10.0.19045, 4 sessions, 6
   compactions, 2026-10-20). The detail is under "Bodies and references" above.
 
-## Adding a pack
+## Adding a framework
 
-First establish that it should be a pack: packs split on inversion, not subject matter. If
-the new guidance only adds to an existing pack, it is a reference there. Then touch:
+A framework is a new set of references inside the `frontend` plugin, not a new plugin.
+First establish that it should be a set: sets split on inversion, not subject matter. If the
+new guidance only adds to an existing set, it is a topic file there. Then touch, all under
+`plugins/frontend/`:
 
 | Place | What |
 | --- | --- |
-| `plugins/<name>/.claude-plugin/plugin.json` | `name`, the shared `version`, `description`, `author`, `repository`, `keywords`, and `dependencies` naming **every** pack it needs, not just the nearest |
-| `.claude-plugin/marketplace.json` | A `plugins[]` entry with `source: ./plugins/<name>` |
-| `plugins/<name>/skills/<name>-engineering/SKILL.md` | The pack's one skill, plus `references/` |
-| `plugins/<name>/README.md` | What it covers, what it depends on, why it is a separate pack, its skill table |
-| `plugins/<name>/evals/` | A README pointing back at `plugins/core/evals/README.md`, and at least one case |
-| `plugins/core/skills/planning-features/references/project.md` | One line in "Framework packs": the dependency that names the framework, and its packs, general first |
-| `README.md`, `docs/installation.md` | The packs table, the install block and "Choosing packs" |
+| `skills/frontend-engineering/references/<framework>-rules.md` | The set's rules file: its guardrails, a Reading table and a symptom router to its topic files; a delta set also lists the base rules that do not apply |
+| `skills/frontend-engineering/references/<framework>-<topic>.md` | The set's topic files, read on demand |
+| `skills/frontend-engineering/SKILL.md` | One row in the selection table: the dependency that names the framework, and the set it loads, base first; the router's `description` names the framework |
+| `evals/` | At least one case: with the framework in `package.json`, the router selects the new set and reads no other set's file, as the `isolation-*` cases do |
+| `.claude-plugin/plugin.json`, `README.md`, and the `frontend` entry of the root `.claude-plugin/marketplace.json` | The framework among the supported ones in `description`, `keywords` and the README's opening |
 
-CI takes its validation targets from `marketplace.json`, so the workflows need no edit.
+`core` does not change: it names the router, never a set. CI takes its validation targets
+from `marketplace.json`'s `plugins[]`, which gains no entry, so the workflows need no edit.
+
+**The router is the one exception to "Body versus reference" above.** Its body holds only
+the selection, the reading order and the rules every set shares; a framework's guardrails
+live in that set's `<framework>-rules.md`, which the body reads first and re-reads before a
+review verdict, before "done" and after compaction
+([ADR 0016](../adr/0016-framework-rules-chosen-per-workspace.md)). A new set's guardrails
+therefore go in its rules file, never only in a topic file.
 
 ## The delta contract
 
-A specialised pack's base is its non-`core` dependency; the manifests' `dependencies` are the
-shape. After editing either side of a family, read the two checklists and the paired
-references as a pair, and look for four kinds of drift, worst first: **an unanswered
+A delta set's base is the set the router's selection table loads before it, and that table
+is the only place a pair is written: take the pair from there, never from a file name.
+After editing either side of a pair, read the two rules files, the two review checklists
+and the paired topic files as a pair, and look for four kinds of drift, worst first: **an unanswered
 inversion** — a base rule false under the specialisation, with no counterpart there;
 **a leaked rule** — guidance in the specialisation equally true of the base, which belongs
 in the base; **duplicated text** — the same rule on both sides, which diverges on the first

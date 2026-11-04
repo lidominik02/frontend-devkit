@@ -2,7 +2,7 @@
 
 ## Contents
 - The tool that runs a manifest
-- Framework packs
+- Frontend rules
 - Gates
 - Own code
 - Held checks
@@ -20,13 +20,20 @@ yarn.lock → yarn · bun.lock or bun.lockb → bun, else npm; that tool is `<pm
 runs as `<pm> run <script>`). The tool runs only its own manifest's targets, never another
 source's command.
 
-## Framework packs
-Read the workspace's package.json — the root, or the workspace the task names in a monorepo
-(`workspaces` in package.json, or pnpm-workspace.yaml). dependencies + devDependencies:
-`nuxt` present → call the Skill tool with "vue:vue-engineering", then "nuxt:nuxt-engineering";
-else `vue` present → "vue:vue-engineering"; else none — say so, follow the codebase's conventions.
-A pack whose skill this session does not list is not installed: say so once and go on without it.
-A later pack wins every conflict. Each dispatch to a worker names the packs it found.
+## Frontend rules
+One line per workspace the work touches, the workspace being the nearest directory above its
+files that holds a package.json, up to the repository root:
+
+- a package.json, and the session lists `frontend:frontend-engineering` →
+  `<workspace> · frontend:frontend-engineering`: call the Skill tool with it, naming the
+  workspace; it selects that workspace's rules from its manifest and says its choice;
+- a package.json, and the session does not list it →
+  `<workspace> · frontend plugin not enabled in this session`, said once, by name;
+- no package.json → `<workspace> · no framework (no package.json)`.
+
+Without the skill's rules, follow the codebase's conventions. Each dispatch to a worker
+carries these lines under a `Frontend:` header; a worker calls the skill for each line that
+names it, with that workspace.
 
 ## Gates
 A gate is only a command the project declares in a file it maintains, and every gate line

@@ -27,7 +27,7 @@ The fixture plants two conflicts:
 Hand-run, both arms, from the fixture below, with the scripted answers. The skill asks
 through forms, so a harness run ends at its first form with nothing written. Use the
 README's hand-run rig, interactively (`claude`, not `-p`), so each form can be answered;
-the with-plugin arm loads `plugins/core` and `plugins/vue`, since the fixture is a Vue
+the with-plugin arm loads `plugins/core` and `plugins/frontend`, since the fixture is a Vue
 app. Every run gets `--strict-mcp-config` with an empty `{"mcpServers":{}}`, so the export
 is the only way to the frame. Stop where the scripted answers say.
 

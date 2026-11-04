@@ -125,8 +125,8 @@ your reasoning has not been shown.
   bypass a commit hook, or amend, squash or otherwise rewrite a commit already made.
 - **Delete anything**: a file under `temp/`, a backup ref, a branch.
 - **Send anything.** The MR text and the open items are shown, never posted.
-- **Run heavier checks the user did not release** (`../planning-features/references/project.md`, `## Held checks`), **Storybook or a
-  browser.**
+- **Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
+  the user did not release** (`../planning-features/references/project.md`, `## Held checks`).
 - **Decide a product question.** Whether the feature is done is the user's answer.
 - **Carry a fact about an individual repository.** A repo's conventions live in its own
   files, read at the moment of use.

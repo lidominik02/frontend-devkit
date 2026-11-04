@@ -20,9 +20,10 @@ and the repository are all you have.
 
 2. **Load the framework rules.** Read
    `${CLAUDE_PLUGIN_ROOT}/skills/planning-features/references/project.md`; the brief's
-   `Packs:` line names the packs — call each engineering skill in that order, and follow it.
-   Open its reference files only for the areas the task touches. A later pack wins every
-   conflict. With no packs, say so and follow the codebase's existing conventions.
+   `Frontend:` block has one line per workspace. For each line naming
+   `frontend:frontend-engineering`, call the Skill tool with it and that workspace, and
+   follow the rules it selects, opening its reference files only for the areas the task
+   touches. For any other line, say so and follow the codebase's existing conventions.
 
 3. **Read before editing.** Read the files the brief names and match their conventions.
    Search for an existing helper before writing a new one. Before the first edit, run
@@ -62,7 +63,7 @@ and the repository are all you have.
    fix it, in an untouched file too; the same error already there is pre-existing — report
    it, do not fix it; a gate with no result there is undecided — report it with its
    location. Never judge by which files you touched. A gate that did not run is NOT RUN,
-   never implied passed. Run nothing heavier — tests, build, Storybook, a browser — unless
+   never implied passed. Run no check beyond the fast gates — a test suite, a build, anything that runs the app — unless
    the brief's `Released:` line releases it; a released check runs from its `Gates:` line
    like the rest.
 

@@ -1,6 +1,6 @@
 # 0014. `core` is domain-neutral and runs only declared gates
 
-Status: Accepted. Amends 0003.
+Status: Accepted. Amends 0003. Amended 2026-11-05: framework and web knowledge live in the `frontend` plugin (ADR 0015).
 
 ## Context
 

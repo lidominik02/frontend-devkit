@@ -29,7 +29,7 @@ drifting from their Claude counterparts; say so rather than adding a third copy.
 
 ## Step 2 — The facts
 
-Read the tool that runs a manifest, the framework packs, the gates and the base branch as
+Read the tool that runs a manifest, the frontend rules, the gates and the base branch as
 `../planning-features/references/project.md` describes them. Every fact comes from a file the
 project already maintains; do not ask the user for anything it answers.
 
@@ -39,34 +39,16 @@ This is almost always the largest real gap, and the one where prose helps least.
 gates `## Gates` in `project.md` finds — each with its workspace and source, or
 `NOT RUN (no declared command)` — and ask:
 
-1. **Is there a type-check at all?** On Vue, `tsc` checks nothing inside a template —
-   `vue-tsc --noEmit` is the gate, and `strictTemplates` and the `checkUnknown*` family
-   default to **off**. Propose turning them on as a separate, visible step.
-2. **Does the gate run anywhere but a developer's machine?** A rule CI does not run has
+1. **Does the gate run anywhere but a developer's machine?** A rule CI does not run has
    nothing behind it; adding the gate to CI usually beats any wording.
-3. **What does the existing gate cost?** A build or a test suite is a held check, not a fast
+2. **What does the existing gate cost?** A build or a test suite is a held check, not a fast
    gate (`## Held checks` in `project.md`); say so.
 
-A new type-checker surfaces a backlog. **Count the errors before changing anything**, and
+If a type-check is added or tightened, it surfaces a backlog. **Count the errors before changing anything**, and
 offer: fix now if small; baseline and enforce on changed files; or stage the strictness.
 Do not pick silently, and never reach for a blanket `@ts-nocheck`.
 
-## Step 4 — Runtime verification, where the repo has a user interface
-
-Every gate in step 3 reads code; without a browser an agent can only *assert* that runtime
-defects are absent. Ask the user one question: **do you already have a browser MCP server
-installed?** A user-scope install appears in no file you can read, so a missing `.mcp.json`
-is no evidence there is none.
-
-If no, name the choice — `chrome-devtools-mcp` day to day, `@playwright/mcp` for
-cross-engine — and recommend **user scope** (`claude mcp add --scope user ...`); a
-checked-in `.mcp.json`, with its `enabledMcpjsonServers` entry, only to equip every cloner.
-
-Where a browser *is* available, the useful line for CLAUDE.md says **when not to use it**.
-It earns its cost on what a glance cannot see — a console error, a duplicated request, a
-hydration mismatch, focus after a route change — and loses on "does this look right".
-
-## Step 5 — CLAUDE.md: cut the generic, add the load-bearing
+## Step 4 — CLAUDE.md: cut the generic, add the load-bearing
 
 Judge each line by one question: **would this be true of any other project in this
 stack?** If yes it is costing context and buying nothing. What earns its place:
@@ -75,7 +57,7 @@ stack?** If yes it is costing context and buying nothing. What earns its place:
   default ("this wrapper returns `{ data, error }` and swallows 401").
 - Which of two visible dialects is the target, when a codebase is mid-migration.
 - Things configured but dead, which an agent will helpfully extend.
-- Build-time versus runtime configuration, and which env vars reach the browser.
+- Build-time versus runtime configuration, and which env vars are baked into what ships.
 
 A fact the project already maintains in a file — the tool that runs a manifest, the base
 branch, the commit convention with its allowed scopes — is not copied into CLAUDE.md: name
@@ -87,14 +69,14 @@ holds, seen only in the commit history, belongs in CLAUDE.md, with the inference
 
 Keep it short. Path-specific conventions belong in `.claude/rules/*.md` with a `paths:` glob.
 
-## Step 6 — Permissions
+## Step 5 — Permissions
 
 Without `.claude/settings.json` every ordinary command prompts; an accreted
 `settings.local.json` freezes one machine's paths. Propose a small read-only allowlist —
 the declared fast-gate commands plus `git diff`/`git log`/`git status`; never a destructive
 command.
 
-## Step 6b — Settings the devkit recommends
+## Step 5b — Settings the devkit recommends
 
 ```json
 {
@@ -119,7 +101,7 @@ The lockfile rule is one `Edit` rule per lockfile the repository keeps, found wi
 every workspace — `package-lock.json`, `go.sum`, `Gemfile.lock`, whatever its tools write;
 with none kept, no rule.
 
-## Step 7 — Check that the documentation is not lying
+## Step 6 — Check that the documentation is not lying
 
 ```
 grep -rnoE '\b(docs|\.claude)/[A-Za-z0-9_./-]+\.md\b' CLAUDE.md .claude/ docs/ 2>/dev/null | sort -u
@@ -128,7 +110,7 @@ grep -rnoE '\b(docs|\.claude)/[A-Za-z0-9_./-]+\.md\b' CLAUDE.md .claude/ docs/ 2
 Confirm each path exists — a cited procedure never written makes the agent hunt, then
 improvise. Report dangling references and orphaned docs as findings.
 
-## Step 8 — Report, then ask
+## Step 7 — Report, then ask
 
 ```
 ## AI-readiness: <repo>
@@ -142,7 +124,7 @@ improvise. Report dangling references and orphaned docs as findings.
 ### Proposed changes
 <file-by-file, with the exact content. An existing CLAUDE.md: only the lines to add, change
 or remove, each with its place in the file. No CLAUDE.md yet: the whole proposed file.
-Step 5 binds the CLAUDE.md in both.>
+Step 4 binds the CLAUDE.md in both.>
 
 ### Not proposed, and why
 ```

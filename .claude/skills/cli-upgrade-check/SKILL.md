@@ -41,9 +41,18 @@ of any build, so check them even when the canary is green.
 1. **Strict validation on both CLIs.** `claude --version` for what is installed,
    `npm view @anthropic-ai/claude-code version` for the latest, and the pin in the two
    workflows. On the pinned and on the latest CLI, run `claude plugin validate . --strict` and
-   the same on `plugins/core`, `plugins/vue` and `plugins/nuxt` (every directory
-   `marketplace.json` lists). Record each exit code and the finding text. If the canary failed,
-   reproduce its output locally before explaining it.
+   the same on `plugins/core` and `plugins/frontend` (every directory `marketplace.json`
+   lists). Record each exit code and the finding text. If the canary failed, reproduce its
+   output locally before explaining it.
+
+   **Re-check `renames` under `--strict`.** `marketplace.json` carries a `renames` map, and
+   the strict run above passes only if the new CLI still accepts it. If it does not, record
+   the finding text and stop before raising the pin: a pin on a CLI that rejects the field
+   turns the merge gate red. Then probe the field on a scratch marketplace outside the repository, as
+   `docs/contributing/authoring.md` records it: one name mapped to a plugin `plugins[]`
+   lists and a second to `null` passes, a misspelled `renamez` fails as an unknown field, and
+   a number in place of the new name fails as a type error. Report each result against the
+   one recorded there.
 
 2. **Probe the frontmatter claim on a scratch fixture.** Outside the repository, write a
    minimal plugin: a `.claude-plugin/plugin.json` with `name` and `version`, and a

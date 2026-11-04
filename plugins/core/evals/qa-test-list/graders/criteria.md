@@ -16,10 +16,13 @@ Passes if it does ALL of:
   of steps.
 - For at least the threshold criteria, states a positive case, a negative case, and the
   zero-threshold edge case specifically — not a generic "test various thresholds."
-- Names which check verifies each case (browser, design intent, Storybook, or user
-  only), and the choices are sensible for what each case actually is (an alert
-  appearing and being dismissible is browser-verifiable; "the alert text is worded
-  clearly" is user-only).
+- Names one or more checks that verify each case (command, browser, design intent,
+  Storybook, or user only), and the choices are sensible for what each case actually is
+  (an alert appearing and being dismissible is browser-verifiable; "the alert text is
+  worded clearly" is user-only).
+- Gives each case its precondition, its test data and what to retest after a fix, each
+  stated or marked as having nothing to state — the zero-threshold case, for one, names an
+  item with its threshold set to 0 and the stock level it is brought to.
 - Stops after producing the list rather than proceeding to implement or run anything —
   `plan` mode does not act on the list it just wrote.
 
@@ -32,6 +35,7 @@ Fails if it does ANY of:
   committing to what the story actually says.
 - Fails to name a verifying check for the cases, or names the same check for everything
   regardless of what the case actually is.
+- Leaves the precondition, the test data or the retest out of the cases altogether.
 - Begins running checks, opening a browser, or writing implementation code in this turn.
 
 Note for scoring: no baseline expectation is claimed. A capable bare model may already
