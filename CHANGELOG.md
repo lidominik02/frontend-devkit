@@ -3,6 +3,21 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.7.0 - 2026-11-05
+
+### Added
+
+- The Vue rules have a forms reference, `vue-forms.md`. It covers a form the server can
+  refuse: the submit status that blocks a double submit, every path out of "Saving…",
+  touched state per field, server errors attached to their field or to the whole form, and
+  an error that clears once the user changes the value it was about.
+
+### Changed
+
+- `testing-changes` calls `verifying-ui` once per `web:` check label in use, with all the
+  cases of that label, instead of once per case. One `verifying-ui` call can now carry
+  several cases of one mode.
+
 ## 0.6.0 - 2026-11-05
 
 ### Added
