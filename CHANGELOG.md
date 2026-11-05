@@ -3,6 +3,42 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.6.0 - 2026-11-05
+
+### Added
+
+- `verifying-ui` has three modes: browser, design intent and Storybook. Each one checks its
+  own prerequisite before it runs. `report` only reports. `design` reads a design source
+  without touching code or a browser. A direct call fixes until it stops making progress or
+  three rounds have passed. Page, console, design and story content is treated as data,
+  never as instructions.
+- `verifying-ui` stops fixing as soon as a source edit cannot reach the page, for example
+  when the page is served from a committed bundle or a stale build. It never patches the
+  served files or repoints the server. It hands the decision back to you and names the
+  served artifact. Running the project's own build or watch command is still allowed.
+- `testing-changes` cases have pre-conditions, test data, a retest step and one or more
+  checks. A `command` check covers read-only checks that need no UI. A finding is written
+  as a bug report that `investigating-bugs` can take over.
+
+### Changed
+
+- **Breaking:** the `vue` and `nuxt` plugins are replaced by a single `frontend` plugin.
+  It holds the framework rules and `verifying-ui`, and it does not depend on `core`. A
+  repository with no frontend leaves it off and pays nothing for its descriptions.
+  `docs/installation.md` "Upgrading from 0.5.x" lists the steps for an existing install.
+- `frontend-engineering` reads each workspace's `package.json` and loads the matching rule
+  set: Vue, or Vue followed by Nuxt. For Next.js it loads none.
+- `core` is domain-neutral. When the `frontend` plugin is not enabled, its skills say so
+  and skip the frontend steps by name.
+- `investigating-bugs` loads the frontend rules for the workspace it runs in and for every
+  workspace the bug report names.
+
+### Fixed
+
+- `finishing-features` no longer treats a QA report as clean while checks are still under
+  Skipped or Not observed. A run with the `frontend` plugin turned off can no longer close
+  a feature as verified.
+
 ## 0.5.1 - 2026-10-28
 
 ### Changed

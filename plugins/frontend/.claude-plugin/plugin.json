@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Frontend engineering and review knowledge for Vue 3, Nuxt and Next.js, with one router skill that selects a framework's rules per workspace from its package.json and loads only that set: reactivity, composables, routing, client vs server state, build-time config and secrets, SSR state, data fetching and hydration. Framework-level only, and version-gated. Contains no facts about any individual repository.",
   "author": { "name": "lidominik02" },
   "license": "MIT",
