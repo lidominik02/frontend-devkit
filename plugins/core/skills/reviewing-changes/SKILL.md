@@ -4,9 +4,9 @@ description: >-
   Reviews the current changes — committed on the branch, uncommitted and untracked —
   against the spec and the repository's own rules, with an independent reviewer and a
   verification pass. Use when the user says "review this", "code review", "review my
-  changes" or "is this safe to merge". For how it looks in a browser, use verifying-ui;
-  for a QA list, testing-changes; for a commit message, describing-changes; for a root
-  cause, investigating-bugs.
+  changes" or "is this safe to merge". For how it looks in a browser, use
+  frontend:verifying-ui; for a QA list, testing-changes; for a commit message,
+  describing-changes; for a root cause, investigating-bugs.
 argument-hint: "[review|re-review] [feature] [base]"
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs *) Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/snapshot.mjs" *) Bash(git rev-parse *) Bash(git merge-base *) Bash(git symbolic-ref *) Bash(git check-ignore *) Read Grep Glob Agent Skill AskUserQuestion
 ---

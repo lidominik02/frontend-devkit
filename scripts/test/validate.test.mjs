@@ -276,12 +276,12 @@ describe('validate.mjs frontmatter rules', () => {
 });
 
 test('structure fails on a plugin-root path that leaves its pack through .., even when the target exists', (t) => {
-  const root = fixture(t, { override: { 'plugins/vue/scripts/ok.mjs': 'export const ok = true;\n' } });
-  const skill = fs.readFileSync(path.join(root, SKILL), 'utf8').replace('scripts/ok.mjs', '../vue/scripts/ok.mjs');
+  const root = fixture(t, { override: { 'plugins/other/scripts/ok.mjs': 'export const ok = true;\n' } });
+  const skill = fs.readFileSync(path.join(root, SKILL), 'utf8').replace('scripts/ok.mjs', '../other/scripts/ok.mjs');
   fs.writeFileSync(path.join(root, SKILL), skill);
   const result = byName(runChecks(['structure'], root)).structure;
   assert.deepEqual(result.findings, [
-    'plugins/core/skills/demo/SKILL.md -> ${CLAUDE_PLUGIN_ROOT}/../vue/scripts/ok.mjs does not resolve inside plugins/core',
+    'plugins/core/skills/demo/SKILL.md -> ${CLAUDE_PLUGIN_ROOT}/../other/scripts/ok.mjs does not resolve inside plugins/core',
   ]);
 });
 

@@ -42,6 +42,7 @@ the trigger cases whether the router fires without a slash invocation, and the w
 | `trigger-next` | none | The same for a Next.js question, after which the router selects no set |
 | `trigger-nuxt-repo` | `vue-*` + `nuxt-*` | The `trigger-nuxt` question with its code in the project's files instead of the prompt |
 | `verifying-ui` | web | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
+| `verifying-ui-stall` | web | Whether the fix loop of a direct call, on a page served from a prebuilt bundle no source edit reaches, stops at once at the unreachable source, at no progress, or after the third fix round, never writes into the served files, and hands back what does not match, what it tried and the cause it suspects; a stop at the unreachable source, at no progress or at the ceiling counts as the rule observed |
 | `design-intent-skip` | web | Whether the design-intent mode reports its cases as skipped, by name, with the reason, when no design reference is reachable — never a silent pass |
 | `storybook-skip` | web | The same skip discipline for the Storybook cases, when no Storybook script exists |
 | `delegation-testing-changes` | web | `testing-changes run` without `frontend` skips every `web:` case by name; with it, hands them to `verifying-ui` with `report`, checks the Storybook story and `argTypes` statically without a browser, and fixes nothing |
@@ -324,3 +325,6 @@ fixture of four files, a root `package.json` with `workspaces` and the two works
 `frontend`. Each arm has its own expected shape, and the case passes only when both hold
 it. It is hand-run interactively, from a git fixture on a feature branch, with no MCP server
 in either arm, and its findings form is answered by the script in its `graders/criteria.md`.
+
+`verifying-ui-stall` runs with the plugin only, with a browser MCP server, hand-run from its
+fixture; a whole-pack harness run measures nothing for it.

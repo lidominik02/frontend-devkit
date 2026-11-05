@@ -169,6 +169,14 @@ defect on screen (no progress), and in any case after the third fix round. Then 
 good: do not try again and do not switch approach on your own. Hand the decision back to
 the user — what does not match, what you tried, and the cause you suspect.
 
+A fix goes into the source. When a source edit leaves the page unchanged because it cannot
+reach it — the served files are not produced from the source by the project's own start or
+build command (a committed bundle, a stale build nothing regenerates, a server pointed at
+another directory) — stop at once, without another fix round. Never write into the served
+files or repoint the server to make the page match; running the project's own build or
+watch command is not writing into them. Hand the decision back, naming the served artifact
+as the cause you suspect.
+
 ## Step 6 — Report what you saw, and what you did not
 
 ```

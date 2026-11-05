@@ -66,9 +66,9 @@ not observed.
 
 The result is recorded here per release, from a run dispatched before that release.
 
-| Release | CLI | Result |
-| --- | --- | --- |
-| 0.6.0 | — | NOT RUN (not yet dispatched) |
+| Release | CLI | Result | Run |
+| --- | --- | --- | --- |
+| 0.6.0 | 2.1.318 | pass | `canary` run 41937372415 |
 
 ## Named remainders
 
@@ -84,12 +84,12 @@ until the trigger that ends it. A hit that fits none of them is a finding.
 
 | Remainder | Where | Why it stays | Ends when |
 | --- | --- | --- | --- |
-| Web verification in the user docs | `docs/browser-verification.md` and its row in `docs/README.md`; the browser paragraph of `docs/architecture.md` | The documentation still describes web verification as part of `core` | The user docs point at the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
+| The `frontend` plugin in the docs | `docs/architecture.md`, `docs/installation.md`, `docs/browser-verification.md`, `docs/feature-lifecycle.md` and `docs/README.md`; "Adding a framework" in `docs/contributing/authoring.md`; "The behaviour smoke" on this page | `docs/` documents every pack of the marketplace, `frontend` included, where `core` hands over to it, and the plugins worth installing beside it | Never: `docs/` covers every pack |
 | Handoffs to the `frontend` plugin | `project.md` `## Frontend rules` and the "frontend rules" and `Frontend:` lines of the lifecycle skills, `dispatch.md`, `formats.md` and both agents; the calls to `frontend:verifying-ui` in `clarifying-features`, `testing-changes`, `fixing-bugs` and `loop.md`, and the routing line in `reviewing-changes`; the sentence "frontend plugin not enabled in this session"; the `web:` check types of `testing-changes` and `qa-test-list.md`, and the browser in a QA finding's Environment line; the `core` README's opening | `core` hands framework rules and web checks to the `frontend` plugin by name, and says so when that plugin is not enabled | `core` stops naming the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
 | UI repro rows | `fixing-bugs` `loop.md` "Repro by kind of bug" (component, store, route, layout rows), the component and store examples of "A correct seam", and section 5's "layout, focus, hydration, a real browser API" | Domain-neutral rows lead; the UI rows serve the UI repositories `core` still serves | The web knowledge leaves `core` ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
 | JavaScript lockfile facts | `syncing-branches` `conflicts.md`: the four JavaScript rows of the lockfile table; the JavaScript lockfile examples in `project.md`, `preparing-a-repo` and `docs/installation.md` | Each row is a verified fact about one tool's lockfile; a lockfile the table does not list is never merged by hand, and a new tool gets its own row | Never: the table grows a row per verified tool |
 | User and report vocabulary | `investigating-bugs`: the description's "is this a frontend or backend bug", "browser, native build" among where a report appears, and a screenshot among what a report holds | It is the user's wording and a report's environment, not a claim about the repository | The listing is measured again with the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
-| The framework packs and the marketplace name | `vue`, `nuxt` and `frontend-devkit` in `docs/architecture.md`, `docs/installation.md`, `docs/README.md`, the manifests, the evals README and each pack README's install line | The packs exist and the marketplace keeps its name | `vue` and `nuxt` become the `frontend` plugin ([ADR 0015](../adr/0015-one-frontend-plugin.md)); the name, by a rename decision |
+| The marketplace name and the 0.5.x pack names | `frontend-devkit` in the docs, the manifests and each pack README's install line; `vue` and `nuxt` in "Upgrading from 0.5.x" of `docs/installation.md` and as the keys of `renames` in `marketplace.json`; `vuejs-ai/skills` credited in the evals README | The marketplace keeps its name; an install from 0.5.x still names the old packs, and `renames` maps them to `frontend` | The name, by a rename decision; the old pack names, when the upgrade from 0.5.x is no longer supported; the credit, never |
 | Observed tool and server names | `docs/contributing/authoring.md`: `figma`, `chrome-devtools`, browser MCP observations | Each records a behaviour observed against a named server and CLI version | The component that cites it moves or is removed |
 | Design material in clarifying and planning | `clarifying-features`: the description's "build this screen", the bounded-size examples, `sources.md`'s design source and research question 2, `question-rounds.md`'s State row; the Design field in `artifacts.md` and `planning-features` | A UI feature's design is a requirement source while `core` plans UI work, and it is skipped for a change with no UI | The `frontend` plugin settles whether design material moves with it ([ADR 0015](../adr/0015-one-frontend-plugin.md)) |
 | Code-unit words | "component" beside a helper and a shared module in `designing-architecture` | One kind of unit among others, named by the repository's own word | Never |

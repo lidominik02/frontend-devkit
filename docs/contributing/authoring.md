@@ -218,8 +218,10 @@ Observed platform behaviour the components rely on without saying so:
   whose `renames` maps one plugin name to another listed in `plugins[]` and a second name
   to `null` passes `claude plugin validate --strict`, a misspelled `renamez` fails as an
   unknown field, and a number in place of the new name fails with "expected string"
-  (Claude Code 2.1.301 and 2.1.299, Windows 10 Pro 10.0.19045, 2026-10-20). What the
-  rename does to an installed copy is not observed.
+  (Claude Code 2.1.301 and 2.1.299, Windows 10 Pro 10.0.19045, 2026-10-20). This
+  repository's own `renames`, `vue` to `frontend` and `nuxt` to `null`, passes and the
+  same file with `renamez` fails (Claude Code 2.1.301 and 2.1.317, Linux 6.8.0,
+  2026-11-05). What the rename does to an installed copy is not observed.
 - Compaction, manual or automatic, re-attaches no part of an invoked skill's body; a
   reference under 5,000 tokens read with `Read` came back whole after each session's first
   compaction and not after the second, which the two automatic sessions reached (Claude

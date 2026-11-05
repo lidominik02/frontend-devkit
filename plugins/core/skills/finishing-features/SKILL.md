@@ -35,7 +35,8 @@ One line per source — done, or open with what is open — in the chat, and aga
 - **Tasks.** Every row of STATUS.md's Tasks table is `done` or `blocked`.
 - **Review.** The open findings, as `../planning-features/references/artifacts.md` defines
   them, are open. No report at all is open: the review has not seen the work.
-- **QA.** A current qa/REPORT.md with no findings, or the user's skip, asked in section 3.
+- **QA.** A current qa/REPORT.md with no findings and nothing under `Skipped` or `Not
+  observed`, or the user's skip, asked in section 3.
   A report is current unless, after its `QA report` line in STATUS.md's Log, a line records
   a task done, a fix or a sync, or `git rev-parse --short HEAD` differs from the hash that
   line records; its own line never makes it stale. Gate results are not read here.

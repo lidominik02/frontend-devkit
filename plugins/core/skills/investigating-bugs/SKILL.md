@@ -7,7 +7,7 @@ description: >-
   "investigate this bug", "find the root cause", "why is X broken", "why does it show X", "is this a frontend
   or backend bug", "debug this", "diagnose this", or pastes a bug report, stack trace or
   QA findings. Diagnosis only; for "fix this bug" use fixing-bugs; for "why does it look
-  wrong", verifying-ui.
+  wrong", frontend:verifying-ui.
 allowed-tools: Read Grep Glob
 ---
 
