@@ -199,10 +199,10 @@ observed. Other CLI versions and platforms may behave differently.
 
 Up to 0.5.x the framework rules came as two packs, `vue` and `nuxt`; `frontend` replaces
 both, and `/core:verifying-ui` is now `/frontend:verifying-ui`. The marketplace declares
-`"renames": { "vue": "frontend", "nuxt": null }`, which is meant to turn an enabled
-`vue@frontend-devkit` into `frontend@frontend-devkit` and to drop `nuxt@frontend-devkit`.
-What it does to an installed copy has not been observed, so the steps below cover the case
-where it did not:
+`"renames": { "vue": "frontend", "nuxt": null }`. On 2.1.317 on Linux, updating the
+marketplace rewrote the enabled `vue@frontend-devkit` to `frontend@frontend-devkit` in the
+settings without installing `frontend`, and left `nuxt@frontend-devkit` installed and
+disabled, so the steps below are needed:
 
 1. After the update, run `claude plugin list`. If `vue@frontend-devkit` or
    `nuxt@frontend-devkit` is still listed, remove it with
@@ -212,9 +212,10 @@ where it did not:
 2. If `frontend@frontend-devkit` is not listed, install it as under [Install](#install).
 3. In each repository, run `git status`. A committed `.claude/settings.json` whose
    `enabledPlugins` names `vue@frontend-devkit` or `nuxt@frontend-devkit` shows as modified
-   when the rename rewrote it, and still names the old pack when it did not. Either way,
-   decide what the team's file should say before committing it: the `frontend` key, or no
-   key and `frontend` at local scope ([Install](#install)).
+   when the rename rewrote it, and still names the old pack when it did not; which one
+   happens to a committed file has not been observed. Either way, decide what the team's
+   file should say before committing it: the `frontend` key, or no key and `frontend` at
+   local scope ([Install](#install)).
 4. A typed `/vue:vue-engineering` or `/nuxt:nuxt-engineering` becomes
    `/frontend:frontend-engineering`.
 

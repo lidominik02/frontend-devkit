@@ -221,7 +221,17 @@ Observed platform behaviour the components rely on without saying so:
   (Claude Code 2.1.301 and 2.1.299, Windows 10 Pro 10.0.19045, 2026-10-20). This
   repository's own `renames`, `vue` to `frontend` and `nuxt` to `null`, passes and the
   same file with `renamez` fails (Claude Code 2.1.301 and 2.1.317, Linux 6.8.0,
-  2026-11-05). What the rename does to an installed copy is not observed.
+  2026-11-05). On an installed copy, `claude plugin marketplace update` to the release
+  carrying that `renames` had rewritten user settings when it returned:
+  `vue@frontend-devkit` became `frontend@frontend-devkit` in `enabledPlugins` and its
+  install record was removed, but `frontend` was not installed and not listed;
+  `nuxt@frontend-devkit` left `enabledPlugins` and stayed installed, listed as disabled. `claude plugin uninstall` of
+  `nuxt` and `claude plugin install` of `frontend` completed the move, and `claude plugin
+  update` moved `core` (Claude Code 2.1.317, Linux 6.8.0, 0.5.1 to 0.6.0 at user scope,
+  2026-11-05).
+- A plugin installed with `--scope local` is enabled in that repository only: in a second
+  repository `claude plugin list` shows it as local and disabled (Claude Code 2.1.317,
+  Linux 6.8.0, separate `CLAUDE_CONFIG_DIR`, 2026-11-05).
 - Compaction, manual or automatic, re-attaches no part of an invoked skill's body; a
   reference under 5,000 tokens read with `Read` came back whole after each session's first
   compaction and not after the second, which the two automatic sessions reached (Claude
