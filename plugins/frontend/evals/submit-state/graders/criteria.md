@@ -6,14 +6,14 @@ weight: 1
 Tests whether a form is modelled as state that can be submitted twice and can be rejected
 by the server, rather than as values plus a validate function.
 
-Expected baseline, per row: (g), (f), (t) and (b) pass; (c) fails, and fails in the pack arm
-too, so the case does not pass as a whole in either arm. The baseline arm is `core` alone, as
-`plugins/frontend/evals/README.md` ("Running the arms") sets it. That README's paragraph on
-`focus-and-announcement`, `submit-state` and `finding-the-cost` records these things done
-unaided by `core` with the Vue rules in an earlier run, which is why there is no forms
-reference; this case is the regression instrument for that, not a capability case. A pack
-arm that misses a row the baseline meets points at the pack's text; a baseline that misses a
-row the pack arm meets reopens the question of a forms reference.
+Expected, per row: in the baseline arm (g), (f), (t) and (b) pass and (c) fails, so the case
+does not pass as a whole there. The baseline arm is `core` alone, as
+`plugins/frontend/evals/README.md` ("Running the arms") sets it. The pack arm carries
+`vue-forms.md`, whose form-state rules cover (c), so every row is expected to pass there. A
+pack arm that misses (c) points at `vue-forms.md`'s text; a pack arm that misses any other
+row the baseline meets points at the pack's text. That README's paragraph on
+`focus-and-announcement`, `submit-state` and `finding-the-cost` records how this case decided
+the forms reference; it is the regression instrument for that, not a capability case.
 
 ## Run
 
@@ -124,10 +124,9 @@ unrelated to submit state.
 
 Score one row per clause — (g), (f), (t), (c), (b) — in every run; a fails-if hit fails its
 row. A run passes when every row is met. (g) and (f) decide the case's question; score them
-before reading the rest. No row depends on the pack's text, which holds no form-state rule,
-so the pack arm can differ only through its turn use or its instruction to read the rules
-first. (c) is the row to watch: `plugins/frontend/evals/README.md` records the one earlier
-pack-arm failure there.
+before reading the rest. (c) is the row to watch: it is the one the baseline arm is expected
+to fail and `vue-forms.md` is expected to carry, and `plugins/frontend/evals/README.md`
+records the earlier measurements of it in both arms.
 
 Recorded per run, outside the rows: whether the run stopped at questions without giving
 code, and whether it ended at `max_turns`. Such a run is still scored on every row; a gap

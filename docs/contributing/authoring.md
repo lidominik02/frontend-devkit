@@ -114,7 +114,16 @@ the grant does not actually follow.
 
 **Bodies ~200 lines unless a measured case shows the cut costs more, front-loaded** — but
 not because a surviving prefix rewards it. A body that runs past the mark names its measured
-case here in `docs/`, never in the body.
+case here in `docs/`, never in the body. A body may also stay past the mark when every
+section it keeps is a guardrail, and its lookup material already sits in references; it is
+named here with the reason, never in the body.
+
+`frontend:verifying-ui` runs past the mark on that ground. Its sections hold the hold, the
+skip rules for each mode, the order of serving, observing and re-observing, the fix-round
+limits and the refusals, and each is acted on at the step that carries it; the report's
+template, the one piece of lookup material, lives in `references/output-shape.md`. A body's
+length is its `SKILL.md`'s line count after the frontmatter:
+`awk 'n >= 2; /^---$/ { n++ }' plugins/frontend/skills/verifying-ui/SKILL.md | wc -l`.
 
 Compaction keeps no part of the invoked body. Measured against Claude Code 2.1.299 and
 2.1.304 (`claude-opus-5-5`, Windows 10 Pro 10.0.19045, 2026-10-20) with a 9,000-token body

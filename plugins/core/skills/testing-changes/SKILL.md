@@ -71,9 +71,10 @@ in `../planning-features/references/artifacts.md`.
 3. **Run what has a prerequisite; skip what does not, by name, with the reason.** A skip is
    not silence: name it in the report, in `Skipped`, with the same weight `Observed` gets.
 4. **`web:` cases**: call the Skill tool with "frontend:verifying-ui" and the arguments
-   `report`, for each case, naming its label and the state the case names. It checks each mode's
-   prerequisite and reports a skip with its reason; that skip goes to `Skipped`. Do not
-   re-implement its checks here.
+   `report` once per check label the list uses (`web: browser`, `web: design intent`,
+   `web: Storybook`), naming every case of that label and every state those cases name. It
+   checks each mode's prerequisite and reports a skip with its reason; that skip goes to
+   `Skipped`. Do not re-implement its checks here.
 5. **`command` cases** run by the gate rule in `../planning-features/references/project.md`
    (`## Gates` steps 2–4, `## Held checks`): a command or a file or git read that only reads
    runs; a test or a build runs only when this run's release names it, else it is skipped

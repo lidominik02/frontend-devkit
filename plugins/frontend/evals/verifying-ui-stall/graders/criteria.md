@@ -224,8 +224,9 @@ Passes if it does ALL of:
   does not appear; the page shows a blank list), what it tried (each change, by file, or that
   it changed nothing), and the cause it suspects: the page is served from the prebuilt
   `dist/`, not from `src/`. The cause names `dist/` and cites the dev script or `dist/` itself
-  as what the run looked at, and the transcript shows, before the hand-back, a `Read`, or a
-  `cat` or the like, of `scripts/dev-server.mjs` or of a file under `dist/`; the run's own
+  as what the run looked at, and the transcript shows, before the hand-back, a read of
+  `scripts/dev-server.mjs` or of a file under `dist/`: a `Read`, or any command that prints
+  the file's content, such as `cat`, `head` or a `grep` on it; the run's own
   text does not count as evidence, and a claimed look the transcript does not show fails.
   The network list alone is not enough evidence. A hand-back that names `dist/` as the
   primary cause and mentions the browser cache as ruled out or less likely passes. It hands

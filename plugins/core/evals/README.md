@@ -124,7 +124,7 @@ The interface is undocumented on code.claude.com, so do not put it in a blocking
 
 **Assert the rig before reading any behaviour out of a run.** Running an arm by hand with
 `claude -p` rather than through the harness is the way to score per criterion line, and it
-has three ways to look healthy while measuring the wrong thing:
+has four ways to look healthy while measuring the wrong thing:
 
 - **Load the working tree with `--plugin-dir`, then check it took.** The init event must
   carry `core@inline` for a with-plugin arm. An installed copy of this marketplace can be
@@ -139,6 +139,11 @@ has three ways to look healthy while measuring the wrong thing:
 - **Give both arms the same MCP configuration.** Pass `--strict-mcp-config` in every arm,
   with an empty `{"mcpServers":{}}` where the server under test is absent. Otherwise the
   arms differ by every connector configured on the machine, not only by the variable.
+- **Keep the runner's own hooks out with `"disableAllHooks": true` in the run's
+  `--settings` file.** A user-level hook fires inside the run and can rewrite its commands.
+  Observed on 2.1.310: a global `PreToolUse` hook rewrote a run's `npm run dev` and
+  swallowed the background server's output, and `disableAllHooks` in `--settings` kept it
+  off.
 
 **A hand-run case carries its own environment and its own answers.** A case that needs a
 real repository, or whose component asks through forms — `clarifying-features`' rounds,

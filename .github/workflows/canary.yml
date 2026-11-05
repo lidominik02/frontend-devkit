@@ -50,6 +50,8 @@ jobs:
           dir=$(mktemp -d)
           cd "$dir"
           echo '{"dependencies":{"nuxt":"^4.0.0","vue":"^3.5.0"}}' > package.json
+          # Keep the exit status so `set -e` cannot end the step before the output is printed.
+          status=0
           out=$(claude -p "/frontend:frontend-engineering Which rules apply in this workspace? Answer with the selection line only." \
             --plugin-dir "$GITHUB_WORKSPACE/plugins/core" \
             --plugin-dir "$GITHUB_WORKSPACE/plugins/frontend" \
@@ -58,6 +60,7 @@ jobs:
             --max-budget-usd 1 \
             --permission-prompts none \
             --no-session-persistence \
-            --output-format text)
+            --output-format text) || status=$?
           echo "$out"
+          [ "$status" -eq 0 ] || exit "$status"
           grep -qF 'vue-* + nuxt-*' <<< "$out"

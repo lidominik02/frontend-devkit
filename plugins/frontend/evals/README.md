@@ -83,8 +83,12 @@ artifact.
 `focus-and-announcement`, `submit-state` and `finding-the-cost` each decide whether a
 reference file is worth adding to the `vue-*` set. **In the earlier run, before the
 2026-10-14 one, all three came back with no criterion line missed in any of three runs, so
-there is no accessibility, forms or performance reference** — a session with `core` and the
-Vue rules then did these things unaided.
+there is no accessibility or performance reference** — a session with `core` and the Vue
+rules then did these things unaided. **Forms now have one, `vue-forms.md`.** A later
+measurement of `submit-state`, five runs per arm, failed its (c) row — a field message about
+a value the field no longer holds is gone by the time the user leaves the field — in all
+five `core` + `frontend` runs and all five `core`-only runs. With `vue-forms.md` in the set,
+the `core` + `frontend` arm met (c) in all five runs.
 
 They are kept for the reason `module-scope-state` is kept, as a regression instrument. A
 case is cheaper to run than its question is to re-argue, so a proposal to add one of these
@@ -161,8 +165,9 @@ shows the pack adding capability.
 
 **Two cases have FAIL runs.** `submit-state` failed one `core` + `vue` run: the 422 field
 messages stay on a field after the user corrects it, until the next submit — the fails-if
-line "Validates only on submit and never re-checks". At 1/2 with the pack, this reopens the
-question of whether a forms reference is worth adding, which the earlier run had settled.
+line "Validates only on submit and never re-checks". At 1/2 with the pack, this reopened the
+question of whether a forms reference is worth adding, which the earlier run had settled. The
+later measurement above answered it: the row failed in both arms, so `vue-forms.md` was added.
 `vitest-jsdom-import-meta-url` passed one `core` + `vue` run and no baseline run. Three of the four runs say `import.meta.url` itself stays `file://`
 and only the literal `new URL('…', import.meta.url)` form is rewritten, which contradicts its
 first passes-if line, and both baseline runs give a fix other than resolving from

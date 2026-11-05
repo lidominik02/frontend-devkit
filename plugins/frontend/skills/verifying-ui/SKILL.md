@@ -45,9 +45,9 @@ what you changed and let the person look — that is the faster instrument, not 
 ## Three modes, each with its own prerequisite
 
 A case or a request is checked in one of three modes. A case labelled `web: browser`,
-`web: design intent` or `web: Storybook` names its mode; a direct request about how a page
-renders or behaves is the browser mode. Establish each mode's prerequisite once, before
-running anything, and run what has one:
+`web: design intent` or `web: Storybook` names its mode, and one call may name several cases
+of one mode; a direct request about how a page renders or behaves is the browser mode.
+Establish each mode's prerequisite once, before running anything, and run what has one:
 
 - **Browser** (Steps 1–6): your own tool list carries `mcp__*__take_snapshot` or
   `mcp__*__browser_snapshot` — Step 1.
@@ -179,23 +179,8 @@ as the cause you suspect.
 
 ## Step 6 — Report what you saw, and what you did not
 
-```
-## UI verification: <what changed>
-
-Verified at: <the URL actually loaded>
-
-### Observed
-- <state>: <what the snapshot/screenshot actually showed>
-
-### Not observed
-- <state>: <why — unreachable without fixture data, needs auth, no browser tool>
-
-### Findings
-- <path:line or component> — what renders wrong, and the evidence you saw
-
-### Console / network
-- <errors and warnings, verbatim, with the page they came from>  |  clean
-```
+Before writing the report, read `references/output-shape.md`, which holds its shape:
+Observed, Not observed, Findings, and Console / network.
 
 Every observation and finding carries the URL it came from; a console line names no
 page, so write the page next to it. **Not observed** is a required section, not an

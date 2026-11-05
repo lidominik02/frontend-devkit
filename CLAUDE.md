@@ -9,7 +9,7 @@ devkit. This file is only the rules that must hold; `docs/adr/` records why they
 
 ## Invariants
 
-**Packs are framework-level.** A pack carries no fact about an individual repository —
+**Plugins are repository-agnostic.** A plugin carries no fact about an individual repository —
 no file paths, helper names or conventions from a specific codebase. Those belong in
 that repo's own `CLAUDE.md`. Every project-specific fact — the tool that runs a
 manifest, gates, base branch, git host, commit convention — is read at the moment of use by

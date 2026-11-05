@@ -40,7 +40,8 @@ loop.
   `verifying-ui` reports and fixes nothing. A QA case names one or more checks: `command`,
   `web: browser`, `web: design intent`, `web: Storybook` or `user only`. `command` is a
   read-only command or a file or git read, with the command and an excerpt of its output as
-  evidence; it never writes. `core` knows only these labels, and the web modes' text and
+  evidence; it never writes. A test or a build runs only when the run's release names it,
+  else it is skipped as held. `core` knows only these labels, and the web modes' text and
   prerequisites live in `frontend`.
 - On UI work `clarifying-features` calls `frontend:verifying-ui` with the `design` argument.
   It reads the design and reports, writes no code and opens no browser. When the name is not

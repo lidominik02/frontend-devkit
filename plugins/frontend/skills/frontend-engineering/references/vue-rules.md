@@ -78,6 +78,7 @@ Read the one file that matches what you are touching, not all of them.
 | `vue-env-and-config.md` | env vars, secrets, per-environment config, Vite build |
 | `vue-routing.md` | Vue Router, guards, route meta, lazy routes |
 | `vue-data-and-state.md` | fetching, caching, Pinia, server vs client state |
+| `vue-forms.md` | forms: submit status, touched fields, server field errors |
 | `vue-imports-and-structure.md` | file layout, barrels, package boundaries |
 | `vue-testing.md` | Vitest, `@vue/test-utils`, what is worth testing |
 | `vue-versions.md` | "which API is correct on this version" |
@@ -115,6 +116,9 @@ Route by what is actually happening, not by which API you suspect.
 
 **The page flashes empty, or shows stale data after navigating back**
 - Cache key does not include the varying input → `vue-data-and-state.md`
+
+**A form submits twice, stays on "Saving…", or keeps an error the user already fixed**
+- `vue-forms.md`
 
 **Type errors appear in CI but not locally, or a template error is never caught**
 - Template checks are off by default → `vue-versions.md`
