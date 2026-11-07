@@ -76,8 +76,9 @@ The report names each dimension not dispatched and why.
 
 Run by the session that dispatched the analysts, not by another agent.
 
-1. Re-read the cited line of every finding that the verdict or an idea will rest on.
-   A finding whose line does not show what it claims is dropped and counted as dropped.
+1. Re-read the cited line of every finding that the verdict or a proposed roadmap item
+   will rest on. A finding whose line does not show what it claims is dropped and
+   counted as dropped.
 2. Merge findings that describe the same event from two dimensions; keep both
    citations.
 3. Decide the verdict from the merged findings and the devkit version in the case
@@ -112,13 +113,13 @@ Devkit: <version per session, with its source type — e.g. plugin cache path, v
 Devkit involvement: <caused | contributed | not involved | cannot tell> — devkit <version>
 <the findings it rests on, by citation; what would change it>
 
-## Proposed ideas
-- **I<n>** · <date> · <one-line idea>
-  - Source: diagnosing-sessions, temp/diagnoses/<slug>/REPORT.md, <finding it came from>
-  - Notes: <what is known, which devkit component it touches>
+## Proposed roadmap items
+- **<one-line item>**
+  - Problem: <what goes wrong, and which devkit component it touches>
+  - Evidence: <the findings it rests on, each as session <id>, line <n>>
+  - Acceptance: <the observable result that shows it is done>
 ```
 
 A dimension with no findings keeps its heading and says so, with the analyst's
-`Not seen:` line. Dropped findings are counted under the verdict. Proposed ideas
-follow the entry shape of `temp/backlog/INBOX.md`; none is written there until the user
-picks it.
+`Not seen:` line. Dropped findings are counted under the verdict. At most three
+roadmap items are proposed.

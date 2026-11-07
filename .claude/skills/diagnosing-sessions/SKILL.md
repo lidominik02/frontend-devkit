@@ -7,7 +7,7 @@ description: >-
   parallel analysts — skill timeline with plan adherence, repeated work with
   stumbles, quality evidence, request conflicts, cost — and writes an anonymised,
   cited report with a devkit-involvement verdict naming the devkit version the
-  session ran, ending with proposed entries for the ideas backlog.
+  session ran, ending with at most three proposed roadmap items.
 disable-model-invocation: true
 argument-hint: "<symptom> [session] [time window]"
 allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(node scripts/validate.mjs:*), PowerShell(node scripts/validate.mjs:*)
@@ -16,8 +16,8 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Agent, AskUserQuestion, Bash(node 
 # Diagnose past sessions
 
 The input is a symptom, optionally a session id and a time window. The output is
-`temp/diagnoses/<slug>/REPORT.md` in this repository (gitignored) and, after the user
-picks, new entries in `temp/backlog/INBOX.md`. Nothing else is written outside the
+`temp/diagnoses/<slug>/REPORT.md` in this repository (gitignored), ending with at most
+three proposed roadmap items that the chat repeats. Nothing else is written outside the
 session scratchpad.
 
 ## Anonymity, before any read
@@ -73,10 +73,9 @@ transcript read to the last line written, in chat as much as in files:
    the anonymity rule and rewrite any that names or quotes something from outside
    the devkit.
 
-6. **Propose ideas.** The report ends with proposed `I<n>` entries, numbered on from
-   the highest id in `temp/backlog/INBOX.md`. Ask the user which to write (a
-   multi-select form). Append each picked entry in that file's entry shape, its
-   `Source:` naming this report and the finding it came from.
+6. **Propose roadmap items.** The report ends with at most three proposed roadmap
+   items in the shape `references/analysts.md` gives — each a problem, its evidence
+   and an acceptance criterion. Repeat them in chat and write them to no other file.
 
 7. **Delete the scratch extracts.** Remove `<scratchpad>/diagnosis-<slug>/` and say
    that it was removed. Do this at the end of every run that created it, including a
@@ -103,6 +102,6 @@ working tree, say so rather than naming the nearest release.
 
 - Every finding in the report cites `session <id>, line <n>`, and every citation was
   read, not inferred.
-- No name, path or quote from outside the devkit is in the report, the ideas entries
-  or the chat summary.
+- No name, path or quote from outside the devkit is in the report, the proposed
+  roadmap items or the chat summary.
 - The scratch directory is gone.
