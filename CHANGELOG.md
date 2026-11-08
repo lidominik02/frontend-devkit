@@ -3,6 +3,26 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.8.0 - 2026-11-08
+
+### Changed
+
+- A Vue app without Nuxt and a Nuxt app no longer get the same Vue rules. The `vue-*` set
+  is now the base both share; a client-only Vue app adds a `vue-spa-*` set on top, and a
+  Nuxt app adds `nuxt-*` and never loads a rule meant only for a client-only app.
+- Before every review verdict, `frontend-engineering` also reads `web-review.md`: the
+  findings that hold in any web framework, such as a listener with no cleanup or an API
+  response asserted with `as` instead of parsed.
+- Rules a model already follows without the plugin are removed. The rules files read at
+  the start of every task are about a quarter shorter for a Vue app and almost half as long
+  for a Nuxt app.
+
+### Fixed
+
+- The Nuxt hydration guidance now says that a time passed from `useState` to `<NuxtTime>`
+  is still the server's render instant, hours old on a cached route, so a time meant to be
+  the visitor's is no longer fixed that way.
+
 ## 0.7.0 - 2026-11-05
 
 ### Added
