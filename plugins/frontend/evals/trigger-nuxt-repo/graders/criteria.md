@@ -127,7 +127,7 @@ Passes if it does ALL of:
   the directory's name, `→`, `vue-* + nuxt-*`, and in parentheses the manifest fact that
   decided the row — `nuxt` in `package.json`: `. → vue-* + nuxt-* (nuxt in package.json)`. A
   translated parenthetical passes only if it names the same manifest fact. A line that
-  selects `vue-*` alone, or hedges between sets, fails.
+  selects `vue-* + vue-spa-*` or `vue-*` alone, or hedges between sets, fails.
 
 Fails if it does ANY of:
 - Never calls `frontend-engineering`. → (f)

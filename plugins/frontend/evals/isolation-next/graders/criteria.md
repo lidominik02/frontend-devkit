@@ -62,7 +62,8 @@ A **read** of a set file is a tool call that targets a file under
 a `Grep` that returns lines of it, a `Bash` `cat`, `head`, `sed` or the like. An attempt
 counts whether or not it was allowed. A `Glob` or a `Grep` that returns only file names is
 not a read; record it. The skill body the slash invocation loads is not a read. Order is
-transcript order.
+transcript order. A read of `references/web-review.md`, the review findings every set
+shares, is accepted and is not required.
 
 Passes if it does ALL of:
 - (s) The assistant text holds, before the first read of a set file if it makes one, one

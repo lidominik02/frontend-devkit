@@ -20,15 +20,15 @@ dependency.
 ## Decision
 
 - `frontend` lists one knowledge skill, `frontend-engineering`. Its body is the selection
-  rule, and each framework's rules are references in a set: `vue-*`, `nuxt-*`, later
-  `next-*` and `react-*`.
+  rule, and each framework's rules are references in a set: `vue-*`, `vue-spa-*`, `nuxt-*`,
+  later `next-*` and `react-*`.
 - Selection is made once per workspace, from that workspace's `package.json`, before any
   rule loads:
 
   | The workspace has | Set loaded |
   | --- | --- |
   | `nuxt` | `vue-*` as base, `nuxt-*` as delta |
-  | `vue`, no `nuxt` | `vue-*` |
+  | `vue`, no `nuxt` | `vue-*` as base, `vue-spa-*` as delta |
   | `next` | `next-*`, on a `react-*` base once one exists |
   | `react`, no `next` | `react-*` once it exists; until then, the codebase's conventions |
   | the framework only as a peer or dev dependency | the strictest set among the workspaces that consume it, SSR winning; with no consumer, SSR-safe rules |
@@ -41,7 +41,10 @@ dependency.
 - The router body holds only what every set shares: check the resolved version, follow the
   codebase's conventions, carry no repository fact, make no sweeping rewrite. It also fixes
   the reading order (`<framework>-rules.md` first, topic files on demand), and re-reads the
-  selected rules before a review verdict, before "done" and after compaction.
+  selected rules before a review verdict, before "done" and after compaction. The review
+  findings that do not depend on the framework live in one shared reference,
+  `web-review.md`, which belongs to no set and which the model reads before a review verdict
+  with every set, so no set's checklist repeats them.
 - For Next.js, API facts come from the installed package's documentation, and the set
   carries only what the model gets wrong even with that documentation.
 - The description names the supported frameworks.

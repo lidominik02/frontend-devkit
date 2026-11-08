@@ -66,9 +66,6 @@ const { data } = await useFetch(() => `/api/orders/${id.value}`)
 const { data: list } = await useFetch('/api/orders', { query: { page }, watch: [page] })
 ```
 
-This is the same getter-across-a-boundary rule as the `vue-*` set's composables: a value
-captures a snapshot, a getter keeps tracking.
-
 ## The options that matter
 
 - **`lazy`** — do not block navigation on this request. The template must then handle

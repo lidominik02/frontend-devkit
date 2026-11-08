@@ -1,12 +1,6 @@
 # Route middleware and plugins
 
-## What replaces `router.beforeEach`
-
-The `vue-*` set's routing guidance describes a hand-registered guard array on a router
-instance you construct. Nuxt owns the router: routes come from files in `app/pages/`,
-and navigation guards are files in `app/middleware/`. There is no router file to edit,
-and adding `router.beforeEach` from a plugin bypasses the mechanism the rest of the app
-uses.
+## Route middleware
 
 | Kind | File | Runs |
 | --- | --- | --- |
@@ -32,21 +26,12 @@ The deny-by-default warning from the `vue-*` set applies unchanged: **returning 
 means allow**, so an early `return` on an error path opens the route instead of closing
 it. Make every branch explicit.
 
-## The double execution — the part that makes guards wrong
+## The double execution
 
 On a server-rendered or generated app, middleware for the **initial** page runs on the
-server during render and then **again on the client** during hydration. Two
-consequences, both security-relevant:
-
-- **A guard that depends on client-only state is not a guard.** Reading `localStorage`,
-  `window`, or a store populated only after mount gives one answer on the server and
-  another on the client. The server-side pass is the one that decides what HTML is sent.
-- **Side effects happen twice.** An analytics event, a counter, or a redirect log in
-  middleware fires two times for the first navigation and once thereafter.
-
-Read the session from something that exists in both places: a cookie via `useCookie`, or
-`useRequestHeaders(['cookie'])` plus a server route that validates it. See
-`nuxt-ssr-state.md`.
+server during render and then **again on the client** during hydration, so its side
+effects happen twice: an analytics event, a counter, or a redirect log in middleware
+fires two times for the first navigation and once thereafter.
 
 ## Rules that are easy to get wrong
 
@@ -86,12 +71,9 @@ export default defineNuxtPlugin((nuxtApp) => {
 - **A plugin runs per request on the server.** Anything it assigns to a module-level
   variable is shared across users — the leak in `nuxt-ssr-state.md`. Provide state through
   `nuxtApp` or `useState`.
-- Do not put a guard here. Middleware is the mechanism, and it is the one
-  `definePageMeta` composes with.
 
 ## Common failure modes
 
-- A guard reading `localStorage`, so the server-rendered pass sees nothing.
 - Middleware side effects firing twice on first load.
 - `useRoute()` inside middleware, returning the route being left.
 - An error branch that returns nothing, allowing the navigation it meant to refuse.

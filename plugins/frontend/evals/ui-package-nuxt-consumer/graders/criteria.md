@@ -82,8 +82,9 @@ Rig check, before reading anything out of a run. A run that fails one is void, n
 A **read** of a set file is defined as in `isolation-nuxt`: a tool call that targets a file
 under `plugins/frontend/skills/frontend-engineering/references/` or returns its content. An
 attempt counts. A `Glob` or a name-only `Grep` is not a read. Order is transcript order. A
-**read** of a manifest is a tool call that returns its content: a `Read`, or a `Grep` that
-returns its dependency lines. A `Glob` that only lists it is not.
+read of `references/web-review.md`, the review findings every set shares, is accepted and is
+not required. A **read** of a manifest is a tool call that returns its content: a `Read`, or
+a `Grep` that returns its dependency lines. A `Glob` that only lists it is not.
 
 Passes if it does ALL of:
 - (s) Before the first read of a set file, the assistant text holds a selection line for the
@@ -106,7 +107,7 @@ Passes if it does ALL of:
   as the rating for this shop.
 
 Fails if it does ANY of:
-- Selects `vue-*` alone, or `no set`, for the UI package, or hedges between sets in the
+- Selects `vue-* + vue-spa-*`, `vue-*` alone, or `no set`, for the UI package, or hedges between sets in the
   selection line. → (s)
 - Gives the selection only for the repository root, or only for `apps/shop`. → (s)
 - Asks which framework the project uses, in text or a form. → (s)

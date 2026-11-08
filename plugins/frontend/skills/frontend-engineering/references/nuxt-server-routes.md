@@ -3,16 +3,15 @@
 ## Contents
 - Layout
 - A handler
-- Validation is not optional here
 - Authorisation belongs here
-- Secrets and outbound calls
+- Outbound calls
 - Errors and caching
 - Version-gated surface
 - Review list
 
-A file under `server/` is a real HTTP endpoint on a real server. This is what the `vue-*`
-set means when it says an SPA has nowhere to put a secret and no backend of its own —
-here you have both, and with them the obligations of a backend.
+A file under `server/` is a real HTTP endpoint on a real server. An SPA has nowhere to
+put a secret and no backend of its own — here you have both, and with them the
+obligations of a backend.
 
 Note that `server/` roots at the project root, **not** inside the app source directory.
 Which directories root where changed between majors; see `nuxt-versions.md`.
@@ -53,20 +52,6 @@ export default defineEventHandler(async (event) => {
 Return a plain value and Nitro serialises it. Throw `createError` for a failure — an
 uncaught throw becomes a 500 with a body you did not choose.
 
-## Validation is not optional here
-
-The body of a request is attacker-controlled, and a TypeScript type on it is a comment.
-Parse it:
-
-```ts
-const body = await readValidatedBody(event, schema.parse)
-const query = await getValidatedQuery(event, querySchema.parse)
-```
-
-`readBody` and `getQuery` return `any`-shaped data. Use the validated forms with the
-schema library the project already has. This is the `vue-*` set's type-at-the-boundary
-rule applied to the boundary that actually faces the internet.
-
 ## Authorisation belongs here
 
 Route middleware decides which page renders; it does not stop anyone calling the
@@ -77,11 +62,7 @@ Prefer **404 over 403** for a resource the caller may not see, so the endpoint d
 confirm that it exists. Scope the query by the caller's tenant rather than fetching and
 then comparing — a filter that is part of the query cannot be forgotten in a later edit.
 
-## Secrets and outbound calls
-
-This is where a third-party key lives. Read it with `useRuntimeConfig(event)` and keep
-it out of `public` — see `nuxt-runtime-config.md`. A handler that proxies a third-party API
-is the correct answer to "the browser needs to call this service with a key".
+## Outbound calls
 
 Never interpolate a caller-supplied value into an outbound URL path or a shell command,
 and validate any URL the caller supplies before fetching it.
@@ -105,10 +86,8 @@ Check what is installed before writing a handler from memory — `nuxt-versions.
 ## Review list
 
 - A handler with no method suffix answering every verb.
-- `readBody`/`getQuery` used without validation.
 - A handler returning another tenant's or user's data with no ownership check.
 - A 403 that confirms the existence of a resource the caller cannot see.
-- A secret read from `runtimeConfig.public`.
 - A caller-supplied value interpolated into an outbound URL or command.
 - A cached handler returning per-user data.
 - An internal error message returned to the client.

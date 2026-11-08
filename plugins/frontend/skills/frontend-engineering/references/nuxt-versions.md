@@ -21,7 +21,7 @@ version, and say in the answer that it is unknown.
 Then read `nuxt.config` for `compatibilityDate` and anything under `future` — those
 change runtime behaviour without changing an installed version.
 
-**For Vue, Pinia, Tailwind, TanStack and lint tooling, read the `vue-*` set's version
+**For Vue, Pinia, Tailwind, TanStack Table and lint tooling, read the `vue-*` set's version
 table, `vue-versions.md`.** Those rows are not repeated here. This file covers only what
 Nuxt itself owns.
 
@@ -42,7 +42,6 @@ before blaming a build.
 | Area | 3.x | 4.x |
 | --- | --- | --- |
 | Source directory | project root | `app/` |
-| `server/`, `public/`, `modules/`, `layers/` | project root | still project root — they did **not** move into `app/` |
 | `shared/` | — | new directory, usable from both app and server |
 | Same-key `useAsyncData`/`useFetch` | independent copies | share one `data`, `error` and `status` |
 | `data` reactivity | deep `ref` | **`shallowRef`** — deep mutation does not re-render |
@@ -99,8 +98,8 @@ silent:
   `"postinstall": "nuxt prepare"`.
 - `typescript.typeCheck` defaults to **`false`**, so a build does not type-check unless
   told to. `typescript.strict` defaults to `true`.
-- **`strictTemplates` still defaults to off**, and it does **not** go in `tsconfig.json`
-  — that file is generated and your edit is overwritten. Put it in `nuxt.config`:
+- **`strictTemplates` does not go in `tsconfig.json`** — that file is generated and your
+  edit is overwritten. Put it in `nuxt.config`:
 
   ```ts
   typescript: { tsConfig: { vueCompilerOptions: { strictTemplates: true } } }
@@ -127,11 +126,11 @@ silent:
 - `defineVitestConfig` / `defineVitestProject` from `@nuxt/test-utils/config`.
 - `mountSuspended` / `renderSuspended` instead of a bare `mount` — anything calling
   `useRuntimeConfig`, `useState`, `useRoute` or `useNuxtApp` needs the Nuxt context, and
-  the `vue-*` set's `withSetup` harness does not provide it.
+  a `withSetup` harness does not provide it.
 - `mockNuxtImport` to replace an auto-imported composable.
 - **`registerEndpoint` instead of MSW for internal routes.** Under the Nuxt test
   environment a `$fetch` to `/api/*` does not traverse the network, so MSW never sees
-  it — the `vue-*` set's "mock at the network boundary" rule does not reach these calls.
+  it.
 - `setup` and `$fetch` from `@nuxt/test-utils/e2e` for a real booted app.
 
 Check the installed peer ranges for Vitest and `@vue/test-utils`; they lag and lead the

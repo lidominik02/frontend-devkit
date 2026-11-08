@@ -29,8 +29,10 @@ on without it, skipping those cases by name.
 `frontend-engineering` is a router. For each workspace the work touches, it reads that
 workspace's `package.json`, selects one framework's set of references — a set that
 specialises another is loaded after its base and wins a conflict — and loads nothing of the
-others. A Vue workspace never sees Nuxt rules, and the listing carries one description
-however many frameworks there are. The selection table in
+others: a client-only Vue workspace never sees Nuxt rules, nor a Nuxt workspace the
+client-only Vue ones. Before a review verdict it also reads `web-review.md`, the findings
+that do not depend on the framework, which belongs to no set. The listing carries one
+description however many frameworks there are. The selection table in
 [`frontend-engineering/SKILL.md`](../plugins/frontend/skills/frontend-engineering/SKILL.md)
 is the only place a base and its delta are paired.
 [ADR 0016](adr/0016-framework-rules-chosen-per-workspace.md)

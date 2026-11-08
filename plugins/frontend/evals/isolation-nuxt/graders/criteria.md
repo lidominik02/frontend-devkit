@@ -5,8 +5,8 @@ weight: 1
 
 Tests that `frontend-engineering` selects its rules from the workspace's `package.json` and
 reads the selected sets in their order. Here the manifest names `nuxt` and `vue`, so the run
-reads the `vue-*` set as base and then the `nuxt-*` set as delta, and says its selection in
-one line. The prompt is identical to `isolation-vue-spa`'s and names no framework, so only
+reads the `vue-*` set as base and then the `nuxt-*` set as delta, never a `vue-spa-*` file,
+and says its selection in one line. The prompt is identical to `isolation-vue-spa`'s and names no framework, so only
 the manifest can tell the two cases apart. One of three isolation cases, with
 `isolation-vue-spa` and `isolation-next`; the three are run together.
 
@@ -63,17 +63,19 @@ A **read** of a set file is a tool call that targets a file under
 a `Grep` that returns lines of it, a `Bash` `cat`, `head`, `sed` or the like. An attempt
 counts whether or not it was allowed. A `Glob` or a `Grep` that returns only file names is
 not a read; record it. The skill body the slash invocation loads is not a read. Order is
-transcript order.
+transcript order. A read of `references/web-review.md`, the review findings every set
+shares, is accepted and is not required.
 
 Passes if it does ALL of:
 - (s) The assistant text holds, before the first read of a set file, one selection line in
   the shape the skill gives: the workspace, `→`, `vue-*` + `nuxt-*`, and in parentheses the
   manifest fact that decided the row — `nuxt` in `package.json`:
-  `. → vue-* + nuxt-* (nuxt in package.json)`. A line that names `vue-*` alone, marks
-  `nuxt-*` as optional or uncertain ("vue-* (+ nuxt-* maybe)"), or hedges between sets,
-  fails.
+  `. → vue-* + nuxt-* (nuxt in package.json)`. A line that names `vue-*` alone or
+  `vue-* + vue-spa-*`, marks `nuxt-*` as optional or uncertain ("vue-* (+ nuxt-* maybe)"),
+  or hedges between sets, fails.
 - (r) Reads `references/vue-rules.md` and `references/nuxt-rules.md`, with the first read of
   `vue-rules.md` before the first read of `nuxt-rules.md`.
+- (i) Reads no `vue-spa-*` file.
 
 Fails if it does ANY of:
 - Asks which framework the project uses. → (s)
@@ -84,8 +86,8 @@ the module-scope `shortlist` a cross-request leak.
 
 ## Note for scoring
 
-The case passes when every line passes in every run. (r) is the line under test: the
-`nuxt-*` delta wins every conflict with the `vue-*` base, so it is read on top of the base,
-after it. No isolation line is scored here: while the reference folder holds only these two
-sets, reading nothing outside them holds by construction. The answer's review content is not
-scored: a verdict on the module-scope ref is `ssr-shared-state`'s question.
+The case passes when every line passes in every run. (r) and (i) are the lines under test:
+the `nuxt-*` delta wins every conflict with the `vue-*` base, so it is read on top of the
+base, after it; and a `vue-spa-*` file matches a `vue-*` glob but belongs to the SPA delta,
+which a Nuxt workspace never reads. The answer's review content is not scored: a verdict on
+the module-scope ref is `ssr-shared-state`'s question.

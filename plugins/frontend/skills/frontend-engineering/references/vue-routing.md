@@ -6,29 +6,10 @@ A guard that returns nothing lets the navigation through. That means a bug in a
 permission check — a thrown error swallowed, a branch that falls off the end — fails
 open, and the page renders for a user who should never have reached it.
 
-Write guards so the permitted path is the explicit one:
-
-```ts
-router.beforeEach((to) => {
-  const required = to.meta.authorities
-  if (!required) return true              // deliberately public
-  if (!auth.isAuthenticated) return { name: 'login', query: { next: to.fullPath } }
-  if (!auth.hasAny(required)) return { name: 'forbidden' }
-  return true
-})
-```
+Write guards so the permitted path is the explicit one.
 
 Make the metadata mandatory rather than optional, and type it, so a route that forgot to
-declare its access is a compile error rather than a public page:
-
-```ts
-declare module 'vue-router' {
-  interface RouteMeta {
-    authorities: string[] | null   // null means deliberately public
-    breadcrumb?: BreadcrumbItem[]
-  }
-}
-```
+declare its access is a compile error rather than a public page.
 
 Guards run on every navigation including the first, so keep them cheap. An `await` on a
 network call in a global guard delays every route change; resolve the session once at
@@ -44,19 +25,6 @@ pass:
 ```ts
 if (to.name === 'login') return true
 ```
-
-## Lazy routes and chunking
-
-Route components should be dynamic imports so each route is its own chunk:
-
-```ts
-{ path: '/reports', component: () => import('@/pages/ReportsPage.vue') }
-```
-
-Static-importing one route component pulls it into the entry bundle, which is the most
-common reason an SPA's initial download grows without anyone noticing. Anything heavy
-and rarely used — a chart library, a rich text editor, a PDF viewer — should be behind a
-dynamic import too, not just behind a route.
 
 ## Scroll and focus
 
@@ -77,10 +45,3 @@ in.
 Deriving the accepted values from the same schema that describes the API, rather than
 hand-writing a second copy, means a backend change surfaces as a type error rather than
 an empty page.
-
-## Version note
-
-Vue Router 5 absorbed `unplugin-vue-router` into core: typed routes are built in, the
-imports moved to `vue-router/vite`, `vue-router/unplugin` and `vue-router/experimental`,
-and `unplugin-vue-router/client` must come out of `tsconfig`. On Router 4 the plugin is
-still a separate dependency. Check which is installed before writing an import.

@@ -12,7 +12,6 @@ loading flags and refetch triggers — badly, and in every feature separately.
 
 | Need | Use |
 | --- | --- |
-| Data from an API | a query layer (TanStack Vue Query, or one fetch composable) |
 | UI state shared across routes | Pinia setup store |
 | UI state for one subtree | `provide`/`inject` or props |
 | UI state for one component | `ref` in that component |
@@ -27,29 +26,6 @@ A cache is only as good as its key. Two rules follow:
 - **Order the key from general to specific**, so a prefix is a meaningful group:
   `['tenant', tenantId, 'invoices', page]` lets you invalidate everything for a tenant
   with the prefix alone.
-
-Put key construction in one factory rather than writing array literals at call sites.
-Hand-written keys drift, and a drifted key is a cache miss that looks like a slow page.
-
-```ts
-export const invoiceKeys = {
-  all: (tenant: string) => ['tenant', tenant, 'invoices'] as const,
-  page: (tenant: string, page: number) => [...invoiceKeys.all(tenant), page] as const,
-}
-```
-
-## Reactive inputs
-
-A query whose input is a plain value is evaluated once and never refetches. Pass a
-getter or a computed so the query re-runs when the input changes:
-
-```ts
-const { data } = useQuery(computed(() => invoiceQuery(tenantId.value, page.value)))
-```
-
-If a value read from a store is destructured without `storeToRefs`, it arrives as a
-snapshot and the query never updates. This is the same class of bug as passing
-`props.id` into a composable.
 
 ## Every fetch has four states
 
@@ -84,9 +60,6 @@ export const useCartStore = defineStore('cart', () => {
 - **A store is not a dumping ground** for anything awkward to pass down. If only one
   subtree needs it, `provide`/`inject` is cheaper and the ownership is visible.
 - **Do not put a token or any credential in a store.** Devtools serialise state.
-- Module-scope state (`const cache = new Map()` at the top of a file) is a plain
-  singleton in a client-only SPA and is often exactly right. Under SSR the same line is
-  a cross-request leak — which is why Nuxt guidance forbids it and this does not.
 
 ## Errors
 

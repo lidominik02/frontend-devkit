@@ -5,10 +5,10 @@ weight: 1
 
 Tests that `frontend-engineering` selects its rules from the workspace's `package.json` and
 reads only the selected set. Here the manifest names `vue` and no `nuxt`, so the run reads
-from the `vue-*` set only and never a `nuxt-*` file, and says its selection in one line. The
-prompt is identical to `isolation-nuxt`'s and names no framework, so only the manifest can
-tell the two cases apart. One of three isolation cases, with `isolation-nuxt` and
-`isolation-next`; the three are run together.
+from the `vue-*` and `vue-spa-*` sets and the shared `web-review.md` only, never a `nuxt-*`
+file, and says its selection in one line. The prompt is identical to `isolation-nuxt`'s and names no
+framework, so only the manifest can tell the two cases apart. One of three isolation cases,
+with `isolation-nuxt` and `isolation-next`; the three are run together.
 
 Expected result: pass in every run. The three isolation cases are with-plugin-only
 regression guards on the router's selection, so a run gives a score, not a verdict on
@@ -63,15 +63,17 @@ A **read** of a set file is a tool call that targets a file under
 a `Grep` that returns lines of it, a `Bash` `cat`, `head`, `sed` or the like. An attempt
 counts whether or not it was allowed. A `Glob` or a `Grep` that returns only file names is
 not a read; record it. The skill body the slash invocation loads is not a read. Order is
-transcript order.
+transcript order. A read of `references/web-review.md`, the review findings every set
+shares, is accepted and is not required.
 
 Passes if it does ALL of:
 - (s) The assistant text holds, before the first read of a set file, one selection line in
-  the shape the skill gives: the workspace, `→`, `vue-*`, and in parentheses the manifest fact
-  that decided the row — `vue` in `package.json`, with or without saying `nuxt` is absent:
-  `. → vue-* (vue in package.json)`. A line that selects `nuxt-*`, or hedges between sets,
-  fails.
-- (r) Reads `references/vue-rules.md`.
+  the shape the skill gives: the workspace, `→`, `vue-*` + `vue-spa-*`, and in parentheses the
+  manifest fact that decided the row — `vue` in `package.json`, with or without saying `nuxt`
+  is absent: `. → vue-* + vue-spa-* (vue in package.json)`. A line that names `vue-*` alone,
+  selects `nuxt-*`, or hedges between sets, fails.
+- (r) Reads `references/vue-rules.md` and `references/vue-spa-rules.md`, with the first read
+  of `vue-rules.md` before the first read of `vue-spa-rules.md`.
 - (i) Reads no `nuxt-*` file.
 
 Fails if it does ANY of:

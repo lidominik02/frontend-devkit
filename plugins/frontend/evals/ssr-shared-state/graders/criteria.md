@@ -32,7 +32,7 @@ Fails if it does ANY of:
 - Only adds a `import.meta.client` guard around the writes, which leaves the shared
   server-side value in place.
 
-Note for scoring: the baseline arm is `core` alone. The `vue-*` rules explicitly state that
-module-scope state is an ordinary singleton and not a finding, so a run that calls this
-code acceptable is exactly what the `nuxt-*` set exists to fix — record it, because that
-failing/passing pair is the whole justification for that set's context cost.
+Note for scoring: the baseline arm is `core` alone. In a client-only SPA module-scope state
+is an ordinary singleton and not a finding, so a run that calls this code acceptable is
+exactly what the `nuxt-*` set exists to fix — record it, because that failing/passing pair
+is the whole justification for that set's context cost.

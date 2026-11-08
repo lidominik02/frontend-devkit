@@ -2,10 +2,7 @@
 
 ## Contents
 - Vue
-- Vue Router
 - Pinia
-- Vite
-- TypeScript and vue-tsc
 - Tailwind
 - TanStack
 - Component libraries
@@ -30,13 +27,6 @@ Everything below is a fact about a version boundary, not a recommendation to upg
 3.5.x is the current stable line. Treat anything Vapor-related as a note, never a
 default.
 
-## Vue Router
-
-| Installed | What holds |
-| --- | --- |
-| 5.x | `unplugin-vue-router` is absorbed into core. Typed routes are built in. Imports are `vue-router/vite`, `vue-router/unplugin`, `vue-router/experimental`, `vue-router/volar/*`. Remove `unplugin-vue-router/client` from `tsconfig` types. |
-| 4.x | Typed routes need the separate `unplugin-vue-router` dependency and its own import paths. |
-
 ## Pinia
 
 | Installed | What holds |
@@ -45,42 +35,6 @@ default.
 | 3.x | No such peer. |
 
 Setup stores are the right style on both.
-
-## Vite
-
-| Installed | What holds |
-| --- | --- |
-| 8.x | Rolldown-based and ESM-only. The build option is **`rolldownOptions`**, not `rollupOptions`. A config carried over from an older major silently ignores the old key. |
-| 5–7 | `rollupOptions`. |
-
-## TypeScript and vue-tsc
-
-`tsc` alone does not type-check anything inside a `.vue` template. `vue-tsc --noEmit`
-is the gate.
-
-**All of the template checks default to `false`**, and they live under
-`vueCompilerOptions`, not `compilerOptions`:
-
-```jsonc
-{
-  "vueCompilerOptions": {
-    "strictTemplates": true,
-    "checkUnknownComponents": true,
-    "checkUnknownProps": true,
-    "checkUnknownEvents": true,
-    "checkUnknownDirectives": true,
-    "strictVModel": true
-  }
-}
-```
-
-Without these, a misspelled prop, an unknown component and a nonexistent event all pass.
-A green `vue-tsc` on default settings is a much weaker claim than it appears, and
-saying "type-check passed" on that basis overstates what was verified.
-
-`vue-tsc` needs TypeScript's stable programmatic compiler API, which the 7.x line does
-not ship. A repo pinned to TypeScript 6 has usually done so deliberately — an
-"upgrade" to 7 silently removes template type-checking altogether.
 
 ## Tailwind
 
@@ -94,8 +48,6 @@ not ship. A repo pinned to TypeScript 6 has usually done so deliberately — an
 - **Vue Table v9** renamed the composable to `useTable` and replaced the
   `getCoreRowModel()`-style setup with `tableFeatures({...})`. v8 code does not run on
   v9 and the error is not obvious.
-- **Vue Query v5** is the current line; prefer `queryOptions` factories over inline
-  option objects so the key and the fetcher stay together.
 
 ## Component libraries
 

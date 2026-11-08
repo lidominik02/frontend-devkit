@@ -29,5 +29,5 @@ Fails if it does ANY of:
 Note for scoring: the third pass line is the one a baseline most often gets right, so a
 run satisfying only that one is still a fail. Score focus first — it is the rule with no
 symptom on the author's own machine. The pack's two existing accessibility bullets live in
-`vue-review-checklist.md`, which a build task has little reason to open; if a run cites them,
-record that, because it makes the baseline look better than a bare model.
+`web-review.md`; if a run cites them, record that, because it makes the baseline look
+better than a bare model.

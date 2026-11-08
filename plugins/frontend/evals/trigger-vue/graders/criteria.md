@@ -73,10 +73,10 @@ Passes if it does ALL of:
   follows another skill's call counts as a fire.
 - (s) After it fires, the assistant text holds one selection line in the shape
   `<workspace> → <set> (<manifest fact>)`, in either arm's language: the workspace as `.` or
-  the directory's name, `→`, `vue-*`, and in parentheses the manifest fact that decided the
-  row — `vue` in `package.json`: `. → vue-* (vue in package.json)`. A translated
-  parenthetical passes only if it names the same manifest fact. A line that selects `nuxt-*`,
-  or hedges between sets, fails.
+  the directory's name, `→`, `vue-* + vue-spa-*`, and in parentheses the manifest fact that
+  decided the row — `vue` in `package.json`: `. → vue-* + vue-spa-* (vue in package.json)`. A
+  translated parenthetical passes only if it names the same manifest fact. A line that
+  selects `nuxt-*` or `vue-*` alone, or hedges between sets, fails.
 
 Fails if it does ANY of:
 - Never calls `frontend-engineering`. → (f)

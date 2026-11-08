@@ -32,6 +32,6 @@ Fails if it does ANY of:
 Note for scoring: score the no-browser arm first. It is the environment most sessions are
 in, and it is the one where "run the build and read the chunk table" is the whole of the
 capability under test. This case needs a second baseline arm — `core` alone, without
-`frontend` — because `vue-routing.md` supplies the lazy-route and entry-chunk answers in prose. If
+`frontend` — because `vue-spa-routing.md` supplies the lazy-route and entry-chunk answers in prose. If
 `core` alone passes while `core` and `frontend` together fail, the pack is manufacturing the
 failure and the finding is a wording fix there, not a new reference file.

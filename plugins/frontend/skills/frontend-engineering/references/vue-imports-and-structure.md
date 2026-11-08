@@ -1,37 +1,14 @@
 # Imports and structure
 
 ## Contents
-- Imports are explicit unless the project opted in
+- Type-only imports
 - Barrels versus subpaths
 - Package boundaries, if there are packages
 - Where code goes
 - Extract on the second occurrence, not the first
 - Generated code
 
-## Imports are explicit unless the project opted in
-
-Imports are explicit unless `vite.config.*` imports an auto-import plugin. Plain Vite
-auto-imports nothing, so by default every `ref`, `computed`, `watch`, component and
-composable is imported where it is used. Explicit is the default because code written
-against auto-imports is one of the most common ways Nuxt habits leak into a plain Vue
-app.
-
-The signal is the plugin's package imported in `vite.config.*`, not the name of the
-binding it is imported as — `AutoImport` and `Components` are only the usual names. Two
-plugins are the common opt-ins:
-
-- **`unplugin-auto-import`** — auto-imports APIs and composables.
-- **`unplugin-vue-components`** — registers components without an import.
-
-They are not a closed list: any Vite plugin in `vite.config.*` that auto-imports or
-auto-registers counts.
-
-The exemption holds only for what the plugin's config covers, defaults included — its
-`imports` presets, its `dirs` and its resolvers. With no `dirs` given,
-`unplugin-vue-components` scans `src/components`, so `Components()` with no options still covers that folder. A
-name outside what the config covers still needs its import. Within that, the
-neighbouring files' convention decides: do not add imports they omit, and do not strip
-the ones they keep. Read `vite.config.*` before flagging a missing import.
+## Type-only imports
 
 Use `import type` for type-only imports. With `verbatimModuleSyntax` enabled — the
 current default in fresh setups — a type imported as a value is a build error, and a

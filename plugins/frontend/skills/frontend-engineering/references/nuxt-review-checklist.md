@@ -3,16 +3,14 @@
 ## Contents
 - Blocking (Critical)
 - Warning
-- What is NOT a finding in Nuxt
 - Before writing the verdict
 
 **This is a delta. Run the `vue-*` set's review checklist first**
-— lost reactivity, a cache key missing its varying input, prop mutation, a missing error
-branch, an uncleaned watcher, unvalidated external input and a guard failing open are
-all still findings here and are not repeated below.
+— lost reactivity, a cache key missing its varying input, a missing error branch, an
+uncleaned watcher, unvalidated external input, a guard failing open and every item of
+`web-review.md` are all still findings here and are not repeated below.
 
-Then apply this list, and the inversions at the bottom, which change the verdict the
-`vue-*` set's list would give.
+Then apply this list.
 
 ## Blocking (Critical)
 
@@ -23,16 +21,12 @@ any cache created at module scope. The fix is `useState`, or per-request context
 the highest-severity finding available in a Nuxt diff, and it is invisible in
 single-user testing.
 
-**A secret reachable from the client.** Any secret credential under `runtimeConfig.public`, in a
-`NUXT_PUBLIC_*` variable, in `app.config.ts`, or placed in `useState` — the payload is
-HTML. Unlike an SPA there *is* somewhere safe here, so the fix is a Nitro route holding
-the key, not a better hiding place. A key its vendor designs to be public is not a
-finding here either; the `vue-*` set's checklist exception and its ask-when-unknown rule carry over.
+**A secret in `app.config.ts` or `useState`.** Both reach the browser: `app.config.ts` is
+bundled, and the `useState` payload is HTML.
 
 **An endpoint that trusts the caller.** A `server/` handler returning or mutating data
-owned by a user or tenant with no ownership check, or one using `readBody`/`getQuery`
-without validation. Route middleware does not protect an endpoint; it decides which page
-renders. A client-side redirect is not authorisation.
+owned by a user or tenant with no ownership check. Route middleware does not protect an
+endpoint; it decides which page renders. A client-side redirect is not authorisation.
 
 **A cached response that varies per user.** `defineCachedEventHandler` or a `routeRules`
 cache over a handler returning user-specific data. This is the cross-request leak again,
@@ -43,14 +37,9 @@ sends no cookies, so it is unauthenticated. It either 401s or returns an anonymo
 response that then renders — and may be cached — for a logged-in user. Use
 `useRequestFetch()`.
 
-**A hydration mismatch.** Locally-formatted dates, `Math.random()`, `crypto.randomUUID()`
-for a rendered id, `window`/`localStorage` read during setup, or invalid HTML nesting.
-Vue discards and re-renders silently in production, so the symptom reaching users is a
-flash or a lost input rather than an error.
-
-**Middleware depending on client-only state.** A guard reading `localStorage` or a store
-populated after mount answers differently on the server, and the server pass is what
-decides the HTML that ships.
+**A hydration mismatch from a locally formatted date or invalid HTML nesting.** Vue
+discards and re-renders silently in production, so the symptom reaching users is a flash
+or a lost input rather than an error.
 
 ## Warning
 
@@ -58,9 +47,11 @@ decides the HTML that ships.
 - `useAsyncData`/`useFetch` with a key missing a varying input, or a key rebuilt every
   render.
 - A plain-string URL where a getter was needed, so it never refetches.
+- A second client query layer, such as TanStack Query, added next to `useFetch`/
+  `useAsyncData` for data they already key, dedupe and carry in the payload — use the
+  built-in one. See `nuxt-data-fetching.md`.
 - No `transform`/`pick` on a large response — the whole payload ships inside the HTML.
 - Deep mutation of `data` on Nuxt 4, where it is a `shallowRef` and will not re-render.
-- A private `runtimeConfig` key read from client code — silently `undefined`.
 - An environment variable with no declared key in `nuxt.config`, so the override is
   ignored.
 - Configuration that exists only in `.env`, which a built server does not read.
@@ -77,37 +68,14 @@ decides the HTML that ships.
 - Middleware performing a fetch that belongs in the page.
 - A `.client`-suffixed plugin whose effect other code assumes ran during SSR.
 - Module-scope state in a plugin.
-- A file moved between the app source directory and the project root without checking
-  which major roots it where.
-- An explicit `#components` import that opts a component out of lazy hydration.
 - A component test using a bare `mount` where `mountSuspended` is needed, or MSW where
   `registerEndpoint` is.
 
-## What is NOT a finding in Nuxt
-
-These three **invert** the `vue-*` set's list. Applying that list unchanged produces false
-findings here, or misses real ones.
-
-- **An auto-imported `ref`, `computed` or composable with no import statement.** Correct
-  here. Do not ask for the import, and do not flag its absence. Adding imports for
-  auto-imported symbols is churn, and importing from `#components` has a real cost.
-- **A build that serves more than one environment.** In the `vue-*` set's list a single-environment
-  build is Critical when the project promotes one artifact; here it is the normal case,
-  because `runtimeConfig` is read at runtime. Do not flag the absence of a `/config.json`
-  boot fetch — adding one is the finding.
-- **A page component imported statically rather than as a dynamic import.** `app/pages/`
-  is already split per file. A hand-written `() => import(...)` has nothing to do.
-
-Conversely, one item the `vue-*` set's list explicitly excuses is Critical here: module-scope
-state. It is listed as "NOT a finding" there because an SPA is client-only. Do not carry
-that excuse across.
-
 ## Before writing the verdict
 
-Say which gates ran. `nuxt typecheck` is the one that checks templates — a bare
-`vue-tsc --noEmit` against a solution-file `tsconfig.json` exits 0 having checked
-nothing, so report that as not verifying rather than as a pass, and note that
-`strictTemplates` defaults to off. See `nuxt-versions.md`.
+`nuxt typecheck` is the gate that checks templates — a bare `vue-tsc --noEmit` against a
+solution-file `tsconfig.json` exits 0 having checked nothing, so report that as not
+verifying rather than as a pass. See `nuxt-versions.md`.
 
 For anything server-rendered, static review cannot see a hydration mismatch or a payload
 problem. If they were not checked by loading the page and viewing source, say so rather

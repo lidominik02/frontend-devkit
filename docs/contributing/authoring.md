@@ -262,6 +262,24 @@ new guidance only adds to an existing set, it is a topic file there. Then touch,
 | `evals/` | At least one case: with the framework in `package.json`, the router selects the new set and reads no other set's file, as the `isolation-*` cases do |
 | `.claude-plugin/plugin.json`, `README.md`, and the `frontend` entry of the root `.claude-plugin/marketplace.json` | The framework among the supported ones in `description`, `keywords` and the README's opening |
 
+**A framework that runs both client-only and server-rendered splits along the same
+inversion.** What holds in both environments is the base set, `<framework>-*`. What a
+server-rendered framework on that base makes false goes into a `<framework>-spa-*` delta:
+module-scope state, a harmless singleton without a server, is a cross-request leak under
+SSR. The client-only and the server-rendered environment each get their own row in the
+selection table, and that table says which sets each row loads. A rule that holds in both
+stays in the base, however much it reads like SPA advice. A
+`<framework>-spa-*` file also matches the base's glob, so the base never points at one, and
+the server-rendered framework's isolation case checks that it reads no `-spa-` file.
+
+**Review findings that hold in every framework belong to no set.** They live in one shared
+reference, `skills/frontend-engineering/references/web-review.md`, and the router names it
+itself: before a review verdict it reads that file with whichever set it selected. A set's
+review checklist does not repeat its items; it names the file only where one of its own
+lists spans it, such as a delta's list of base findings that still hold or an exception
+that covers that file's Critical items. A finding that depends on the framework goes in the
+set's own checklist.
+
 `core` does not change: it names the router, never a set. CI takes its validation targets
 from `marketplace.json`'s `plugins[]`, which gains no entry, so the workflows need no edit.
 

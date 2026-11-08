@@ -21,11 +21,6 @@ Anything that differs between the two renders causes it:
 - **Time and dates.** `new Date().toLocaleString()` renders the server's timezone, then
   the browser's. Use `<NuxtTime>`, or format from a fixed timezone and locale, or render
   the ISO string and localise after mount.
-- **Randomness.** `Math.random()`, `crypto.randomUUID()`, a shuffled array. For ids, use
-  `useId()`, which is stable across the boundary.
-- **Browser globals.** `window`, `document`, `localStorage`, `matchMedia` do not exist
-  on the server. Reading one during setup either throws at SSR or yields a different
-  branch per environment.
 - **Invalid HTML nesting.** A `<div>` inside a `<p>`, or a `<p>` inside a `<p>`: the
   browser's parser repairs the server's HTML into a different tree than the one the
   client builds. This produces a mismatch with no obviously wrong code.
@@ -60,6 +55,13 @@ session. What the visitor then sees depends on the type:
   the server's zone (often UTC) or locale differs from the visitor's. It hides wherever
   they match — typically in development, where both are the same machine.
 
+Either way the page shows the server's render instant, never the visitor's: `<NuxtTime>`
+or a fixed zone given the `useState` value fixes how that instant is formatted, not which
+instant it is. On a prerendered or cached route it can be hours old, and after a
+client-side navigation it is still the first load's. Keep `useState` only for a time meant
+to be the server's, and say that it is; a time meant to be the visitor's is taken on the
+client, in `onMounted`, and never read back from `useState`.
+
 See `nuxt-ssr-state.md` for what `useState` is and is not for.
 
 `<ClientOnly>` is a cost, not a fix: its content is absent from the HTML, invisible to
@@ -70,14 +72,16 @@ crawlers, and unavailable with JavaScript off. Reach for it after the first thre
 A component can be server-rendered and have its hydration deferred until it is needed —
 visible, idle, interacted with — which keeps the content in the HTML while cutting the
 JavaScript that runs at load. This is version-gated and the API has moved; check
-`nuxt-versions.md` before using it. Note that importing a component explicitly from
-`#components` opts it out.
+`nuxt-versions.md` before using it.
 
 ## Rendering modes
 
-`ssr: false` in `nuxt.config` makes the whole app client-rendered — at which point the
-`vue-*` set's SPA rules apply again and most of this set does not. That is a deliberate
-architectural choice, not a fix for a hydration warning.
+`ssr: false` in `nuxt.config` makes the whole app client-rendered. That is a deliberate
+architectural choice, not a fix for a hydration warning. The verdicts that depend on a
+server render turn back:
+
+- Module-scope state is a per-tab singleton, not a cross-request leak, and is not a
+  finding.
 
 `routeRules` sets the mode per route: prerender a marketing page at build, SSR the
 dashboard, cache an expensive route at the edge. Prefer a route rule to a global switch
@@ -104,8 +108,7 @@ useSeoMeta({ title: order.value.reference, description: () => order.value.summar
 
 ## Common failure modes
 
-- A locally-formatted date or `Math.random()` in a rendered template.
-- `window`/`localStorage` read during setup instead of `onMounted`.
+- A locally-formatted date in a rendered template.
 - Invalid nesting producing a mismatch that looks like a framework bug.
 - `<ClientOnly>` with no fallback, or a fallback of a different height.
 - `<ClientOnly>` used to silence a warning that a deterministic render would fix.

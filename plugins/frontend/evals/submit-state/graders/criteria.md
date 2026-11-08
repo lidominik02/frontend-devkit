@@ -67,7 +67,7 @@ Rig check, before reading anything out of a run; a run that fails one is void, n
   `mcp_servers` is empty.
 - No transcript line contains `plugins/cache`.
 - The model answered: the transcript holds at least one assistant turn.
-- Pack arm: the answer holds the skill's selection line choosing `vue-*`.
+- Pack arm: the answer holds the skill's selection line choosing `vue-* + vue-spa-*`.
 - No `Skill` call was denied.
 
 Recorded with the rig check, not grounds for a void:
