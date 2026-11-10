@@ -3,6 +3,19 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.0 - 2026-11-10
+
+### Added
+
+- `frontend-engineering` now has rules for React. A React app without Next.js loads the
+  `react-*` base and a `react-spa-*` delta; a Next.js app loads `react-*` and `next-*`, and
+  never reads a rule meant only for a client-only React app. Before, a React workspace got
+  no rules and a Next.js workspace got only the documentation its `next` package ships.
+- The React rules keep auth tokens out of storage that page scripts can read; the SPA set
+  adds the server-side change that requires. The Next.js set sends API questions to the
+  documentation the installed `next` package ships and adds a review checklist. A React
+  review also reads the shared `web-review.md`.
+
 ## 0.8.0 - 2026-11-08
 
 ### Changed
