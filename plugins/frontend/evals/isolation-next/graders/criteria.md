@@ -4,8 +4,9 @@ weight: 1
 ---
 
 Tests that `frontend-engineering` selects its rules from the workspace's `package.json` and
-reads only the selected set. Here the manifest names `next` and `react`, for which no set
-exists yet, so the run reads no `vue-*` or `nuxt-*` file, and says its selection in one line.
+reads only the selected set. Here the manifest names `next` and `react`, so the run reads
+from the `react-*` set, without `react-spa-*`, the `next-*` set and the shared `web-review.md`
+only, never a `react-spa-*`, `vue-*` or `nuxt-*` file, and says its selection in one line.
 One of three isolation cases, with `isolation-vue-spa` and `isolation-nuxt`; the three are
 run together.
 
@@ -66,23 +67,25 @@ transcript order. A read of `references/web-review.md`, the review findings ever
 shares, is accepted and is not required.
 
 Passes if it does ALL of:
-- (s) The assistant text holds, before the first read of a set file if it makes one, one
-  selection line in the shape the skill gives: the workspace, `→`, `no set`, and in
-  parentheses the manifest fact that decided the row — `next` in `package.json`:
-  `. → no set (next in package.json)`. A line that names `vue-*` or `nuxt-*`, or hedges
-  between sets, fails.
-- (i) Reads no `vue-*` or `nuxt-*` file.
+- (s) The assistant text holds, before the first read of a set file, one selection line in
+  the shape the skill gives: the workspace, `→`, `react-*` + `next-*`, and in parentheses the
+  manifest fact that decided the row — `next` in `package.json`:
+  `. → react-* + next-* (next in package.json)`. A line that names `react-*` alone, selects
+  `react-spa-*` or a `vue-*` set, or hedges between sets, fails.
+- (r) Reads `references/react-rules.md` and `references/next-rules.md`, with the first read
+  of `react-rules.md` before the first read of `next-rules.md`.
+- (i) Reads no set file other than `references/react-rules.md`, a `next-*` file and
+  `references/web-review.md`: no `react-spa-*`, `vue-*` or `nuxt-*` file.
 
 Fails if it does ANY of:
 - Asks which framework the project uses. → (s)
 
-Recorded, not scored: the selection line verbatim; any file under `references/` read anyway,
-and the tool that read it; any `Glob` or name-only `Grep` over `references/`; whether the
-answer recommends a Vue or Nuxt API (`ref`, `useState`, a composable) for this code.
+Recorded, not scored: the selection line verbatim; every set file read, in order, and the
+tool that read it; any `Glob` or name-only `Grep` over `references/`; whether the answer
+calls the module-scope `shortlist` state shared across requests.
 
 ## Note for scoring
 
-The case passes when every line passes in every run. (i) is the line under test. With no
-set, (s) and the rig check's skill-fired line are what show the router ran, so a run without
-the selection line fails, and a run where the skill never fired is void, even when it read
-nothing. The answer's review content is not scored.
+The case passes when every line passes in every run. (i) is the line under test; (s) and (r)
+show the router ran and selected, so (i) is not met by a run that read nothing. The answer's
+review content is not scored.

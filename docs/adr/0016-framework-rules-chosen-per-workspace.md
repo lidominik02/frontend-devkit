@@ -21,7 +21,7 @@ dependency.
 
 - `frontend` lists one knowledge skill, `frontend-engineering`. Its body is the selection
   rule, and each framework's rules are references in a set: `vue-*`, `vue-spa-*`, `nuxt-*`,
-  later `next-*` and `react-*`.
+  `react-*`, `react-spa-*`, `next-*`.
 - Selection is made once per workspace, from that workspace's `package.json`, before any
   rule loads:
 
@@ -29,8 +29,8 @@ dependency.
   | --- | --- |
   | `nuxt` | `vue-*` as base, `nuxt-*` as delta |
   | `vue`, no `nuxt` | `vue-*` as base, `vue-spa-*` as delta |
-  | `next` | `next-*`, on a `react-*` base once one exists |
-  | `react`, no `next` | `react-*` once it exists; until then, the codebase's conventions |
+  | `next` | `react-*` as base, `next-*` as delta |
+  | `react`, no `next` | `react-*` as base, `react-spa-*` as delta |
   | the framework only as a peer or dev dependency | the strictest set among the workspaces that consume it, SSR winning; with no consumer, SSR-safe rules |
   | none of these | no set |
 
@@ -89,10 +89,10 @@ hedge that [0004](0004-framework-packs-layer-as-deltas.md) forbids does not retu
 
 ## Validation requirements
 
-- Before the release: on Vue SPA, Nuxt and Next.js fixtures, the transcript's reads touch
-  only the selected set's files.
+- Before the release: on Vue SPA, Nuxt, React SPA and Next.js fixtures, the transcript's
+  reads touch only the selected set's files.
 - The trial fails if the per-framework trigger cases show the router not firing on Vue,
-  Nuxt or Next.js wording, or if the selected rules are not re-read after compaction. Either
+  Nuxt, React or Next.js wording, or if the selected rules are not re-read after compaction. Either
   failure splits `frontend` into one listed skill per framework, each checking its identity
   in its first line, with the router table kept as the source of selection, and a new record
   supersedes this one.

@@ -1,6 +1,9 @@
 # Machine-specific settings: local paths and consuming-repo access.
 .claude/settings.local.json
 
+# Claude Code worktrees: local checkouts, never part of the marketplace.
+.claude/worktrees/
+
 # Scratch space. Never part of the marketplace.
 temp/
 tmp/

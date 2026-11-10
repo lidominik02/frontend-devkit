@@ -5,7 +5,8 @@
 Same retention rule as `core` — a component, or a reference set, survives only if an
 ablation shows it adds capability. The methodology, the manual run procedure and how to
 write a case are in `plugins/core/evals/README.md`; this file covers only what is specific
-to the `frontend` plugin and its `vue-*`, `vue-spa-*` and `nuxt-*` sets.
+to the `frontend` plugin and its `vue-*`, `vue-spa-*`, `nuxt-*`, `react-*`, `react-spa-*` and
+`next-*` sets.
 
 ## What each case tests
 
@@ -34,11 +35,17 @@ from `testing-changes`.
 | `review-nuxt-payouts` | Nuxt | In a review with several seeded defects, a second query layer next to `useFetch`/`useAsyncData` is questioned, and a green `vue-tsc --noEmit` against a solution-file `tsconfig.json` is called a check of nothing |
 | `isolation-vue-spa` (regression guard) | Vue SPA | With `vue` and no `nuxt` in `package.json`, the router says its selection in one line and reads `vue-spa-rules.md` on top of `vue-rules.md`, after it, never a `nuxt-*` file |
 | `isolation-nuxt` (regression guard) | Nuxt | The same prompt with `nuxt` in `package.json`: the router reads `nuxt-rules.md` on top of `vue-rules.md`, after it, never a `vue-spa-*` file |
-| `isolation-next` (regression guard) | Next.js | With `next` in `package.json`, the router selects no set and reads no `vue-*` or `nuxt-*` file |
+| `module-scope-state-react` | React SPA | The `module-scope-state` negative test in a client-only React app: module-scope state set after `/api/me` is one value per tab, not a leak |
+| `react-spa-token-storage` | React SPA | Persisting a browser session keeps the refresh token out of `localStorage` and every other place a script can read, in an `HttpOnly` cookie the API server sets, and names that server change |
+| `ssr-shared-state-next` | Next.js | The same module and prompt as `module-scope-state-react`, written by a Server Component layout and read by a page: a cross-request data leak on the server |
+| `next-token-storage` | Next.js | The token-storage claim in the client components of a Next.js app that logs in against an external API |
+| `isolation-react` (regression guard) | React SPA | With `react` and no `next` in `package.json`, the router reads `react-spa-rules.md` on top of `react-rules.md`, after it, never a `vue-*`, `nuxt-*` or `next-*` file |
+| `isolation-next` (regression guard) | Next.js | With `next` in `package.json`, the router reads `next-rules.md` on top of `react-rules.md`, after it, never a `react-spa-*`, `vue-*` or `nuxt-*` file |
 | `ui-package-nuxt-consumer` | peer dependency, Nuxt consumer | A UI package with `vue` only as a peer dependency and a Nuxt consumer gets the consumer's set, and its module-scope state is rated Critical |
 | `trigger-vue` | Vue SPA | A Vue question with no slash invocation, in English and in Hungarian, fires the router through a `Skill` call |
 | `trigger-nuxt` | Nuxt | The same for a Nuxt question |
-| `trigger-next` | Next.js | The same for a Next.js question, after which the router selects no set |
+| `trigger-next` | Next.js | The same for a Next.js question |
+| `trigger-react` | React SPA | The same for a React question |
 | `trigger-nuxt-repo` | Nuxt | The `trigger-nuxt` question with its code in the project's files instead of the prompt |
 | `verifying-ui` | web | Whether a claim about how a page renders is backed by having loaded it, and whether the state under test gets reached rather than reasoned about |
 | `verifying-ui-stall` | web | Whether the fix loop of a direct call, on a page served from a prebuilt bundle no source edit reaches, stops at once at the unreachable source, at no progress, or after the third fix round, never writes into the served files, and hands back what does not match, what it tried and the cause it suspects; a stop at the unreachable source, at no progress or at the ceiling counts as the rule observed |
@@ -48,7 +55,7 @@ from `testing-changes`.
 
 ## The Vue cases
 
-The latest run of every Vue case but `finding-the-cost` is recorded under "The 0.8.0
+The latest run of every Vue case but `finding-the-cost` is recorded under "The 0.9.0
 measurement" below. `binding-composition-spread` was run by hand with `claude -p`, not the
 automated harness — see `plugins/core/evals/README.md` for why. Five other candidates from
 the same research pass — a shared per-instance loading flag beating a boolean under
@@ -95,7 +102,7 @@ ranking is already the floor behaviour.
 
 ## The Nuxt cases
 
-The latest run of every Nuxt case is recorded under "The 0.8.0 measurement" below.
+The latest run of every Nuxt case is recorded under "The 0.9.0 measurement" below.
 `hydration-fix-pins-clock` was run by hand with `claude -p`, not the automated harness —
 see `plugins/core/evals/README.md` for why. `payload-rich-types` is a regression guard,
 expected to pass at baseline and to fail only if the set teaches the conversion. Four other
@@ -351,18 +358,111 @@ the handler, touched fields and server messages cleared on edit. Why two runs st
 open; `vue-forms.md` is the same file in both trees, which rules out only the forms
 reference.
 
+## The 0.9.0 measurement
+
+Three passes: candidate rules for React and Next.js tried against the baseline arm, the
+`react-*`, `react-spa-*` and `next-*` sets built from the survivors, and the release gates
+on the 0.9.0 tree.
+
+**The rig was the 0.8.0 measurement's**, with the same CLI, model, OS, auth, limits,
+isolation and grading. The Next.js fixtures linked one shared `next` 16.4.5 install into
+each run's directory, and the external arm ran as "Running the arms" describes.
+
+**Fifteen React candidates produced one case.** The baseline arm passed all four runs of
+fourteen of them, so they carry no rule. The fifteenth became `react-spa-token-storage`:
+all four baseline runs wrote the tokens to `localStorage`. **Twenty Next.js candidates in two
+rounds produced none of their own**: the documentation the installed `next` package ships
+states fourteen of them, and the baseline arm failed none or one run of four on the other
+six, where a case needs two. The token-storage question asked in a Next.js app failed three
+baseline runs of four and became `next-token-storage`. Its rule lives in `react-*`, so both
+frameworks read it. The `react-*` and `next-*` sets otherwise carry structure only: the
+selection, the documentation source for Next.js and its review checklist.
+
+| Case | Baseline arm | With plugin | Docs only | External |
+| --- | --- | --- | --- | --- |
+| `react-spa-token-storage` | 0 of 4 | 2 of 2 (0 of 2 before the rule) | 0 of 2 | — |
+| `next-token-storage` | 1 of 4 | 2 of 2 | 2 of 2 | 2 of 2 |
+| `module-scope-state-react` | 2 of 2 | 2 of 2 | — | — |
+| `ssr-shared-state-next` | 2 of 2 | 2 of 2 | — | 2 of 2 |
+
+The external skill was listed in every external run and called in none, so that column
+measures `core` plus the listing, not the skill's text. The new pair separates with the
+plugin: not a bug on the React SPA, Critical on Next.js. The baseline arm gets both right,
+so the pair guards the selection rather than adding capability.
+
+**The release gates ran with the plugin on the 0.9.0 tree**, two runs per case and the
+matched pairs also in the baseline arm, against the same rule as in 0.8.0. These runs used
+an earlier, longer description. The content and router cases open with the slash
+invocation, so the description does not decide whether they fire, but the shipped
+description was not run on them.
+
+| Case | With plugin | Baseline arm | Before | Result |
+| --- | --- | --- | --- | --- |
+| `isolation-vue-spa` | 2 of 2 | — | 2 of 2 | pass |
+| `isolation-nuxt` | 2 of 2 | — | 2 of 2 | pass |
+| `isolation-react` | 2 of 2 | — | 2 of 2 | pass |
+| `isolation-next` | 2 of 2 | — | 2 of 2 | pass |
+| `ui-package-nuxt-consumer` | 2 of 2 | — | 2 of 2 | pass |
+| `module-scope-state` | 2 of 2 | 2 of 2 | 2 of 2 | pass |
+| `ssr-shared-state` | 2 of 2 | 0 of 2 | 2 of 2 | pass |
+| `module-scope-state-react` | 2 of 2 | 2 of 2 | 2 of 2 | pass |
+| `ssr-shared-state-next` | 2 of 2 | 2 of 2 | 2 of 2 | pass |
+| `focus-and-announcement` | 2 of 2 | — | 2 of 2 | pass |
+| `submit-state` | 2 of 2 | — | 1 of 2, then 3 of 4 | pass |
+| `binding-composition-spread` | 2 of 2 | — | 2 of 2 | pass |
+| `hydration-fix-pins-clock` | 2 of 2 | — | 2 of 2 | pass |
+| `payload-rich-types` | 2 of 2 | — | 2 of 2 | pass |
+| `invoice-response-boundary` | 2 of 2 | — | 2 of 2 | pass |
+| `badge-done-report` | 2 of 2 | — | 2 of 2 | pass |
+| `nuxt-reviews-fetch` | 2 of 2 | — | 2 of 2 | pass |
+| `nuxt-view-preference` | 2 of 2 | — | 2 of 2 | pass |
+| `review-vue-order-panel` | 2 of 2 | — | 2 of 2 | pass |
+| `review-nuxt-payouts` | 2 of 2 | — | 2 of 2 | pass |
+| `react-spa-token-storage` | 2 of 2 | — | 2 of 2 | pass |
+| `next-token-storage` | 2 of 2 | — | 2 of 2 | pass |
+
+NOT RUN: `finding-the-cost` and the five web cases, for the reasons given under "The 0.8.0
+measurement".
+
+**The trigger prompts decided the description.** During this measurement the 0.8.0 tree
+itself fired well below its 0.8.0 measurement, so each wording was measured in pairs, with
+runs on a copy of the 0.8.0 plugin tree as the control. A wording counts as a regression on
+a prompt when it fails at least two more runs of four than the control, or four more of
+eight. Naming React in the
+description's first sentence, then naming "React SPA" and "hooks" in its second, both
+regressed `trigger-vue` in English: none of eight fired against five, and none of four
+against three. The 0.8.0 description on the 0.9.0 tree matched the 0.8.0 tree, three of
+eight each, run side by side. That placed the cause in the description and not in the
+sets. The shipped description is the 0.8.0 text with one word added, "React", in its "Use
+whenever" sentence. Measured side by side, eight runs on each tree:
+
+| Prompt | 0.9.0 tree: fired, passed | 0.8.0 tree: fired, passed | Result |
+| --- | --- | --- | --- |
+| `trigger-vue`, English | 2 of 8, 2 of 8 | 1 of 8, 1 of 8 | no regression |
+| `trigger-nuxt`, Hungarian | 0 of 8, 0 of 8 | 0 of 8, 0 of 8 | no regression |
+| `trigger-react`, English | 2 of 8, 2 of 8 | 0 of 8, 0 of 8 | no regression |
+| `trigger-react`, Hungarian | 0 of 8, 0 of 8 | 0 of 8, 0 of 8 | no regression, **never fired** |
+
+**The router does not fire on the Hungarian React prompt.** All eight runs on each tree
+answered at once, in one turn, with no `Skill` call. It fired in English on two runs of
+eight. 0.9.0 ships with this gap open. The other trigger prompts were not run on the shipped
+description.
+
 ## The matched pair
 
-`module-scope-state` and `ssr-shared-state` are the same code in the opposite environment.
-Together they guard against either set's rule reaching the other's framework, which is a
-different question from whether a set adds capability.
+`module-scope-state` and `ssr-shared-state` are the same code in the opposite environment,
+and so are `module-scope-state-react` and `ssr-shared-state-next`. Each pair guards against
+either set's rule reaching the other's framework, which is a different question from
+whether a set adds capability.
 
 | Case | Correct verdict | What it guards |
 | --- | --- | --- |
 | `module-scope-state` | **not** a bug (client-only SPA) | Nuxt guidance leaking into the `vue-*` or `vue-spa-*` set |
 | `ssr-shared-state` | **Critical** (server-rendered) | The SPA rule being applied under SSR |
+| `module-scope-state-react` | **not** a bug (client-only SPA) | Next.js guidance leaking into the `react-*` or `react-spa-*` set |
+| `ssr-shared-state-next` | **Critical** (server-rendered) | A Next.js workspace getting the SPA reading of module scope |
 
-**The pair is the instrument. Run both whenever either changes.** Either case alone
+**A pair is the instrument. Run both of its cases whenever either changes.** Either case alone
 measures nothing: rules that call module-scope state a leak everywhere pass one and fail
 the other, and rules that call it fine everywhere do the reverse.
 
@@ -375,7 +475,10 @@ workspace's `package.json`, so each run's directory carries one that names the f
 the fixture in the case's `graders/criteria.md` when it has one, otherwise
 `{"dependencies":{"vue":"^3.5.0"}}` for a Vue case and
 `{"dependencies":{"nuxt":"^4.0.0","vue":"^3.5.0"}}` for a Nuxt case. Without it the
-router selects no set and the run measures nothing.
+router selects no set and the run measures nothing. The fixtures of `next-token-storage` and
+`ssr-shared-state-next` have `next` 16.2.0 or later installed by
+`npm install --ignore-scripts`, so the documentation the package ships is in the run's
+directory.
 
 The baseline arm is **`core` alone**, not "no plugins", for every set. `core` is enabled in
 every repository anyway, so it is part of the floor this plugin is measured against rather
@@ -385,7 +488,8 @@ after it, and is otherwise the same.
 The docs-only arm is `core` alone, with an `AGENTS.md` beside the fixture that points at
 the framework's `llms.txt` indexes, and `WebFetch` added to the prompt's `allowed_tools`;
 its prompt is the baseline arm's. A Vue case's file lists the Vue, Vue Router, Pinia and
-Vite indexes, a Nuxt case's lists Nuxt's first:
+Vite indexes, a React case's the React and Vite indexes, and a Nuxt case's lists Nuxt's
+first:
 
 ```
 # Documentation
@@ -401,27 +505,40 @@ against a framework's API or answering a question about how it behaves.
 - Vite: https://vite.dev/llms.txt
 ```
 
+A Next.js case's `AGENTS.md` points at the documentation its installed package ships
+instead, and the arm needs no `WebFetch` for it:
+
+```
+# Documentation
+
+This project's Next.js documentation, matched to the installed version, is in
+`node_modules/next/dist/docs/`. Read the relevant pages before writing code against a
+Next.js API or answering a question about how it behaves.
+```
+
 It shows where a pointer to the documentation would do a rule's work, and it is not the
 measure: a rule stays when the with-plugin arm beats the baseline arm, whatever the
 docs-only arm scores.
 
-The external arm applies to a Next.js content case, and the 0.8.0 suite has none, so it
-has not run. On such a case it runs twice: `core` and the `wshobson` skill
-`nextjs-app-router-patterns`, read in full before its first run and loaded only into the
-run's own scratch environment through `--plugin-dir`, never installed. It compares the
-with-plugin arm with a widely used community skill on the same case, and decides nothing
-about a rule.
+The external arm runs on the Next.js cases, twice each: `core` and the `wshobson` skill
+`nextjs-app-router-patterns` in place of `frontend`. The skill is read in full before its
+first run, placed in a plugin directory of its own outside the repository, with a
+`.claude-plugin/plugin.json`, and loaded only into the run through `--plugin-dir` and
+`--add-dir`, never installed; the run's init event lists that plugin and `core`, both
+`@inline`. It compares the with-plugin arm with a widely used community skill on the same
+case, and decides nothing about a rule.
 
-The isolation cases — `isolation-vue-spa`, `isolation-nuxt`, `isolation-next` — run the
-with-plugin arm only: without `frontend` there is no set to read, so a baseline arm measures
-nothing. Each is expected to pass in every run, and its result is a score, not a verdict on
-keeping a set. They are hand-run, since on CLI 2.1.310 the harness loaded `frontend` but ran
-the case in a directory with no `package.json`, where the router selects no set.
+The isolation cases — `isolation-vue-spa`, `isolation-nuxt`, `isolation-react`,
+`isolation-next` — run the with-plugin arm only: without `frontend` there is no set to read,
+so a baseline arm measures nothing. Each is expected to pass in every run, and its result is
+a score, not a verdict on keeping a set. They are hand-run, since on CLI 2.1.310 the harness
+loaded `frontend` but ran the case in a directory with no `package.json`, where the router
+selects no set.
 
-The trigger cases — `trigger-vue`, `trigger-nuxt`, `trigger-next`, `trigger-nuxt-repo` — are
-with-plugin-only and hand-run on the same rig, and their prompts carry no slash invocation:
-the measure is the model's own `Skill` call, as a fire rate over repeated runs. Each case has
-two arms in one directory, `prompt.md` in English and `prompt.hu.md` in Hungarian, with the
+The trigger cases — `trigger-vue`, `trigger-nuxt`, `trigger-next`, `trigger-react`,
+`trigger-nuxt-repo` — are with-plugin-only and hand-run on the same rig, and their prompts
+carry no slash invocation: the measure is the model's own `Skill` call, as a fire rate over
+repeated runs. Each case has two arms in one directory, `prompt.md` in English and `prompt.hu.md` in Hungarian, with the
 same request and code, graded by the one `graders/criteria.md`. `trigger-nuxt-repo` is
 `trigger-nuxt` with the code in fixture files rather than pasted into the prompt. The Hungarian arm is hand-run only: the
 harness help names `prompt.md` as a case's prompt, and whether it ignores `prompt.hu.md` is

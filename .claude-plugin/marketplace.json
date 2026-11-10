@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "frontend-devkit",
-  "description": "A domain-neutral core for software work in any repository - feature lifecycle, bug fixing in any layer, review, commit and MR text - plus a frontend plugin for Vue, Nuxt and Next.js. Every project fact is read from the files a repository already maintains; no component carries a fact about an individual repository.",
+  "description": "A domain-neutral core for software work in any repository - feature lifecycle, bug fixing in any layer, review, commit and MR text - plus a frontend plugin for Vue, Nuxt, React and Next.js. Every project fact is read from the files a repository already maintains; no component carries a fact about an individual repository.",
   "owner": {
     "name": "lidominik02",
     "url": "https://github.com/lidominik02"
@@ -26,11 +26,12 @@
     {
       "name": "frontend",
       "source": "./plugins/frontend",
-      "description": "Frontend engineering and review knowledge for Vue 3, Nuxt and Next.js: one router skill selects a framework's rules per workspace from its package.json and loads only that set. Version-gated. Contains no repo-specific facts. Depends on no other plugin.",
+      "description": "Frontend engineering and review knowledge for Vue 3, Nuxt, React SPAs and Next.js: one router skill selects a framework's rules per workspace from its package.json and loads only that set. Version-gated. Contains no repo-specific facts. Depends on no other plugin.",
       "category": "development",
       "keywords": [
         "vue",
         "nuxt",
+        "react",
         "nextjs",
         "ssr",
         "frontend"

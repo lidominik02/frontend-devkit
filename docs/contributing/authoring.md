@@ -268,7 +268,9 @@ server-rendered framework on that base makes false goes into a `<framework>-spa-
 module-scope state, a harmless singleton without a server, is a cross-request leak under
 SSR. The client-only and the server-rendered environment each get their own row in the
 selection table, and that table says which sets each row loads. A rule that holds in both
-stays in the base, however much it reads like SPA advice. A
+stays in the base, however much it reads like SPA advice. A rule only part of which holds in
+both splits: that part goes in the base, scoped to the code it governs (browser code, say),
+and only what one environment adds goes in that environment's delta. A
 `<framework>-spa-*` file also matches the base's glob, so the base never points at one, and
 the server-rendered framework's isolation case checks that it reads no `-spa-` file.
 

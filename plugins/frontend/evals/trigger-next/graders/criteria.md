@@ -7,8 +7,7 @@ Tests whether `frontend-engineering` fires on its description alone: a Next.js q
 no slash invocation and no skill name, in English (`prompt.md`) and in Hungarian
 (`prompt.hu.md`). The two prompts carry the same request and the same code; the language is
 the only variable. One of three trigger cases, with `trigger-vue` and `trigger-nuxt`; the
-three are run together. Next.js has no set yet, so once fired the router's correct result is
-`no set`.
+three are run together. Once fired, the router's correct result is `react-*` + `next-*`.
 
 The prompts are in a deliberately realistic register, and their prose avoids the router
 description's own vocabulary — its symptom phrases, "hydration", the framework's name —
@@ -74,10 +73,11 @@ Passes if it does ALL of:
   follows another skill's call counts as a fire.
 - (s) After it fires, the assistant text holds one selection line in the shape
   `<workspace> → <set> (<manifest fact>)`, in either arm's language: the workspace as `.` or
-  the directory's name, `→`, `no set`, and in parentheses the manifest fact that decided the
-  row — `next` in `package.json`: `. → no set (next in package.json)`. A translated
-  parenthetical passes only if it names the same manifest fact. A line that selects `vue-*`
-  or `nuxt-*` fails; one that only mentions them, as sets that do not apply, does not.
+  the directory's name, `→`, `react-* + next-*`, and in parentheses the manifest fact that
+  decided the row — `next` in `package.json`: `. → react-* + next-* (next in package.json)`.
+  A translated parenthetical passes only if it names the same manifest fact. A line that
+  selects `react-spa-*`, `react-*` alone or a `vue-*` set, or hedges between sets, fails; one
+  that only mentions a set as not applying does not.
 
 Fails if it does ANY of:
 - Never calls `frontend-engineering`. → (f)
@@ -94,8 +94,9 @@ Recorded per run, as one outcome:
 - **stall** — no call, no diagnosis, no question: the run ends or hits `max_turns`.
 
 Recorded, not scored: the arm (`en` or `hu`); every `Skill` call, in order, with its input
-verbatim; the selection line verbatim; any file under `references/` read anyway, and the
-tool that read it; whether the answer recommends a Vue or Nuxt API for this code.
+verbatim; the selection line verbatim; every file under `references/` read, in order, and
+whether any is a `react-spa-*`, `vue-*` or `nuxt-*` file; whether the answer recommends a
+Vue or Nuxt API for this code.
 
 ## Note for scoring
 

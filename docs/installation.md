@@ -91,7 +91,7 @@ trailer, where the control added one (12).
 ## Choosing packs
 
 `core` is domain-neutral and belongs in every repository. `frontend` belongs where a
-repository has a frontend: it holds the framework rules for Vue 3, Nuxt and Next.js and
+repository has a frontend: it holds the framework rules for Vue 3, Nuxt, React SPAs and Next.js and
 `verifying-ui`. Its `frontend-engineering` skill reads each workspace's `package.json` and
 loads only that framework's rules, so one install serves every frontend workspace
 ([ADR 0016](adr/0016-framework-rules-chosen-per-workspace.md)).

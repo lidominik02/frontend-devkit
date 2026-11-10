@@ -23,9 +23,9 @@ at the moment of use from files the project already maintains, so nothing goes s
 - **Commit and merge request text** in the repository's own convention.
 - **Browser verification** — check a UI change in a real browser instead of asserting it
   works, compare it with the design's intent, and check its Storybook stories.
-- **Framework knowledge** for Vue 3 on Vite and for Nuxt, chosen per workspace from its
-  `package.json` and checked against the installed versions; a Next.js workspace is
-  recognised and works from the documentation its installed package ships.
+- **Framework knowledge** for Vue 3 on Vite, Nuxt, React SPAs and Next.js, chosen per
+  workspace from its `package.json` and checked against the installed versions; a Next.js
+  workspace takes its API facts from the documentation its installed package ships.
 - **Recommended settings** — permission deny rules and an empty attribution that keep
   credentials unread and pushes yours; the devkit ships no hook
   ([Installation](docs/installation.md#permissions-and-attribution)).
@@ -35,7 +35,7 @@ at the moment of use from files the project already maintains, so nothing goes s
 | Pack | For | Depends on |
 | --- | --- | --- |
 | [`core`](plugins/core/README.md) | Every repository: lifecycle, bugs, review | — |
-| [`frontend`](plugins/frontend/README.md) | Frontend and mixed repositories: Vue 3, Nuxt and Next.js rules, browser verification | — |
+| [`frontend`](plugins/frontend/README.md) | Frontend and mixed repositories: Vue 3, Nuxt, React and Next.js rules, browser verification | — |
 
 Install `core` everywhere, and `frontend` where a repository has a frontend; in a team
 repository, at local scope ([Installation](docs/installation.md#install)).
