@@ -3,6 +3,15 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.1 - 2026-11-11
+
+### Changed
+
+- The skills, agents and frontend rules no longer carry instructions about how the devkit
+  itself is written, such as a length limit for a rules file or where a base-delta pair may
+  be named. Every session that loads them reads less, and the rules that govern the work
+  are unchanged.
+
 ## 0.9.0 - 2026-11-10
 
 ### Added
