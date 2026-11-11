@@ -40,12 +40,11 @@ A set applies to its own workspace only. In a monorepo, select for each workspac
 work touches, and never carry one workspace's set into another.
 
 A set is its rules file and the files that rules file points at, never every file its name
-matches as a glob: a `vue-spa-*` file also matches `vue-*`, and belongs to `vue-spa-*` only;
-the same holds for `react-spa-*` and `react-*`. So a Next.js workspace, under `react-*` +
-`next-*`, reads no `react-spa-*` file.
+matches as a glob: a delta whose prefix extends its base's prefix owns the files under that
+longer prefix, and a workspace the table gives another delta reads none of them.
 
-Under `vue-*` + `nuxt-*`, the list "Rules from the `vue-*` set that do NOT apply here" in
-`references/nuxt-rules.md` wins every conflict with the base.
+The delta rules file's list "Rules from the … set that do NOT apply here" wins every
+conflict with the base.
 
 **Say the selection, one line per workspace, before reading any rule:**
 
@@ -65,9 +64,10 @@ The manifest fact in parentheses is the one that decided the row.
 - A `package.json` that does not parse: say so, `no set (package.json does not parse)`, and
   follow the codebase's conventions.
 - The framework only as a peer or dev dependency, and no workspace consumes it: SSR-safe
-  rules, which means `vue-*` + `nuxt-*` for Vue, and `react-*` + `next-*` for React.
-- React only as a peer or dev dependency: `react-*` + `next-*` when any consuming workspace
-  has `next`, and `react-*` + `react-spa-*` only when every consumer is a React SPA.
+  rules, which means the table's row for that framework's SSR framework (`nuxt`, `next`).
+- The framework only as a peer or dev dependency, with consumers: that SSR row when any
+  consuming workspace has the SSR framework, and the SPA row only when every consumer is an
+  SPA.
 - Anything else no fact settles: say so, and follow the table.
 
 Never ask which framework it is, and never infer one from file names, globs or the
@@ -75,16 +75,12 @@ directory layout — the manifest decides.
 
 ## 2. Read in order
 
-1. **The rules file first** — `<framework>-rules.md` of each selected set, before writing,
-   reviewing or diagnosing anything. For `vue-*` + `vue-spa-*`: `references/vue-rules.md`,
-   then `references/vue-spa-rules.md`. For `vue-*` + `nuxt-*`: `references/vue-rules.md`,
-   then `references/nuxt-rules.md`. For `react-*` + `react-spa-*`:
-   `references/react-rules.md`, then `references/react-spa-rules.md`. For `react-*` +
-   `next-*`: `references/react-rules.md`, then `references/next-rules.md`. A rules file
-   holds its set's guardrails, so it is never skipped.
-2. **Topic files on demand** — a `vue-<topic>.md`, `vue-spa-<topic>.md`, `nuxt-<topic>.md`
-   or `next-<topic>.md` only when the rules file's Reading table or symptom router points at
-   it for what you are touching.
+1. **The rules files first** — the base's `references/<base>-rules.md`, then the delta's
+   `references/<delta>-rules.md`, both as the table selected, before writing, reviewing or
+   diagnosing anything. A rules file holds its set's guardrails, so it is never skipped.
+2. **Topic files on demand** — a `references/<base>-<topic>.md` or
+   `references/<delta>-<topic>.md` only when its rules file's Reading table or symptom
+   router points at it for what you are touching.
 3. **Only when reviewing, before the verdict** — `references/web-review.md`, with every
    set: the review findings that do not depend on the framework.
 4. **Nothing from a set not selected** for this workspace.

@@ -101,11 +101,9 @@ both invisible in a hydrated DOM.
 
 ## What this must NOT do
 
-- **State a version-gated API as fact** without checking what is installed. The
-  directory layout, the data-fetching defaults and the server layer all move between
-  majors.
+- **Read a `vue-spa-*` file.** Its name matches `vue-*`, but it belongs to the client-only
+  SPA set, where module-scope state is a harmless singleton; do not import its conclusions
+  into this one.
 - **Cover Nuxt layers, `extends`, or module authoring.** Say this set does not cover them
   rather than improvising.
-- **Bulk-convert files the task did not ask about** — no drive-by migrations to `app/`,
-  no rewriting working `$fetch` calls outside the change.
-- **Invent a gate command.** Read `package.json`'s scripts instead.
+- **Migrate to `app/` or rewrite working `$fetch` calls** outside the change.
