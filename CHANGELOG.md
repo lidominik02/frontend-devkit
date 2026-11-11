@@ -3,6 +3,18 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.2 - 2026-11-11
+
+### Changed
+
+- `frontend-engineering` takes the files to read from its selection table alone: the rest
+  of its instructions refer to the base and the delta the table chose, so a fix to the
+  table can no longer disagree with a second copy of it. Each workspace reads the same files
+  as before.
+- A Nuxt workspace is now told directly never to read a `vue-spa-*` file, the rules meant
+  only for a client-only Vue app, and its rules no longer repeat two items the shared Vue
+  rules already state.
+
 ## 0.9.1 - 2026-11-11
 
 ### Changed

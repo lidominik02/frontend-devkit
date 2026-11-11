@@ -1,6 +1,6 @@
 {
   "name": "core",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "Domain-neutral development platform for any repository: a feature lifecycle (clarify, plan, execute, automatic review, QA), bug investigation and fixing in any layer, commit/MR authoring and repo preparation.",
   "author": { "name": "lidominik02" },
   "license": "MIT",
