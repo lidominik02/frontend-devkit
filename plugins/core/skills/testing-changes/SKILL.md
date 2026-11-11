@@ -143,6 +143,4 @@ Without a STATUS.md, nothing is written beyond the list and the report.
 - **Run a `command` case that writes**, or a test or a build the release does not name.
 - **Silently omit a case from the report** — Observed, Not observed, Skipped and Findings
   together must account for every case on the approved list.
-- **Contain a fact about any individual repository.** Where its requirements live, whether
-  it has a design source — read at the moment of use from the project's own files.
 - **Re-implement a `web:` check.** `frontend:verifying-ui` owns them.

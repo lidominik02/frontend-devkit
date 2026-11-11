@@ -101,8 +101,7 @@ and the repository are all you have.
 - **Commit, stage, push**, or otherwise touch the git index or refs — plumbing included:
   `git write-tree`, `git update-index`, `git read-tree`, `git commit-tree`. `snapshot.mjs`
   builds its tree in a private temporary index and is the exception.
-- **Dispatch an agent or run a review.** The Agent tool is not in this agent's tool set;
-  not running a review through the Skill tool is a rule you hold. Review is the
+- **Dispatch an agent or run a review**, through the Skill tool or otherwise. Review is the
   dispatcher's next step, not yours.
 - **Run anything heavier than the fast gates** unless the brief releases it.
 - **Decide a product question.** Ask it (step 4).

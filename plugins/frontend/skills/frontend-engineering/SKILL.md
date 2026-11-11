@@ -44,9 +44,8 @@ matches as a glob: a `vue-spa-*` file also matches `vue-*`, and belongs to `vue-
 the same holds for `react-spa-*` and `react-*`. So a Next.js workspace, under `react-*` +
 `next-*`, reads no `react-spa-*` file.
 
-This table is the only place a base–delta pair is written. Under `vue-*` + `nuxt-*`, the
-list "Rules from the `vue-*` set that do NOT apply here" in `references/nuxt-rules.md`
-wins every conflict with the base.
+Under `vue-*` + `nuxt-*`, the list "Rules from the `vue-*` set that do NOT apply here" in
+`references/nuxt-rules.md` wins every conflict with the base.
 
 **Say the selection, one line per workspace, before reading any rule:**
 
@@ -99,8 +98,8 @@ With no set, read no file here: follow the codebase's conventions.
   claim no exact version, and say so in the answer.
 - **Follow the codebase's conventions.** Read the neighbouring files first, reuse what
   exists before writing anything new, and keep changes surgical.
-- **No rule here is a fact about this repository.** File paths, helper names and
-  conventions come from the repository itself and its own `CLAUDE.md`.
+- **Take file paths, helper names and conventions from the repository** itself and its own
+  `CLAUDE.md`.
 - **No sweeping rewrite.** Bulk-convert nothing the task did not ask about — no drive-by
   migrations or refactors of adjacent code.
 
@@ -120,6 +119,5 @@ survived:
 - **Select by `paths`, file names or layout.** Only the workspace's manifest selects.
 - **Read from a set not selected** for the workspace, or apply one workspace's set to
   another.
-- **Write a base–delta pair** anywhere but the table above.
 - **Ask the user which framework applies.** A fact decides, or the table's fallback does.
 - **Apply a rule from memory of a set** after compaction without re-reading it.

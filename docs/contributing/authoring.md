@@ -18,6 +18,10 @@ shipped here.
 
 **Every component ships a written "what this must not do."**
 
+**A shipped component names no client either.** The repository-agnostic invariant in
+[`CLAUDE.md`](../../CLAUDE.md) extends to the organisation the work is done for: no client
+name, product name or ticket prefix in any pack.
+
 **Prefer deleting a component to adding one.** If Claude delegates to the wrong component,
 there are too many — prune before adding.
 
@@ -173,6 +177,11 @@ that changes the outcome of the first action. Candidates to move are material co
 rather than followed: version matrices and compatibility tables, exhaustive enumerations
 where the body needs only the distinction, worked examples beyond the first, per-case detail
 behind a branch most invocations do not take, and background explaining why a rule holds.
+
+**Two files on one subject each keep their own side.** When files cover the same defects
+from different angles — one says how to judge a defect in a diff, another how to see it in
+a running page — each states only its angle and names the other, and neither carries a copy
+of the other's list.
 
 ## Decisions in, evidence out
 

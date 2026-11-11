@@ -215,8 +215,7 @@ Report in Step 6's shape.
 - **Re-observe without re-establishing the state under test**, or **call it fixed
   without re-observing.** See step 5 and `references/runtime-checks.md`.
 - **Leave a dev server or a browser running** that it started, or kill one it did not.
-- **Type credentials into a page.** No deny rule covers an MCP upload tool, so the upload
-  tools are removed from this skill's pool outright — see `references/browser-tools.md`.
+- **Type credentials into a page.**
 - **Substitute for an accessibility review.** A snapshot shows the tree; it does not
   tell you the tree is right.
 - **Run the whole state checklist** on a change that cannot reach most of it.

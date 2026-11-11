@@ -182,5 +182,3 @@ Every path ends here: a fix, an owner report, a contradicted diagnosis, or the u
   not run.
 - **Decide a product question.** The expected behaviour comes from the report, the
   diagnosis or the user.
-- **Carry a fact about an individual repository.** A repo's conventions live in its own
-  files, read at the moment of use.

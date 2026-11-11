@@ -201,5 +201,3 @@ rounds settled before going on.
 - Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
   the user did not release (`../planning-features/references/project.md`, `## Held checks`).
 - Commit, stage or touch the index.
-- Carry a fact about an individual repository or a client. A repo's conventions live in its
-  own files, read at the moment of use.

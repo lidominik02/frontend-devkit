@@ -226,4 +226,3 @@ After every sync onto main, conflicts or not, find what main brought that the br
 - **Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
   the user did not release** (`../planning-features/references/project.md`, `## Held checks`),
   or a command that writes as a gate (`## Gates` there).
-- **Carry a fact about an individual repository**; its own files are read at use.

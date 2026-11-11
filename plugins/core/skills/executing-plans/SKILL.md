@@ -189,5 +189,3 @@ The user has read the code and the review report and says what to do with each f
 - Decide a product question, or rule on anything but a reversible plan defect.
 - Mark a task done with a step skipped or a gate unrun.
 - Run two implementers at once.
-- Carry a fact about an individual repository. A repo's conventions live in its own files,
-  read at the moment of use.

@@ -132,5 +132,3 @@ After fixes:
 - Run checks beyond the fast gates — a test suite, a build, anything that runs the app —
   the user did not release (`../planning-features/references/project.md`, `## Held checks`).
 - Imply a gate passed or the spec axis ran when it did not.
-- Carry a fact about an individual repository. A repo's conventions live in its own files,
-  read at the moment of use.

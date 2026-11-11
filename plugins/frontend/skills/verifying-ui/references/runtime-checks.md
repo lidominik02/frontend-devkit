@@ -140,11 +140,10 @@ applying the wrong pack's rules produces both false findings and missed critical
 Skill tool with "frontend:frontend-engineering" for the workspace of the diff you are
 looking at.
 
-Be exact about what that buys you: what the packs carry is a **review checklist for
-reading a diff**, not a second copy of this list. They name the defect and what makes it
-wrong; this file is the only place that says how to see one in a running page. Where a
-pack is silent on the runtime symptom, say what you observed and let the pack's rule
-classify it — do not invent a framework rule here to fill the gap.
+Be exact about what that buys you: the packs carry a **review checklist for reading a
+diff**, which names the defect and what makes it wrong. Where a pack is silent on the
+runtime symptom, say what you observed and let the pack's rule classify it — do not
+invent a framework rule to fill the gap.
 
 The one worth naming from `core`, because it is only ever visible in a browser: on a
 server-rendered app, a **hydration mismatch** shows as a flash of different content

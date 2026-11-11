@@ -101,19 +101,11 @@ both invisible in a hydrated DOM.
 
 ## What this must NOT do
 
-- **Grow past ~200 lines in this body.** Detail belongs in `references/`, one level
-  deep — Claude partial-reads anything reached through a second hop.
-- **Restate what the `vue-*` set already says.** Reactivity, Pinia mechanics, query-key
-  construction and Vitest basics live there. This set carries only what SSR inverts or
-  adds. Two copies of one rule is two rules that drift.
-- **Contain facts about any individual repository** — no file paths, helper names or
-  conventions from a specific codebase. Those belong in that repo's own `CLAUDE.md`.
-  This set must stay true of *any* Nuxt app.
 - **State a version-gated API as fact** without checking what is installed. The
   directory layout, the data-fetching defaults and the server layer all move between
   majors.
-- **Cover Nuxt layers, `extends`, or module authoring.** Those are a different audience
-  and a different pack's problem; say so rather than improvising.
+- **Cover Nuxt layers, `extends`, or module authoring.** Say this set does not cover them
+  rather than improvising.
 - **Bulk-convert files the task did not ask about** — no drive-by migrations to `app/`,
   no rewriting working `$fetch` calls outside the change.
 - **Invent a gate command.** Read `package.json`'s scripts instead.

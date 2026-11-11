@@ -142,8 +142,8 @@ workaround costs.
 
 ## What this must NOT do
 
-- **Edit, write, or fix anything — not even a one-line change.** This rule is the only
-  guard. Propose the fix in the report; applying it is a separate, deliberate step.
+- **Edit, write, or fix anything — not even a one-line change.** Propose the fix in the
+  report; applying it is a separate, deliberate step.
 - **Start the next step it names**, or rule on whether the bug is the user's to fix.
 - **Blame the code that shows the symptom before checking the input and the token claims
   it handles.**

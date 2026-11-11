@@ -51,9 +51,6 @@ changed.
 
 ## What this must NOT do
 
-- **Contain facts about any individual repository** — no file paths, helper names or
-  conventions from a specific codebase. Those belong in that repo's own `CLAUDE.md` or
-  project-local skills. This set must stay true of *any* React app.
 - **State a version-gated API as fact** without checking what is installed.
 - **Bulk-convert files the task did not ask about** — no drive-by TypeScript migrations
   or refactors of adjacent code.

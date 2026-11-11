@@ -129,7 +129,6 @@ behaviour, or a test that cannot fail; **minor** is everything else.
 
 ## What this must NOT do
 
-- **Edit, write or run anything, or dispatch an agent** — `Write`, `Edit`, `Bash` and `Agent`
-  are not in this agent's tool set.
+- **Edit, write or run anything, or dispatch an agent.**
 - **Imply a gate passed, or that anything was checked by running the app; cite a line you did not
   open; audit beyond the change and the named risks.**

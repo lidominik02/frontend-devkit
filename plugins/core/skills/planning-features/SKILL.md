@@ -141,5 +141,3 @@ For work with no plan — a quick fix, an exploration. Write `temp/handoffs/<slu
 - Commit or `git add` the feature's files.
 - Mark a task done with a step skipped or a gate unrun.
 - Keep a second Next action in STATUS.md — rewrite the one that is there.
-- Carry a fact about an individual repository. A repo's conventions live in that repo's
-  own files, read at the moment of use.

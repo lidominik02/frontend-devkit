@@ -178,5 +178,3 @@ On "Stop here", name the record's path and stop.
 - Write into the repository without the user choosing the location, or commit, stage or
   touch the index.
 - Use the reference's terms in text written for the user.
-- Carry a fact about an individual repository or a client. A repo's conventions live in
-  its own files, read at the moment of use.
