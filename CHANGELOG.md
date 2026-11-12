@@ -3,6 +3,26 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.3 - 2026-11-12
+
+### Fixed
+
+- The Vue Router guard example in the Vue SPA rules no longer lets a route without access
+  metadata through: only a route marked public passes, and the routing rule no longer
+  claims the type check catches a route that omits its metadata.
+- A Vue or Nuxt review now looks for external input used without validation and for an
+  interval or listener a component never stops; the Nuxt checklist already counted on
+  both.
+
+### Changed
+
+- A Vue SPA review also checks a query whose input never changes and, when one build is
+  promoted across environments, how runtime configuration is read and served.
+- The Vite 8 and TypeScript 7 facts now apply to Nuxt workspaces as well, from the shared
+  Vue version table.
+- The dark-mode check before reporting done applies only to a project that styles a dark
+  mode, in Vue and React alike.
+
 ## 0.9.2 - 2026-11-11
 
 ### Changed
