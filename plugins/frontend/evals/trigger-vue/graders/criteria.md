@@ -33,8 +33,8 @@ no skill to fire, so a baseline arm measures nothing here.
 
 The Hungarian arm is hand-run only. The harness help names `prompt.md` as a case's prompt;
 whether it ignores `prompt.hu.md` beside it is unobserved. A whole-pack harness run measures
-nothing for this case either: on CLI 2.1.310 `claude plugin eval` ran the isolation cases in
-a directory with no `package.json`, where the router answers `no set (no package.json)`.
+nothing for this case either: the harness runs a case without its fixture's `package.json`,
+where the router answers `no set (no package.json)`.
 
 ## Fixture
 

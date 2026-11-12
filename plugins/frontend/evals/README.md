@@ -531,19 +531,19 @@ case, and decides nothing about a rule.
 The isolation cases — `isolation-vue-spa`, `isolation-nuxt`, `isolation-react`,
 `isolation-next` — run the with-plugin arm only: without `frontend` there is no set to read,
 so a baseline arm measures nothing. Each is expected to pass in every run, and its result is
-a score, not a verdict on keeping a set. They are hand-run, since on CLI 2.1.310 the harness
-loaded `frontend` but ran the case in a directory with no `package.json`, where the router
-selects no set.
+a score, not a verdict on keeping a set. They are hand-run, since the harness runs a case
+without its fixture's `package.json`, where the router selects no set.
 
 The trigger cases — `trigger-vue`, `trigger-nuxt`, `trigger-next`, `trigger-react`,
 `trigger-nuxt-repo` — are with-plugin-only and hand-run on the same rig, and their prompts
 carry no slash invocation: the measure is the model's own `Skill` call, as a fire rate over
-repeated runs. Each case has two arms in one directory, `prompt.md` in English and `prompt.hu.md` in Hungarian, with the
-same request and code, graded by the one `graders/criteria.md`. `trigger-nuxt-repo` is
-`trigger-nuxt` with the code in fixture files rather than pasted into the prompt. The Hungarian arm is hand-run only: the
-harness help names `prompt.md` as a case's prompt, and whether it ignores `prompt.hu.md` is
-unobserved. A whole-pack harness run measures nothing for these cases, for the reason the
-isolation cases give.
+repeated runs. Each case has two arms in one directory, `prompt.md` in English and
+`prompt.hu.md` in Hungarian, with the same request and code, graded by the one
+`graders/criteria.md`. `trigger-nuxt-repo` is `trigger-nuxt` with the code in fixture files
+rather than pasted into the prompt. The Hungarian arm is hand-run only: the harness help
+names `prompt.md` as a case's prompt, and whether it ignores `prompt.hu.md` is unobserved. A
+whole-pack harness run measures nothing for these cases, for the reason the isolation cases
+give.
 
 `ui-package-nuxt-consumer` runs like the isolation cases: with-plugin only, hand-run, from a
 fixture of four files, a root `package.json` with `workspaces` and the two workspaces' own.

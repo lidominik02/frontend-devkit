@@ -153,19 +153,19 @@ Node 22 or newer on `PATH`; the one shipped script, `snapshot.mjs`, needs nothin
 ## Platforms
 
 The script and the tooling run on Linux, Windows and macOS, on the Node version above.
-Windows is observed: Windows 10 Pro 10.0.19045 (build 10.0.19045.6466) with Node 22.23.3
-and Claude Code 2.1.292; on 2026-10-12, after the hooks and scripts were removed,
+Windows is observed: Windows 10 Pro 10.0.19045 (build 10.0.19045.6466) with Node 22.23.3 and
+Claude Code 2.1.292; on 2026-10-12, after the hooks and scripts were removed,
 `scripts/validate.mjs` and the test suite pass there
 ([Known update behaviour](#known-update-behaviour)). Linux was observed before that change:
-Ubuntu 24.04.5 LTS (kernel 6.8.0) with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10. macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on
-every push to `main` and `dev` and on every pull request; it is not observed in a Claude
-Code session.
+Ubuntu 24.04.5 LTS (kernel 6.8.0) with Node 22.23.3 and Claude Code 2.1.283 on 2026-10-10.
+macOS is exercised by CI (`macos-latest`, Node 22), which runs the test suite on every push
+to `main` and `dev` and on every pull request; it is not observed in a Claude Code session.
 
 ## Updating
 
 Turn auto-update on ([Install](#install)). It is off by default for third-party
-marketplaces, so without it a release reaches nobody until someone runs `/plugin update`. A session installs the
-`main` branch, and `main` moves only at a release.
+marketplaces, so without it a release reaches nobody until someone runs `/plugin update`. A
+session installs the `main` branch, and `main` moves only at a release.
 
 After a release, check with `claude plugin list` that every pack reports the new version,
 and run `claude plugin update <pack>@frontend-devkit` for any that does not.

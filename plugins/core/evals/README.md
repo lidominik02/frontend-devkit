@@ -90,8 +90,8 @@ claude plugin eval . --ablation with-without
 ```
 
 **The harness runs, and every case in every pack needs frontmatter before it will load.**
-Checked against 2.1.278: both files take a YAML header, and without one the case is rejected
-with `invalid case.yaml: graders: Required`. `claude plugin eval init --bare <name>` prints
+Both files take a YAML header, and without one the case is rejected with
+`invalid case.yaml: graders: Required`. `claude plugin eval init --bare <name>` prints
 the canonical shape — `max_turns` and `allowed_tools` on `prompt.md`, `type` and `weight` on
 each grader. Every case in `core` and `frontend` carries it; a new case needs it too, and
 the harness is the fastest way to find out that it does not.
@@ -140,10 +140,8 @@ has four ways to look healthy while measuring the wrong thing:
   with an empty `{"mcpServers":{}}` where the server under test is absent. Otherwise the
   arms differ by every connector configured on the machine, not only by the variable.
 - **Keep the runner's own hooks out with `"disableAllHooks": true` in the run's
-  `--settings` file.** A user-level hook fires inside the run and can rewrite its commands.
-  Observed on 2.1.310: a global `PreToolUse` hook rewrote a run's `npm run dev` and
-  swallowed the background server's output, and `disableAllHooks` in `--settings` kept it
-  off.
+  `--settings` file.** A user-level hook fires inside the run and can rewrite its commands
+  or swallow their output.
 
 **A hand-run case carries its own environment and its own answers.** A case that needs a
 real repository, or whose component asks through forms — `clarifying-features`' rounds,
@@ -152,19 +150,19 @@ and including its first form. Its `criteria.md` holds a **Fixture** section, whi
 runner builds in a fresh directory before each run and checks with the rig commands it
 lists, and a **Scripted answers** section: the option to pick for each form, in order, and
 where to end the session. Run a case with scripted answers interactively (`claude`, not
-`-p`) so each form can be answered; `claude --help` on 2.1.283 marks neither `--plugin-dir`
-nor `--strict-mcp-config` as print-only. Pass the prompt's `allowed_tools` as
-`--allowedTools` and approve no other tool mid-run. A hand-run is graded per criterion line
-against those two sections, and a run whose rig check failed is void, not a fail.
+`-p`) so each form can be answered; neither `--plugin-dir` nor `--strict-mcp-config` is
+print-only. Pass the prompt's `allowed_tools` as `--allowedTools` and approve no other tool
+mid-run. A hand-run is graded per criterion line against those two sections, and a run whose
+rig check failed is void, not a fail.
 
 **User-level instructions reach both arms unless the run keeps them out.**
 `~/.claude/CLAUDE.md` and `~/.claude/rules/` load with or without the plugin, so a
-baseline can pass a line because the runner's own instructions state it. Observed on
-2.1.283: `--bare` skips CLAUDE.md auto-discovery and hooks but still loads every installed
-plugin — it is not a no-plugin arm, so the installed copies are still disabled for the run
-— and under a subscription login a `--bare` run fails with `api_error`, `apiKeySource` none.
-`claude --help` on 2.1.283 names `ANTHROPIC_API_KEY`, or an `apiKeyHelper` passed with
-`--settings`, as the only Anthropic auth under `--bare`; the second route is unobserved.
+baseline can pass a line because the runner's own instructions state it. `--bare` skips
+CLAUDE.md auto-discovery and hooks but still loads every installed plugin — it is not a
+no-plugin arm, so the installed copies are still disabled for the run — and under a
+subscription login a `--bare` run fails with `api_error`, `apiKeySource` none.
+`claude --help` names `ANTHROPIC_API_KEY`, or an `apiKeyHelper` passed with `--settings`, as
+the only Anthropic auth under `--bare`; the second route is unobserved.
 "An API key", here and in each case's criteria, means either. A hand-run therefore isolates
 user-level instructions only by running every arm with `--bare` and an API key. Where
 that is unavailable, a case that user-level instructions could contaminate names the lines

@@ -230,13 +230,12 @@ Rig check in `work`, before each run: `git status --short` prints nothing;
 — the index check after the run compares against them. Record the isolation that applied,
 as above.
 
-After the run, collect every transcript before grading. Observed on 2.1.283, in a session
-started from the editor extension: the main transcript is
+After the run, collect every transcript before grading. The main transcript is
 `~/.claude/projects/<slug>/<session-id>.jsonl`, `<slug>` being the absolute path of `work`
 with each `/` replaced by `-`; each worker's is a separate
 `~/.claude/projects/<slug>/<session-id>/subagents/agent-<id>.jsonl`; and a worker's own tool
-calls are not in the main transcript. Confirm the same layout for a terminal session — the
-worker files exist, and their tool-use ids are absent from the main transcript — then grade
+calls are not in the main transcript. Confirm this layout in the session the case runs in —
+the worker files exist, and their tool-use ids are absent from the main transcript — then grade
 the **Implementer**, **Review**, **Git** and **Test** lines from all of them, scanning every
 `Bash` call in each.
 

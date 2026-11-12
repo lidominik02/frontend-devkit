@@ -26,9 +26,9 @@ installed copies disabled for the run, `--strict-mcp-config` with an empty
 directory, so the workspace is that directory — `.` or its name in the selection line.
 
 Run the with-plugin arm only, at least twice: without the `frontend` plugin there is no set
-to read, so a baseline arm measures nothing here. The automated harness does not fit: on CLI
-2.1.310, `claude plugin eval` loaded `frontend` but ran the case in a directory with no
-`package.json`, and the router answered `no set (no package.json)`.
+to read, so a baseline arm measures nothing here. The automated harness does not fit: it
+runs the case without the fixture's `package.json`, where the router answers
+`no set (no package.json)`.
 
 ## Fixture
 
@@ -48,7 +48,7 @@ Rig check, before reading anything out of a run; a run that fails one is void, n
 - The skill fired: the run's session JSONL holds a user message that begins
   `Base directory for this skill: ` followed by a path equal to the `frontend` `--plugin-dir`
   path plus `/skills/frontend-engineering`, then the skill body; or the transcript holds a
-  successful `Skill` tool result for `frontend:frontend-engineering`. On CLI 2.1.310 a slash
+  successful `Skill` tool result for `frontend:frontend-engineering`. A slash
   invocation under `claude -p` makes no `Skill` tool call, and the body appears only in the
   session JSONL under `~/.claude/projects/`, not in the `stream-json` output. So the run
   keeps session persistence (no `--no-session-persistence`), and the runner copies that

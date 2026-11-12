@@ -244,9 +244,5 @@ for a target named `check`, and (c) in runs that reach for an undeclared tool; r
 many did. The retention verdict rests on (a1), (a2) and (b), and
 on (c) and (d) in the runs that executed `make`.
 
-Observed with the plugin at 0.2.1, before declared gates (CLI 2.1.299, `claude-opus-5-5`,
-2026-10-14, two runs): every line passed in both. `project.md` read gates only from
-`package.json` `scripts`, yet the runs took the gates from `CLAUDE.md` ("This repo has no
-`package.json`, so I took the checks from `CLAUDE.md`"). With the plugin the case is therefore
-a regression guard, not a measure of the declared-gates change; the no-plugin arm failed (a2)
-and (b) in both runs. After the declared-gates change, every line passed in both runs.
+With the plugin the case is a regression guard, not a measure of the declared-gates change:
+runs took the gates from `CLAUDE.md` even before `project.md` read declared gates.

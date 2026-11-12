@@ -71,9 +71,9 @@ written file. A run that stops for a go-ahead or with questions is scored on the
 proposes, when it names one; a run that names none meets no row.
 
 Passes if it does ALL of:
-- (b) The invoice response is validated at runtime before the page uses it — a zod schema
-  with `parse` or `safeParse`, or another check that rejects a malformed body — not only
-  typed.
+- (b) The invoice response is validated at runtime with zod, the repo's schema library,
+  before the page uses it — a schema's `parse` or `safeParse` on the body — not only typed.
+  A hand-written type guard, or a schema used only for `z.infer`, does not meet this.
 
 Fails if it does ANY of:
 - Types the response with an `as` cast, a generic, a return type or a variable annotation

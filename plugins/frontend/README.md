@@ -26,12 +26,13 @@ change. Then turn auto-update on for the marketplace, or no release reaches you
 
 ## Why one router
 
-Much of the guidance inverts between frameworks: module-scope state is an ordinary
-singleton in a client-only Vue app and a cross-request data leak in a server-rendered one.
-Choosing once, from the manifest, keeps the rules of a framework the workspace does not use
-out of the context — a client-only Vue app never loads Nuxt's rules, nor a Nuxt app the
-client-only ones, and a React SPA and a Next.js app share only the React base — and keeps the listing at one description however many frameworks there
-are. Why: [ADR 0016](../../docs/adr/0016-framework-rules-chosen-per-workspace.md).
+Much of the guidance inverts between frameworks: module-scope state is an ordinary singleton
+in a client-only Vue app and a cross-request data leak in a server-rendered one. Choosing
+once, from the manifest, keeps the rules of a framework the workspace does not use out of
+the context — a client-only Vue app never loads Nuxt's rules, nor a Nuxt app the client-only
+ones, and a React SPA and a Next.js app share only the React base — and keeps the listing at
+one description however many frameworks there are. Why:
+[ADR 0016](../../docs/adr/0016-framework-rules-chosen-per-workspace.md).
 
 ## Skills
 
