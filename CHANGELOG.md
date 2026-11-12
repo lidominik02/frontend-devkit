@@ -3,6 +3,15 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.4 - 2026-11-13
+
+### Changed
+
+- The eval READMEs and case criteria state only the rule a runner follows, without the
+  Claude Code version it was once observed on.
+- The `invoice-response-boundary` eval passes only when the response is validated with the
+  repository's schema library; a hand-written type guard no longer passes.
+
 ## 0.9.3 - 2026-11-12
 
 ### Fixed
