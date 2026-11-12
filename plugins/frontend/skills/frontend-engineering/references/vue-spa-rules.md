@@ -23,13 +23,13 @@ Read the one file that matches what you are touching, not all of them.
 | `vue-spa-routing.md` | a `router.beforeEach` guard, typed route meta, lazy routes, the Router 5 imports |
 | `vue-spa-data-and-state.md` | the query layer, a query-key factory, a query's reactive input |
 | `vue-spa-testing.md` | a component context for composables, mocking HTTP with MSW |
-| `vue-spa-versions.md` | Vue Router, Vite, `vue-tsc` and TanStack Query on this version |
+| `vue-spa-versions.md` | Vue Router, the `vue-tsc` gate and TanStack Query on this version |
 | `vue-spa-review-checklist.md` | **reviewing a diff** — the findings only a client-only app has |
 
 ## Symptom router
 
 **It works in dev and breaks in the deployed build**
-- A dependency resolved differently by the bundler → `vue-spa-versions.md`
+- A build option the installed Vite major ignores → the Vite table in `vue-versions.md`
 
 ## What this must NOT do
 

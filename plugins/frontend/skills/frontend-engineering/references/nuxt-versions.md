@@ -8,22 +8,12 @@
 - Type-checking — the row that matters most
 - Testing
 
-Read the installed versions before applying anything on this page. The wrong half of a
-version-gated rule is worse than no rule, and Nuxt moved the source directory in one
-major and is moving the server layer in the next.
+Read the installed versions and `nuxt.config`'s compatibility settings first, as
+`nuxt-rules.md` says, before applying anything on this page.
 
-Read the resolved version of `nuxt`, `nitro`, any `@nuxt/*` package, `vue`, `pinia`,
-`@pinia/nuxt`, `typescript` and `vue-tsc` from the lockfile or
-`node_modules/<pkg>/package.json`. A `package.json` range is only a range — it bounds
-what may be installed, not what is. With the resolved version unknown, claim no exact
-version, and say in the answer that it is unknown.
-
-Then read `nuxt.config` for `compatibilityDate` and anything under `future` — those
-change runtime behaviour without changing an installed version.
-
-**For Vue, Pinia, Tailwind, TanStack Table and lint tooling, read the `vue-*` set's version
-table, `vue-versions.md`.** Those rows are not repeated here. This file covers only what
-Nuxt itself owns.
+**For Vue, Pinia, Tailwind, TanStack Table, Vite, TypeScript and lint tooling, read the
+`vue-*` set's version table, `vue-versions.md`.** Those rows are not repeated here. This
+file covers only what Nuxt itself owns.
 
 ## Nuxt majors
 
@@ -110,10 +100,10 @@ silent:
   it, so do not enumerate them the way a plain Vue setup does. That key is not typed in
   `defineNuxtConfig`, so a typo fails silently — run `nuxt prepare` and confirm the
   option landed in `.nuxt/tsconfig.app.json`.
-- **TypeScript 7.x**: `vue-tsc` needs TypeScript's stable programmatic compiler API,
-  which the 7 line does not ship. `nuxt typecheck` can select a different checker
-  (`--checker`), so the remedy here is either pinning TypeScript to 6.x or switching
-  checker — confirm which checker actually runs before believing templates are checked.
+- **TypeScript 7.x**: `vue-tsc` stops checking templates on it (`vue-versions.md`).
+  `nuxt typecheck` can select a different checker (`--checker`), so the remedy here is
+  either pinning TypeScript to 6.x or switching checker — confirm which checker actually
+  runs before believing templates are checked.
 - A sudden wall of `Cannot find name 'ref'` across auto-imports is a known rough edge in
   project-references build mode, not a defect in the diff. Check the installed patch
   version before chasing it.
@@ -126,7 +116,7 @@ silent:
 - `defineVitestConfig` / `defineVitestProject` from `@nuxt/test-utils/config`.
 - `mountSuspended` / `renderSuspended` instead of a bare `mount` — anything calling
   `useRuntimeConfig`, `useState`, `useRoute` or `useNuxtApp` needs the Nuxt context, and
-  a `withSetup` harness does not provide it.
+  a harness that mounts the composable in a bare Vue app does not provide it.
 - `mockNuxtImport` to replace an auto-imported composable.
 - **`registerEndpoint` instead of MSW for internal routes.** Under the Nuxt test
   environment a `$fetch` to `/api/*` does not traverse the network, so MSW never sees

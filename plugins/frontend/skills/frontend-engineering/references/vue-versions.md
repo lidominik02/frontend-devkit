@@ -4,6 +4,8 @@
 - Vue
 - Pinia
 - Tailwind
+- Vite
+- TypeScript
 - TanStack
 - Component libraries
 - Lint and format
@@ -42,6 +44,19 @@ Setup stores are the right style on both.
 | --- | --- |
 | 4.x | CSS-first. There is no `tailwind.config.js`. Theme lives in CSS via `@theme`, and content scanning is driven by `@source` globs in the stylesheet. In a monorepo an `@source` glob must point at each sibling package whose files use Tailwind classes: without it, every class used only in that package is stripped from the build. |
 | 3.x | `tailwind.config.js` with a `content` array. |
+
+## Vite
+
+| Installed | What holds |
+| --- | --- |
+| 8.x | Rolldown-based and ESM-only. The build option is **`rolldownOptions`**, not `rollupOptions`. A config carried over from an older major silently ignores the old key. |
+| 5–7 | `rollupOptions`. |
+
+## TypeScript
+
+`vue-tsc` needs TypeScript's stable programmatic compiler API, which the 7.x line does
+not ship. A repo pinned to TypeScript 6 has usually done so deliberately — an
+"upgrade" to 7 silently removes template type-checking altogether.
 
 ## TanStack
 

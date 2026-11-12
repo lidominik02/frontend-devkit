@@ -8,8 +8,9 @@ open, and the page renders for a user who should never have reached it.
 
 Write guards so the permitted path is the explicit one.
 
-Make the metadata mandatory rather than optional, and type it, so a route that forgot to
-declare its access is a compile error rather than a public page.
+Make the access metadata a required, typed field, so a route whose `meta` leaves it out
+fails to compile. A route with no `meta` at all still compiles, so the guard treats
+missing metadata as denied, never as public.
 
 Guards run on every navigation including the first, so keep them cheap. An `await` on a
 network call in a global guard delays every route change; resolve the session once at

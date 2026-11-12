@@ -24,7 +24,6 @@ state, or put in a query string.
 **Lost reactivity.** The value silently stops updating:
 - destructuring a store without `storeToRefs`
 - watching a destructured prop directly rather than via a getter
-- a query whose input is a plain value, so it never refetches
 
 **A cache key missing its varying input.** `['user']` where `['user', id]` was meant.
 This does not read as a caching bug — it reads as one account seeing another's data.
@@ -51,6 +50,10 @@ requires it.
 - A new composable extracted from single-use logic, adding indirection for no reuse.
 - Server data copied into a Pinia store, where nothing will invalidate it.
 - `deep: true` on data that is only ever replaced wholesale.
+- External input — an API response, route params, form input, `postMessage` — used
+  without validation by the schema library the repo already uses.
+- An interval, event listener, observer or subscription a component starts and never
+  stops on unmount.
 
 ## What is NOT a finding
 

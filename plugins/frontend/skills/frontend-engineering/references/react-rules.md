@@ -47,7 +47,7 @@ No symptom routes to a file of this set.
 ## Before reporting done
 
 Name the manual steps you relied on, including dark mode wherever anything visual
-changed.
+changed in a project that styles a dark mode.
 
 ## What this must NOT do
 

@@ -7,9 +7,9 @@ The explicit permitted path, on a router you construct:
 ```ts
 router.beforeEach((to) => {
   const required = to.meta.authorities
-  if (!required) return true              // deliberately public
+  if (required === null) return true      // deliberately public
   if (!auth.isAuthenticated) return { name: 'login', query: { next: to.fullPath } }
-  if (!auth.hasAny(required)) return { name: 'forbidden' }
+  if (!required || !auth.hasAny(required)) return { name: 'forbidden' }  // no metadata: denied
   return true
 })
 ```
@@ -20,7 +20,6 @@ The mandatory route metadata, typed:
 declare module 'vue-router' {
   interface RouteMeta {
     authorities: string[] | null   // null means deliberately public
-    breadcrumb?: BreadcrumbItem[]
   }
 }
 ```
@@ -40,7 +39,6 @@ dynamic import too, not just behind a route.
 
 ## Version note
 
-Vue Router 5 absorbed `unplugin-vue-router` into core: typed routes are built in, the
-imports moved to `vue-router/vite`, `vue-router/unplugin` and `vue-router/experimental`,
-and `unplugin-vue-router/client` must come out of `tsconfig`. On Router 4 the plugin is
-still a separate dependency. Check which is installed before writing an import.
+Typed routes and their import paths differ between Vue Router 4 and 5; the Vue Router
+table in `vue-spa-versions.md` has what holds on each. Check which is installed before
+writing an import.
