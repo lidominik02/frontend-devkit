@@ -3,6 +3,14 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.5 - 2026-11-13
+
+### Changed
+
+- The frontend evals README no longer carries the records of past eval runs; it keeps the
+  rules those runs settled, such as when a rule and its case leave a set and how a release
+  gate and a description change are measured.
+
 ## 0.9.4 - 2026-11-13
 
 ### Changed
