@@ -3,6 +3,14 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.6 - 2026-11-13
+
+### Fixed
+
+- `frontend-engineering` starts more reliably on a frontend request written in a language
+  other than English, such as a React question asked in Hungarian, without starting less
+  often on Vue or Nuxt requests.
+
 ## 0.9.5 - 2026-11-13
 
 ### Changed
