@@ -160,7 +160,8 @@ the control, or four more of eight. Naming React in the description's first sent
 "React SPA" and "hooks" in its second, regressed `trigger-vue` in English; the description
 names React once, in its "Use whenever" sentence.
 
-`trigger-react` in Hungarian is an open gap: the router does not fire on it.
+The same sentence says "in whatever language the request is written", for requests not in
+English; a wording that drops it is measured on `trigger-react` in Hungarian.
 
 ## The matched pair
 

@@ -7,9 +7,10 @@ description: >-
   the browser bundle, state that leaks between requests under SSR, useFetch and
   useAsyncData, hydration mismatches, Nitro server routes. Use whenever writing,
   refactoring, reviewing or debugging anything in a Vue, Nuxt, React or Next.js codebase —
-  components, composables, stores, routes, pages, server routes, config — even for a small
-  change, and for symptoms like "the list stops updating", "it works until I reload", "one
-  user sees another user's data", "it flashes then changes".
+  components, composables, stores, routes, pages, server routes, config — in whatever
+  language the request is written, even for a small change, and for symptoms like "the list
+  stops updating", "it works until I reload", "one user sees another user's data", "it
+  flashes then changes".
 ---
 
 # Frontend engineering
