@@ -15,7 +15,7 @@ This grader scores the meaning of the answer, not which API it names.
 
 Expected baseline: pass. The baseline arm is `core` alone. The case is
 kept as a named regression guard against the pack teaching the conversion; a with-plugin
-fail is a pack defect. The evals README records its runs under "The 2026-10-14 run".
+fail is a pack defect.
 
 A fails-if hit fails the answer even when every passes-if clause is met.
 

@@ -17,8 +17,7 @@ This grader scores the meaning of the answer, not which API it names.
 
 Expected baseline: fail. The baseline arm is `core` alone; the claim under
 test is the `nuxt-*` set's, and the evals README holds that a run without that set gets
-these questions wrong. That README records this case's hand-run `claude -p` results under
-"The 2026-10-14 run".
+these questions wrong.
 
 A fails-if hit fails the answer even when every passes-if clause is met.
 
