@@ -47,6 +47,7 @@ from `testing-changes`.
 | `isolation-react` (regression guard) | React SPA | With `react` and no `next` in `package.json`, the router reads `react-spa-rules.md` on top of `react-rules.md`, after it, never a `vue-*`, `nuxt-*` or `next-*` file |
 | `isolation-next` (regression guard) | Next.js | With `next` in `package.json`, the router reads `next-rules.md` on top of `react-rules.md`, after it, never a `react-spa-*`, `vue-*` or `nuxt-*` file |
 | `ui-package-nuxt-consumer` | peer dependency, Nuxt consumer | A UI package with `vue` only as a peer dependency and a Nuxt consumer gets the consumer's set, and its module-scope state is rated Critical |
+| `compaction-reread` | Nuxt | After a compaction in a long task, the selected `nuxt-rules.md` is read again, or the router invoked again, before the next review verdict |
 | `trigger-vue` | Vue SPA | A Vue question with no slash invocation, in English and in Hungarian, fires the router through a `Skill` call |
 | `trigger-nuxt` | Nuxt | The same for a Nuxt question |
 | `trigger-next` | Next.js | The same for a Next.js question |
@@ -265,6 +266,9 @@ give.
 
 `ui-package-nuxt-consumer` runs like the isolation cases: with-plugin only, hand-run, from a
 fixture of four files, a root `package.json` with `workspaces` and the two workspaces' own.
+
+`compaction-reread` runs with the plugin only, hand-run from its fixture under
+`--autocompact 100k`; its `graders/criteria.md` has the rest of the rig.
 
 `delegation-testing-changes` has two arms, and both load `core`: `core` alone, and `core` +
 `frontend`. Each arm has its own expected shape, and the case passes only when both hold
