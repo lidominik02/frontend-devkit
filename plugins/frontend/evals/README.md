@@ -25,16 +25,13 @@ from `testing-changes`.
 | Case | Workspace | The claim under test |
 | --- | --- | --- |
 | `module-scope-state` | Vue SPA | A negative test: module-scope reactive state is an ordinary singleton in a client-only SPA, not a cross-request leak |
-| `focus-and-announcement` | Vue SPA | Whether accessibility rules get applied on a task that never asks for them — focus after a removal, a live region for a count that changes, names that distinguish one control from another |
 | `submit-state` | Vue SPA | Whether a form is modelled as state that can be submitted twice and rejected by the server, rather than as values plus a validate function |
 | `finding-the-cost` | Vue SPA | Whether a performance claim is backed by a measurement, or assembled from plausible causes read off the source |
-| `binding-composition-spread` | Vue SPA | Extending a shared binding for one consumer via a spread-and-override rather than folding the new condition into the shared source (which leaks it to every other consumer) |
 | `invoice-response-boundary` | Vue SPA | A new API response is validated with the schema library the repo already uses, not typed like the neighbouring module that only casts its JSON |
 | `badge-done-report` | Vue SPA | The report after a visual change in a component that styles dark mode separately names looking at it in dark mode as a check |
 | `review-vue-order-panel` | Vue SPA | In a review with several seeded defects, server data copied into a Pinia store is flagged when the app already installs a query layer |
 | `ssr-shared-state` | Nuxt | Module-scope reactive state is a cross-request data leak under SSR, where the identical code is an ordinary singleton in an SPA |
-| `hydration-fix-pins-clock` | Nuxt | Moving a hydration-mismatched time value into `useState` silences the warning by freezing it to the server's clock, not by fixing it, unless the label means server time and the format is fixed |
-| `payload-rich-types` (regression guard) | Nuxt | A `Date` and a `Set` in `useState` reach the client as themselves (devalue, every Nuxt 3+ version), so the review comment that they arrive as a string and `{}` and need converting is wrong |
+| `payload-rich-types` | Nuxt | A `Date` and a `Set` in `useState` reach the client as themselves (devalue, every Nuxt 3+ version), so the review comment that they arrive as a string and `{}` and need converting is wrong |
 | `nuxt-reviews-fetch` | Nuxt | Rendered data added next to a page's bare `$fetch` is fetched with `useFetch`/`useAsyncData`, not by copying the neighbour into a double fetch |
 | `nuxt-view-preference` | Nuxt | The report after a server-rendered change names a check of the server HTML — view source, or the page with JavaScript disabled |
 | `review-nuxt-payouts` | Nuxt | In a review with several seeded defects, a second query layer next to `useFetch`/`useAsyncData` is questioned, and a green `vue-tsc --noEmit` against a solution-file `tsconfig.json` is called a check of nothing |
@@ -61,13 +58,12 @@ from `testing-changes`.
 
 ## The Vue cases
 
-`binding-composition-spread` was run by hand with `claude -p`, not the
-automated harness — see `plugins/core/evals/README.md` for why. Five other candidates from
-the same research pass — a shared per-instance loading flag beating a boolean under
-overlapping requests, `cn()`/tailwind-merge's last-argument-wins override order,
-re-subscribing to a DOM mutation made outside Vue's reactivity, a mock handler's generic
-losing its connection to the response schema, and a named Tailwind group requiring its
-literal marker class on the right ancestor — were tested the same way and dropped: a bare
+Five candidates from one research pass — a shared per-instance loading flag beating a
+boolean under overlapping requests, `cn()`/tailwind-merge's last-argument-wins override
+order, re-subscribing to a DOM mutation made outside Vue's reactivity, a mock handler's
+generic losing its connection to the response schema, and a named Tailwind group requiring
+its literal marker class on the right ancestor — were run by hand with `claude -p`, not the
+automated harness (see `plugins/core/evals/README.md` for why), and dropped: a bare
 Sonnet 5 already answered every one of them correctly. A sixth, whether
 `@storybook/vue3`'s `render` needs to return a function or a bare VNode to dodge
 `vue/one-component-per-file`, was dropped because both arms converged on the same
@@ -82,11 +78,10 @@ in case a future run — or a differently-worded note — closes it.
 `module-scope-state` is expected to pass at baseline and is kept for a different reason,
 as a regression guard: it fails if the set applies a rule where it does not hold.
 
-`focus-and-announcement`, `submit-state` and `finding-the-cost` each decide whether a
-reference file is worth adding to the `vue-*` set. **There is no accessibility or
-performance reference**: a session with `core` and the Vue rules met every criterion line of
-`focus-and-announcement` and `finding-the-cost` unaided. **Forms have one, `vue-forms.md`**:
-without it, `submit-state` failed its (c) row — a field message about a value the field no
+`submit-state` and `finding-the-cost` each decide whether a reference file is worth adding
+to the `vue-*` set. **There is no performance reference**: a session with `core` and the
+Vue rules met every criterion line of `finding-the-cost` unaided. **Forms have one,
+`vue-forms.md`**: without it, `submit-state` failed its (c) row — a field message about a value the field no
 longer holds is gone by the time the user leaves the field — in both arms, and with it the
 `core` + `frontend` arm met (c).
 
@@ -105,14 +100,13 @@ ranking is already the floor behaviour.
 
 ## The Nuxt cases
 
-`hydration-fix-pins-clock` was run by hand with `claude -p`, not the automated harness —
-see `plugins/core/evals/README.md` for why. `payload-rich-types` is a regression guard,
-expected to pass at baseline and to fail only if the set teaches the conversion. Four other
-candidates from the same research pass — a plain async function losing Nuxt's request
-context after an `await`, a missing `runtimeConfig.public` key, `setup` running twice
-under hydration, and an un-awaited `navigateTo` outside middleware — were tested the same
-way and dropped: a bare Sonnet 5, with no plugin at all, already answered every one of
-them correctly.
+`payload-rich-types` is kept because the baseline arm does not pass it: it ties `Date` and
+`Set` surviving the payload to a later Nuxt version. Four candidates from one research pass — a plain async
+function losing Nuxt's request context after an `await`, a missing `runtimeConfig.public`
+key, `setup` running twice under hydration, and an un-awaited `navigateTo` outside
+middleware — were run by hand with `claude -p`, not the automated harness (see
+`plugins/core/evals/README.md` for why), and dropped: a bare Sonnet 5, with no plugin at
+all, already answered every one of them correctly.
 
 The `nuxt-*` set costs references to maintain and reads on every Nuxt workspace. The
 evidence that it is worth it is not that the Nuxt guidance is correct — it is that **a run

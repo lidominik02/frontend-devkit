@@ -13,9 +13,10 @@ conversion. The string-or-`{}` behaviour belongs to a server route's response re
 
 This grader scores the meaning of the answer, not which API it names.
 
-Expected baseline: pass. The baseline arm is `core` alone. The case is
-kept as a named regression guard against the pack teaching the conversion; a with-plugin
-fail is a pack defect.
+Expected baseline: fail. The baseline arm is `core` alone; it ties the payload's rich types
+to a later Nuxt version, which the last fails-if line below catches. The case is kept for
+that, under the retention rule in `plugins/frontend/evals/README.md`; a with-plugin fail is
+a pack defect.
 
 A fails-if hit fails the answer even when every passes-if clause is met.
 

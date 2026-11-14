@@ -40,30 +40,6 @@ Anything that differs between the two renders causes it:
    as the real content, or the page shifts layout when it swaps — the skeleton rule from
    the `vue-*` set, with an SSR-specific cause.
 
-**Not an escape hatch: moving a time- or locale-derived value into `useState`.** This is
-correct alone and wrong in combination with the fix above it. `useState` is per-request,
-not per-render — its value is computed once on the server and serialised into the
-payload, so it never advances past the **server's** clock for the rest of that request's
-session. What the visitor then sees depends on the type:
-
-- **A formatted string** arrives exactly as the server formatted it, so it also stays in
-  the server's timezone and locale. It looks like a fix because the mismatch warning goes
-  away; it has actually removed the client's chance to ever show its own time.
-- **A `Date`** arrives as the same instant, frozen at the server's clock. But
-  `toLocale*` with no timezone or locale passed formats in each runtime's default — the
-  server's, then the browser's — so it follows that the mismatch is still there whenever
-  the server's zone (often UTC) or locale differs from the visitor's. It hides wherever
-  they match — typically in development, where both are the same machine.
-
-Either way the page shows the server's render instant, never the visitor's: `<NuxtTime>`
-or a fixed zone given the `useState` value fixes how that instant is formatted, not which
-instant it is. On a prerendered or cached route it can be hours old, and after a
-client-side navigation it is still the first load's. Keep `useState` only for a time meant
-to be the server's, and say that it is; a time meant to be the visitor's is taken on the
-client, in `onMounted`, and never read back from `useState`.
-
-See `nuxt-ssr-state.md` for what `useState` is and is not for.
-
 `<ClientOnly>` is a cost, not a fix: its content is absent from the HTML, invisible to
 crawlers, and unavailable with JavaScript off. Reach for it after the first three.
 

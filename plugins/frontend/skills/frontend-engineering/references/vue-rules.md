@@ -38,7 +38,7 @@ Read the one file that matches what you are touching, not all of them.
 
 | Reading | When |
 | --- | --- |
-| `vue-reactivity.md` | watchers, destructured props, cleanup, shared bindings, template refs |
+| `vue-reactivity.md` | watchers, destructured props, cleanup, template refs |
 | `vue-env-and-config.md` | secrets, tokens in the browser, build-time facts |
 | `vue-routing.md` | Vue Router, guards, route meta |
 | `vue-data-and-state.md` | fetching, caching, Pinia, server vs client state |
