@@ -1,6 +1,18 @@
 # 0016. A router skill picks one framework's rules per workspace
 
-Status: Trial. Supersedes 0004 together with 0015; amends 0007.
+Status: Accepted 2026-11-15 with 0.9.7; supersedes 0004 with 0015, amends 0007. Measured on
+Claude Code 2.1.319. Naming React in the description regressed no trigger case against the
+0.9.6 description: `trigger-vue`, `trigger-nuxt` and `trigger-next`, in English and
+Hungarian, each failed fewer than two more runs of four (`trigger-next` in Hungarian, fewer
+than four more of eight). The trigger cases fired and printed the selection, per language,
+English then Hungarian: `trigger-vue` 4/5 and 4/5, `trigger-nuxt` 4/5 and 4/5, `trigger-next`
+3/5 and 4/5, `trigger-react` 3/5 and 5/5, `trigger-nuxt-repo` 5/5 and 5/5. Each isolation
+case passed 2/2: `isolation-vue-spa`, `isolation-nuxt`, `isolation-react`, `isolation-next`.
+`compaction-reread` passed 4/4, all four carried by the CLI re-attaching `nuxt-rules.md` to
+the context after compaction, none by a re-read; a CLI that stops re-attaching it needs the
+case run again. The acceptance rests on these measured cases: real sessions read with
+`/diagnosing-sessions` so far cover only Next.js, and that only in part, so a diagnosis of a
+real Vue, Nuxt or React SPA session can reopen it.
 
 ## Context
 

@@ -21,10 +21,9 @@ why they are that way and what would have to change to revisit it.
 | [0013](0013-no-hooks-no-facts-service-artifacts-without-a-protocol.md) | No hooks, no facts service, feature files without a protocol | Accepted, amended by 0017 and 0018 |
 | [0014](0014-core-is-domain-neutral.md) | `core` is domain-neutral and runs only declared gates | Accepted; amends 0003; amended by 0015 |
 | [0015](0015-one-frontend-plugin.md) | One `frontend` plugin holds framework knowledge and web verification | Accepted; supersedes 0004 with 0016, amends 0005, 0008 and 0014 |
-| [0016](0016-framework-rules-chosen-per-workspace.md) | A router skill picks one framework's rules per workspace | Trial; supersedes 0004 with 0015, amends 0007 |
+| [0016](0016-framework-rules-chosen-per-workspace.md) | A router skill picks one framework's rules per workspace | Accepted 2026-11-15 with 0.9.7; supersedes 0004 with 0015, amends 0007 |
 | [0017](0017-hard-gates-only-where-failure-does-harm.md) | Hard gates only where a failure does harm | Accepted; amends 0013 |
 | [0018](0018-worker-model-and-effort-by-measured-pair.md) | A worker's model and effort change only with a measured pair | Accepted; amends 0013 |
-| [0019](0019-one-listed-skill-per-framework.md) | `frontend` splits into one listed skill per framework | Proposed 2026-11-14; amends 0016 |
 
 ## Writing a record
 
