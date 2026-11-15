@@ -12,7 +12,7 @@ does not pass as a whole there. The baseline arm is `core` alone, as
 `vue-forms.md`, whose form-state rules cover (c), so every row is expected to pass there. A
 pack arm that misses (c) points at `vue-forms.md`'s text; a pack arm that misses any other
 row the baseline meets points at the pack's text. That README's paragraph on
-`submit-state` and `finding-the-cost` records how this case decided
+`submit-state` records how this case decided
 the forms reference; it is the regression instrument for that, not a capability case.
 
 ## Run

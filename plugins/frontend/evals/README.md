@@ -26,7 +26,6 @@ from `testing-changes`.
 | --- | --- | --- |
 | `module-scope-state` | Vue SPA | A negative test: module-scope reactive state is an ordinary singleton in a client-only SPA, not a cross-request leak |
 | `submit-state` | Vue SPA | Whether a form is modelled as state that can be submitted twice and rejected by the server, rather than as values plus a validate function |
-| `finding-the-cost` | Vue SPA | Whether a performance claim is backed by a measurement, or assembled from plausible causes read off the source |
 | `invoice-response-boundary` | Vue SPA | A new API response is validated with the schema library the repo already uses, not typed like the neighbouring module that only casts its JSON |
 | `badge-done-report` | Vue SPA | The report after a visual change in a component that styles dark mode separately names looking at it in dark mode as a check |
 | `review-vue-order-panel` | Vue SPA | In a review with several seeded defects, server data copied into a Pinia store is flagged when the app already installs a query layer |
@@ -44,7 +43,7 @@ from `testing-changes`.
 | `isolation-react` (regression guard) | React SPA | With `react` and no `next` in `package.json`, the router reads `react-spa-rules.md` on top of `react-rules.md`, after it, never a `vue-*`, `nuxt-*` or `next-*` file |
 | `isolation-next` (regression guard) | Next.js | With `next` in `package.json`, the router reads `next-rules.md` on top of `react-rules.md`, after it, never a `react-spa-*`, `vue-*` or `nuxt-*` file |
 | `ui-package-nuxt-consumer` | peer dependency, Nuxt consumer | A UI package with `vue` only as a peer dependency and a Nuxt consumer gets the consumer's set, and its module-scope state is rated Critical |
-| `compaction-reread` | Nuxt | After a compaction in a long task, the selected `nuxt-rules.md` is read again, or the router invoked again, before the next review verdict |
+| `compaction-reread` | Nuxt | After a compaction between two parts of a task, the selected `nuxt-rules.md` is in the context again before the next review verdict: read again (`reread-rules`) or re-attached by the CLI (`reattached`) |
 | `trigger-vue` | Vue SPA | A Vue question with no slash invocation, in English and in Hungarian, fires the router through a `Skill` call |
 | `trigger-nuxt` | Nuxt | The same for a Nuxt question |
 | `trigger-next` | Next.js | The same for a Next.js question |
@@ -78,35 +77,26 @@ in case a future run — or a differently-worded note — closes it.
 `module-scope-state` is expected to pass at baseline and is kept for a different reason,
 as a regression guard: it fails if the set applies a rule where it does not hold.
 
-`submit-state` and `finding-the-cost` each decide whether a reference file is worth adding
-to the `vue-*` set. **There is no performance reference**: a session with `core` and the
-Vue rules met every criterion line of `finding-the-cost` unaided. **Forms have one,
-`vue-forms.md`**: without it, `submit-state` failed its (c) row — a field message about a value the field no
-longer holds is gone by the time the user leaves the field — in both arms, and with it the
-`core` + `frontend` arm met (c).
+**There is no performance reference** in the `vue-*` set: the baseline arm, `core` alone,
+already measured before ranking the causes of a slow page — it ran the project's build and
+read the entry chunk against the lazy routes — so the reference had no failure to fix.
+**Forms have one, `vue-forms.md`**: without it, `submit-state` failed its (c) row — a field
+message about a value the field no longer holds is gone by the time the user leaves the
+field — in both arms, and with it the `core` + `frontend` arm met (c).
 
-They are kept for the reason `module-scope-state` is kept, as a regression instrument. A
-case is cheaper to run than its question is to re-argue, so a proposal to add one of these
-files is answered by running the case rather than by debating the file.
-
-`finding-the-cost`'s second baseline arm, `core` alone, clears the set of the suspicion it
-was written to test. The worry was that the routing reference supplies the
-lazy-route and entry-chunk answers in prose, so a baseline with the Vue rules could produce
-them without knowing anything. **`core` alone does it too** — three runs, each of which ran
-the project's own build unprompted, read the 372 kB entry chunk against the 0.2 kB lazy
-routes off the chunk table, and named `chart.js/auto` and `luxon` at the entry. The set is
-not manufacturing the failure, because there is no failure to manufacture: measuring before
-ranking is already the floor behaviour.
+`submit-state` is kept for the reason `module-scope-state` is kept, as a regression
+instrument. A case is cheaper to run than its question is to re-argue, so a proposal about
+`vue-forms.md` is answered by running the case rather than by debating the file.
 
 ## The Nuxt cases
 
 `payload-rich-types` is kept because the baseline arm does not pass it: it ties `Date` and
-`Set` surviving the payload to a later Nuxt version. Four candidates from one research pass — a plain async
-function losing Nuxt's request context after an `await`, a missing `runtimeConfig.public`
-key, `setup` running twice under hydration, and an un-awaited `navigateTo` outside
-middleware — were run by hand with `claude -p`, not the automated harness (see
-`plugins/core/evals/README.md` for why), and dropped: a bare Sonnet 5, with no plugin at
-all, already answered every one of them correctly.
+`Set` surviving the payload to a later Nuxt version. Four candidates from one research
+pass — a plain async function losing Nuxt's request context after an `await`, a missing
+`runtimeConfig.public` key, `setup` running twice under hydration, and an un-awaited
+`navigateTo` outside middleware — were run by hand with `claude -p`, not the automated
+harness (see `plugins/core/evals/README.md` for why), and dropped: a bare Sonnet 5, with no
+plugin at all, already answered every one of them correctly.
 
 The `nuxt-*` set costs references to maintain and reads on every Nuxt workspace. The
 evidence that it is worth it is not that the Nuxt guidance is correct — it is that **a run
@@ -151,9 +141,8 @@ added, stands in for one.
 A change to the router's description is measured on the trigger prompts in pairs, with runs
 on a copy of the previous plugin tree as the control, because the fire rate drifts between
 measurements. A wording regresses a prompt when it fails at least two more runs of four than
-the control, or four more of eight. Naming React in the description's first sentence, or
-"React SPA" and "hooks" in its second, regressed `trigger-vue` in English; the description
-names React once, in its "Use whenever" sentence.
+the control, or four more of eight. The description names React in its first sentence,
+beside Vue 3, Nuxt and Next.js.
 
 The same sentence says "in whatever language the request is written", for requests not in
 English; a wording that drops it is measured on `trigger-react` in Hungarian.
@@ -252,17 +241,21 @@ The trigger cases — `trigger-vue`, `trigger-nuxt`, `trigger-next`, `trigger-re
 carry no slash invocation: the measure is the model's own `Skill` call, as a fire rate over
 repeated runs. Each case has two arms in one directory, `prompt.md` in English and
 `prompt.hu.md` in Hungarian, with the same request and code, graded by the one
-`graders/criteria.md`. `trigger-nuxt-repo` is `trigger-nuxt` with the code in fixture files
-rather than pasted into the prompt. The Hungarian arm is hand-run only: the harness help
-names `prompt.md` as a case's prompt, and whether it ignores `prompt.hu.md` is unobserved. A
-whole-pack harness run measures nothing for these cases, for the reason the isolation cases
-give.
+`graders/criteria.md`. Each run loads the plugins from a copy of `plugins/` at a path that names
+none of the case, the framework or the devkit, copies the fixture into a fresh directory whose
+path names none of those or the word "frontend", and the selection line may give that workspace
+as `.`, its name or its full path. `trigger-nuxt-repo` is `trigger-nuxt` with
+the code in fixture files rather than pasted into the prompt. The Hungarian arm is hand-run
+only: the harness help names `prompt.md` as a case's prompt, and whether it ignores
+`prompt.hu.md` is unobserved. A whole-pack harness run measures nothing for these cases, for
+the reason the isolation cases give.
 
 `ui-package-nuxt-consumer` runs like the isolation cases: with-plugin only, hand-run, from a
 fixture of four files, a root `package.json` with `workspaces` and the two workspaces' own.
 
-`compaction-reread` runs with the plugin only, hand-run from its fixture under
-`--autocompact 100k`; its `graders/criteria.md` has the rest of the rig.
+`compaction-reread` runs with the plugin only, hand-run from its fixture as two messages of
+one session with a manual `/compact` between them; its `graders/criteria.md` has the rest of
+the rig.
 
 `delegation-testing-changes` has two arms, and both load `core`: `core` alone, and `core` +
 `frontend`. Each arm has its own expected shape, and the case passes only when both hold

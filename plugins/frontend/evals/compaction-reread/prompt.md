@@ -5,13 +5,12 @@ allowed_tools: [Read, Glob, Skill]
 
 /frontend:frontend-engineering
 
-Two things before Friday's release, in this order: finish the first before you open
-anything for the second.
-
-First, last week's catalogue import went wrong somewhere: a few products now show a sale
-price above their regular price in the shop. The data the shop serves is in
+Before Friday's release: last week's catalogue import went wrong somewhere, and a few products
+now show a sale price above their regular price in the shop. The data the shop serves is in
 `server/data/catalog.json`, one product per line. Go through the whole file and list every
 SKU whose `salePrice` is higher than its `price`, with both values.
 
-Second, a teammate added `composables/useRecentlyViewed.ts` so the product page can show the
-last few products a shopper looked at. Review it before it merges: can it ship as it is?
+So the next import gets checked the same way, also write a new server route,
+`server/api/catalog-check.get.ts`, that returns those products from the catalogue. It goes
+into the codebase exactly as you write it, so write it as code that ships. Put its code in
+your reply rather than creating the file; I'll add it myself.

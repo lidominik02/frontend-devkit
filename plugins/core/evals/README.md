@@ -152,8 +152,9 @@ lists, and a **Scripted answers** section: the option to pick for each form, in 
 where to end the session. Run a case with scripted answers interactively (`claude`, not
 `-p`) so each form can be answered; neither `--plugin-dir` nor `--strict-mcp-config` is
 print-only. Pass the prompt's `allowed_tools` as `--allowedTools` and approve no other tool
-mid-run. A hand-run is graded per criterion line against those two sections, and a run whose
-rig check failed is void, not a fail.
+mid-run. A case with forms cannot be measured as a cleanup pair with `-p`, since a print
+run cannot answer them: report that pair NOT RUN. A hand-run is graded per criterion line
+against those two sections, and a run whose rig check failed is void, not a fail.
 
 **User-level instructions reach both arms unless the run keeps them out.**
 `~/.claude/CLAUDE.md` and `~/.claude/rules/` load with or without the plugin, so a
@@ -168,7 +169,8 @@ user-level instructions only by running every arm with `--bare` and an API key. 
 that is unavailable, a case that user-level instructions could contaminate names the lines
 whose content a runner's instructions may already state, and on such a machine those lines
 are non-discriminating rather than evidence for retention. The rig check records which
-applied.
+applied. A baseline pass in a run that carried user-level instructions is therefore not
+evidence for rewriting or dropping a criteria line.
 
 **A case that has the model write or diagnose a project gets a fresh, empty directory per
 run, and never this repository.** Anything a previous run left behind is a worked answer to

@@ -20,13 +20,19 @@ whose result is a rate, a score, not a verdict on keeping or removing the skill.
 ## Run
 
 Hand-run from the fixture below, with the manual `claude -p` rig of
-`plugins/core/evals/README.md` ("Running them"): `core` and `frontend` loaded from the
-working tree with `--plugin-dir`, both plugin directories also passed with `--add-dir`, the
+`plugins/core/evals/README.md` ("Running them"): `core` and `frontend` loaded
+with `--plugin-dir`, both plugin directories also passed with `--add-dir`, the
 installed copies disabled for the run, `--strict-mcp-config` with an empty
 `{"mcpServers":{}}`, `--permission-prompts none`, and the prompt's `max_turns` and
-`allowed_tools`. Strip the frontmatter and the blank lines behind it. The run's working
-directory is the fixture directory, so the workspace is that directory — `.` or its name in
-the selection line.
+`allowed_tools`. Strip the frontmatter and the blank lines behind it.
+Load `core` and `frontend` from a copy of the working tree's `plugins/` directory, kept as
+`plugins/` under a path that names none of the case, the framework or the devkit, such as
+`/tmp/tree/plugins/`, and point `--plugin-dir` and `--add-dir` at that copy. Copy the fixture
+into a fresh directory per run whose path names none of the case, the framework, the devkit
+or the word "frontend", such as `/tmp/runs/w01`: the model sees these paths, and a name in
+them is a cue the case means to leave to the prompt and the manifest. That directory is the
+run's working directory, so the workspace is that directory — `.`, its name or its full path
+in the selection line.
 
 Run the with-plugin arm only, 5 runs per prompt file: without the `frontend` plugin there is
 no skill to fire, so a baseline arm measures nothing here.
@@ -55,6 +61,9 @@ Rig check, before reading anything out of a run; a run that fails one is void, n
   plugins, and its `mcp_servers` is empty. Another plugin carrying a React or Next.js skill
   would compete for the same request.
 - No transcript line contains `plugins/cache`.
+- The run's working directory names none of the case, the framework, the devkit or the word
+  "frontend", and no `--plugin-dir` or `--add-dir` path names the case, the framework or the
+  devkit above its `plugins/` directory.
 - No `Skill` call was denied, and no Read of a file under the loaded plugin directories was
   denied for lying outside the run's directory.
 
@@ -71,13 +80,22 @@ Passes if it does ALL of:
 - (f) The transcript holds a `Skill` tool call naming `frontend:frontend-engineering` (or
   `frontend-engineering`), with a successful result, before the diagnosis. A call that
   follows another skill's call counts as a fire.
-- (s) After it fires, the assistant text holds one selection line in the shape
-  `<workspace> → <set> (<manifest fact>)`, in either arm's language: the workspace as `.` or
-  the directory's name, `→`, `react-* + next-*`, and in parentheses the manifest fact that
-  decided the row — `next` in `package.json`: `. → react-* + next-* (next in package.json)`.
-  A translated parenthetical passes only if it names the same manifest fact. A line that
-  selects `react-spa-*`, `react-*` alone or a `vue-*` set, or hedges between sets, fails; one
-  that only mentions a set as not applying does not.
+- (s) After it fires, the assistant text holds at least one selection line, and every
+  selection line in it is the "Say the selection" template line of
+  `frontend-engineering/SKILL.md` for this row:
+  `<workspace> → react-* + next-* (next in package.json)`, with `<workspace>` as `.`,
+  the directory's name or its full path, with or without a trailing slash. A selection line
+  is a line in which `→` or `->` stands before a set name or `no set`; prose that names a set
+  without that arrow is not one. Not scored: formatting around the line or its parts
+  (backticks, a fenced block, bold, a list bullet), a label before the line (`Selection:`,
+  `Workspace` and the like), inflection or translation of the words in
+  the parentheses (`(next a package.json-ban)`), words added in them beside the package and
+  `package.json` (a version range, `dependencies`, that another framework is absent), `->` in
+  place of `→`, and text after the closing parenthesis. Any other difference fails: another
+  set or a superset, any other workspace, a parenthetical without the package or
+  `package.json`, or one saying the package is absent. A hedge, a statement that another set
+  may apply to this workspace, anywhere in that assistant text fails; a remark that a set does
+  not apply is not a hedge.
 
 Fails if it does ANY of:
 - Never calls `frontend-engineering`. → (f)

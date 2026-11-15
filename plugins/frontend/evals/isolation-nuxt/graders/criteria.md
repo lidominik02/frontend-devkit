@@ -17,13 +17,20 @@ keeping or removing a set.
 ## Run
 
 Hand-run from the fixture below, with the manual `claude -p` rig of
-`plugins/core/evals/README.md` ("Running them"): `core` and `frontend` loaded from the
-working tree with `--plugin-dir`, both plugin directories also passed with `--add-dir`, the
+`plugins/core/evals/README.md` ("Running them"): `core` and `frontend` loaded
+with `--plugin-dir`, both plugin directories also passed with `--add-dir`, the
 installed copies disabled for the run, `--strict-mcp-config` with an empty
 `{"mcpServers":{}}`, `--permission-prompts none`, and the prompt's `max_turns` and
 `allowed_tools`. Strip the frontmatter and the blank lines behind it, so
-`/frontend:frontend-engineering` is line 1. The run's working directory is the fixture
-directory, so the workspace is that directory — `.` or its name in the selection line.
+`/frontend:frontend-engineering` is line 1.
+Load `core` and `frontend` from a copy of the working tree's `plugins/` directory, kept as
+`plugins/` under a path that names none of the case, the framework or the devkit, such as
+`/tmp/tree/plugins/`, and point `--plugin-dir` and `--add-dir` at that copy. Copy the fixture
+into a fresh directory per run whose path names none of the case, the framework, the devkit
+or the word "frontend", such as `/tmp/runs/w01`: the model sees these paths, and a name in
+them is a cue the case means to leave to the prompt and the manifest. That directory is the
+run's working directory, so the workspace is that directory — `.`, its name or its full path
+in the selection line.
 
 Run the with-plugin arm only, at least twice: without the `frontend` plugin there is no set
 to read, so a baseline arm measures nothing here. The automated harness does not fit: it
@@ -45,6 +52,9 @@ Rig check, before reading anything out of a run; a run that fails one is void, n
 - The directory holds only `package.json`, with the content above.
 - The init event lists `core@inline` and `frontend@inline`, and its `mcp_servers` is empty.
 - No transcript line contains `plugins/cache`.
+- The run's working directory names none of the case, the framework, the devkit or the word
+  "frontend", and no `--plugin-dir` or `--add-dir` path names the case, the framework or the
+  devkit above its `plugins/` directory.
 - The skill fired: the run's session JSONL holds a user message that begins
   `Base directory for this skill: ` followed by a path equal to the `frontend` `--plugin-dir`
   path plus `/skills/frontend-engineering`, then the skill body; or the transcript holds a
@@ -67,12 +77,23 @@ transcript order. A read of `references/web-review.md`, the review findings ever
 shares, is accepted and is not required.
 
 Passes if it does ALL of:
-- (s) The assistant text holds, before the first read of a set file, one selection line in
-  the shape the skill gives: the workspace, `→`, `vue-*` + `nuxt-*`, and in parentheses the
-  manifest fact that decided the row — `nuxt` in `package.json`:
-  `. → vue-* + nuxt-* (nuxt in package.json)`. A line that names `vue-*` alone or
-  `vue-* + vue-spa-*`, marks `nuxt-*` as optional or uncertain ("vue-* (+ nuxt-* maybe)"),
-  or hedges between sets, fails.
+- (s) The assistant text holds, before the first read of a set file, at least one selection
+  line, and every selection line in it is the "Say the selection" template line of
+  `frontend-engineering/SKILL.md` for this row:
+  `<workspace> → vue-* + nuxt-* (nuxt in package.json)`, with `<workspace>` as `.`,
+  the directory's name or its full path, with or without a trailing slash. A selection line
+  is a line in which `→` or `->` stands before a set name or `no set`; prose that names a set
+  without that arrow is not one. Not scored: formatting around the line or its parts
+  (backticks, a fenced block, bold, a list bullet), a label before the line (`Selection:`,
+  `Workspace` and the like), inflection or translation of the words in
+  the parentheses (`(nuxt a package.json-ban)`), words added in them beside the package and
+  `package.json` (a version range, `dependencies`, that another framework is absent), `->` in
+  place of `→`, and text after the closing parenthesis. Any other difference fails: another
+  set or a superset, any other workspace, a parenthetical without the package or
+  `package.json`, or one saying the package is absent. A hedge, a statement that another set
+  may apply to this workspace, anywhere in that assistant text fails; a remark that a set does
+  not apply is not a hedge. Only the assistant text before the first read of a set file is
+  scored; a selection line repeated later in the run is not.
 - (r) Reads `references/vue-rules.md` and `references/nuxt-rules.md`, with the first read of
   `vue-rules.md` before the first read of `nuxt-rules.md`.
 - (i) Reads no `vue-spa-*` file.
