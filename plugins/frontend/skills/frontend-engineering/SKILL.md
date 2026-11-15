@@ -1,7 +1,7 @@
 ---
 name: frontend-engineering
 description: >-
-  Frontend engineering and review knowledge for Vue 3, Nuxt and Next.js, chosen per
+  Frontend engineering and review knowledge for Vue 3, Nuxt, React and Next.js, chosen per
   workspace from its package.json: reactivity that silently stops updating, composables,
   Vue Router guards, client versus server state, build-time config and secrets that reach
   the browser bundle, state that leaks between requests under SSR, useFetch and
