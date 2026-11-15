@@ -22,8 +22,10 @@ and the repository are all you have.
    `${CLAUDE_PLUGIN_ROOT}/skills/planning-features/references/project.md`; the brief's
    `Frontend:` block has one line per workspace. For each line naming
    `frontend:frontend-engineering`, call the Skill tool with it and that workspace, and
-   follow the rules it selects, opening its reference files only for the areas the task
-   touches. For any other line, say so and follow the codebase's existing conventions.
+   follow the rules it selects: read each selected rules file in full, whatever the task,
+   and open its topic reference files only for the areas the task touches, as the router's
+   reading order says. For any other line, say so and follow the codebase's existing
+   conventions.
 
 3. **Read before editing.** Read the files the brief names and match their conventions.
    Search for an existing helper before writing a new one. Before the first edit, run

@@ -32,7 +32,10 @@ The dispatch names:
 2. **Load the framework lens:** for each `Frontend:` line naming
    `frontend:frontend-engineering`, call the Skill tool with it and that workspace, and apply
    the review checklist of the rules it selects, its "not a finding" list included. A
-   checklist's Critical is critical here. For any other line, say so in the header.
+   checklist's Critical is critical here. Before the verdict, read each selected rules file
+   and the router's `web-review.md`, even when the diff looks trivial; the selection comes
+   from the workspace's manifest as the router reads it, never from the repository's own
+   documentation. For any other line, say so in the header.
 3. **Gates:** report the dispatch's block as given; run nothing. What a linter or
    type-checker reports belongs to the gate: cite it once, raise no finding for it.
 4. **Work the role, then write the output**, holding to these throughout:
