@@ -3,6 +3,24 @@
 Each section records one release of every pack in the marketplace, which share one
 version: what it added, changed and fixed for someone using the devkit, newest first.
 
+## 0.9.7 - 2026-11-15
+
+### Changed
+
+- The frontend evals run their trigger, isolation and compaction cases from directories
+  whose paths give no hint of the case, and grade the selection line against the
+  router's own template. The compaction case compacts by hand and passes when the
+  selected rules are back in view before the verdict.
+
+### Fixed
+
+- `frontend-engineering` starts on React requests: its description names React beside
+  Vue 3, Nuxt and Next.js in its first sentence, without starting less often on the
+  others.
+- `core`'s implementer always reads the selected framework rules file before writing
+  code, and its reviewer reads the selected rules and the web review checklist before
+  every verdict, even on a small diff.
+
 ## 0.9.6 - 2026-11-13
 
 ### Fixed
